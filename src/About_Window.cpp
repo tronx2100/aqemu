@@ -42,6 +42,7 @@ About_Window::About_Window( QWidget *parent ): QDialog( parent )
 	"<b>Developers:</b>\n"
 	"<br>Andrey Rijov (aka RDron) - Original Author (Up until version 0.8.2)\n"
 	"<br>Tobias Gläßer - Maintainer/Developer (Version 0.9.0 and up)\n"
+	"<br>Henry Röhricht (TRONX2100) - Fork Maintainer/Developer\n"
 
 	"<br><br><b>Contributors:</b>\n"
     "<br>Georg Schlisio - Arch Linux Packaging and Testing\n"
@@ -124,4 +125,3 @@ void About_Window::Show_Links_File()
 		ui.Links_View->setHtml( all );
 	}
 }
-
