@@ -18,12 +18,13 @@ ninja
 ./aqemu
 ```
 
-### Convenience build script
+### Convenience scripts
 ```
 ./compile.sh [builddir]
+./create-deb.sh [builddir] [dist]
 ```
-- If `libvncclient` is available, the script uses Meson.
-- Otherwise it falls back to CMake with `-DWITHOUT_EMBEDDED_DISPLAY=on` and a policy minimum for newer CMake.
+- `compile.sh` uses Meson when `libvncclient` is available, otherwise CMake with `-DWITHOUT_EMBEDDED_DISPLAY=on`.
+- `create-deb.sh` builds a Debian package into `dist/` (uses Meson when `libvncclient` is available, otherwise CMake fallback).
 
 ### CMake (from README)
 - Configure options: `DEBUG`, `WITHOUT_EMBEDDED_DISPLAY`, `INSTALL_MAN`, `MAN_PAGE_COMPRESSOR`.
