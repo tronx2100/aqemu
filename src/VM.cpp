@@ -42,7 +42,8 @@
 #include <QRect>
 #include <QLabel>
 #include <QHBoxLayout>
-#include <QDesktopWidget>
+#include <QGuiApplication>
+#include <QScreen>
 
 //GenerateHTMLInfo
 #include <QTextEdit>
@@ -53,6 +54,7 @@
 
 #include "VM.h"
 #include "Utils.h"
+#include "Service.h"
 #include "Emulator_Control_Window.h"
 #include "System_Info.h"
 #include "VNC_Password_Window.h"
@@ -108,9 +110,13 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 	
 	QObject::connect( QEMU_Process, SIGNAL(finished(int,QProcess::ExitStatus)),
 					  this, SLOT(QEMU_Finished(int,QProcess::ExitStatus)) );
+
+	QObject::connect( QEMU_Process, SIGNAL(errorOccurred(QProcess::ProcessError)),
+					  this, SLOT(QEMU_Error(QProcess::ProcessError)) );
 	
 	this->Icon_Path = vm.Get_Icon_Path();
 	this->Screenshot_Path = vm.Get_Screenshot_Path();
+    this->QEMU_Error_Log_Entries = vm.QEMU_Error_Log_Entries;
 	
 	// General Tab
 	this->Machine_Name = vm.Get_Machine_Name();
@@ -252,6 +258,7 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 	this->VNC_x509_Folder_Path = vm.Get_VNC_x509_Folder_Path();
 	this->VNC_x509verify = vm.Use_VNC_x509verify();
 	this->VNC_x509verify_Folder_Path = vm.Get_VNC_x509verify_Folder_Path();
+    this->QEMU_Error_Log_Entries = vm.QEMU_Error_Log_Entries;
 	
 	this->Load_VM_Window = nullptr;
 	this->Save_VM_Window = nullptr;
@@ -274,6 +281,7 @@ Virtual_Machine::~Virtual_Machine()
 	Network_Cards.clear();
 	Network_Redirections.clear();
 	USB_Ports.clear();
+    QEMU_Error_Log_Entries.clear();
 	
 	delete Load_VM_Window;
 	delete Save_VM_Window;
@@ -318,6 +326,9 @@ void Virtual_Machine::Shared_Constructor()
 	
 	QObject::connect( QEMU_Process, SIGNAL(finished(int, QProcess::ExitStatus)),
 					  this, SLOT(QEMU_Finished(int, QProcess::ExitStatus)) );
+
+	QObject::connect( QEMU_Process, SIGNAL(errorOccurred(QProcess::ProcessError)),
+					  this, SLOT(QEMU_Error(QProcess::ProcessError)) );
 	
 	Icon_Path = ":/other.png";
 	Screenshot_Path = "";
@@ -361,8 +372,14 @@ void Virtual_Machine::Shared_Constructor()
 	
 	Show_Boot_Menu = true;
 	
-    Video_Card = "";
+	Video_Card = "";
 	Audio_Card = VM::Sound_Cards();
+	Use_Custom_Audio_Backend = false;
+	Audio_Backend = Settings.contains( "QEMU_AUDIO/QEMU_AUDIO_DRV" )
+		? Settings.value( "QEMU_AUDIO/QEMU_AUDIO_DRV" ).toString()
+		: Get_Preferred_Audio_Backend();
+	if( Audio_Backend.isEmpty() )
+		Audio_Backend = Get_Preferred_Audio_Backend();
 	Remove_RAM_Size_Limitation = false;
 	Memory_Size = 128;
 	
@@ -375,6 +392,7 @@ void Virtual_Machine::Shared_Constructor()
 	Start_CPU = true;
 	No_Reboot = false;
 	No_Shutdown = false;
+	Use_TPM = false;
 	
 	FD0 = VM_Storage_Device();
 	FD1 = VM_Storage_Device();
@@ -467,8 +485,10 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
 		this->SMP == vm.Get_SMP() &&
 		this->Keyboard_Layout == vm.Get_Keyboard_Layout() &&
 		this->Show_Boot_Menu == vm.Get_Show_Boot_Menu() &&
-        this->Video_Card == vm.Get_Video_Card() &&
+		this->Video_Card == vm.Get_Video_Card() &&
 		this->Audio_Card == vm.Get_Audio_Cards() &&
+		this->Use_Custom_Audio_Backend == vm.Get_Use_Custom_Audio_Backend() &&
+		this->Audio_Backend == vm.Get_Audio_Backend() &&
 		this->Memory_Size == vm.Get_Memory_Size() &&
 		this->Remove_RAM_Size_Limitation == vm.Get_Remove_RAM_Size_Limitation() &&
 		this->Fullscreen == vm.Use_Fullscreen_Mode() &&
@@ -480,6 +500,7 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
 		this->No_Shutdown == vm.Use_No_Shutdown() &&
 		this->Start_CPU == vm.Use_Start_CPU() &&
 		this->No_Reboot == vm.Use_No_Reboot() &&
+		this->Use_TPM == vm.Get_Use_TPM() &&
 		this->FD0 == vm.Get_FD0() &&
 		this->FD1 == vm.Get_FD1() &&
 		this->CD_ROM == vm.Get_CD_ROM() &&
@@ -680,9 +701,13 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	
 	QObject::connect( QEMU_Process, SIGNAL(finished(int,QProcess::ExitStatus)),
 					  this, SLOT(QEMU_Finished(int,QProcess::ExitStatus)) );
+
+	QObject::connect( QEMU_Process, SIGNAL(errorOccurred(QProcess::ProcessError)),
+					  this, SLOT(QEMU_Error(QProcess::ProcessError)) );
 	
 	this->Icon_Path = vm.Get_Icon_Path();
 	this->Screenshot_Path = vm.Get_Screenshot_Path();
+    this->QEMU_Error_Log_Entries = vm.QEMU_Error_Log_Entries;
 	
 	// General Tab
 	this->Machine_Name = vm.Get_Machine_Name();
@@ -694,8 +719,10 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->Keyboard_Layout = vm.Get_Keyboard_Layout();
 	this->Boot_Order_List = vm.Get_Boot_Order_List();
 	this->Show_Boot_Menu = vm.Get_Show_Boot_Menu();
-    this->Video_Card = vm.Get_Video_Card();
+	this->Video_Card = vm.Get_Video_Card();
 	this->Audio_Card = vm.Get_Audio_Cards();
+	this->Use_Custom_Audio_Backend = vm.Get_Use_Custom_Audio_Backend();
+	this->Audio_Backend = vm.Get_Audio_Backend();
 	this->Memory_Size = vm.Get_Memory_Size();
 	this->Remove_RAM_Size_Limitation = vm.Get_Remove_RAM_Size_Limitation();
 	this->Fullscreen = vm.Use_Fullscreen_Mode();
@@ -707,6 +734,7 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->Start_CPU = vm.Use_Start_CPU();
 	this->No_Reboot = vm.Use_No_Reboot();
 	this->No_Shutdown = vm.Use_No_Shutdown();
+	this->Use_TPM = vm.Get_Use_TPM();
 	
 	// FDD/CD/DVD Tab
 	this->FD0 = vm.Get_FD0();
@@ -1299,7 +1327,35 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 		Dom_Text = New_Dom_Document.createTextNode( "false" );
 	
 	Dom_Element.appendChild( Dom_Text );
-	
+
+	// Use_TPM
+	Dom_Element = New_Dom_Document.createElement( "Use_TPM" );
+	VM_Element.appendChild( Dom_Element );
+
+	if( Use_TPM )
+		Dom_Text = New_Dom_Document.createTextNode( "true" );
+	else
+		Dom_Text = New_Dom_Document.createTextNode( "false" );
+
+	Dom_Element.appendChild( Dom_Text );
+
+	// Use_Custom_Audio_Backend
+	Dom_Element = New_Dom_Document.createElement( "Use_Custom_Audio_Backend" );
+	VM_Element.appendChild( Dom_Element );
+
+	if( Use_Custom_Audio_Backend )
+		Dom_Text = New_Dom_Document.createTextNode( "true" );
+	else
+		Dom_Text = New_Dom_Document.createTextNode( "false" );
+
+	Dom_Element.appendChild( Dom_Text );
+
+	// Audio_Backend
+	Dom_Element = New_Dom_Document.createElement( "Audio_Backend" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( Audio_Backend );
+	Dom_Element.appendChild( Dom_Text );
+
 	// Floppy's and CD-ROM
 	if( template_mode &&
 		! (Template_Opts & Create_Template_Window::Template_Save_FDD_CD) )
@@ -3852,7 +3908,18 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 			
 			// No_Shutdown
 			No_Shutdown = (Child_Element.firstChildElement("No_Shutdown").text() == "true");
-			
+
+			// Use_TPM
+			Use_TPM = (Child_Element.firstChildElement("Use_TPM").text() == "true");
+
+			// Use_Custom_Audio_Backend
+			Use_Custom_Audio_Backend = (Child_Element.firstChildElement("Use_Custom_Audio_Backend").text() == "true");
+
+			// Audio_Backend
+			Audio_Backend = Child_Element.firstChildElement("Audio_Backend").text();
+			if( Audio_Backend.isEmpty() )
+				Audio_Backend = Get_Preferred_Audio_Backend();
+
 			// Floppy and CD-ROM
 			if( template_mode &&
 				Template_Opts ^ Create_Template_Window::Template_Save_FDD_CD )
@@ -4482,7 +4549,7 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 				// For AQEMU VM files version 0.8.2 and oldest
 				if( ! Second_Element.firstChildElement("BusAddr").text().isEmpty() )
 				{
-					QStringList busAddrList = Second_Element.firstChildElement("BusAddr").text().split( ':', QString::SkipEmptyParts );
+					QStringList busAddrList = Second_Element.firstChildElement("BusAddr").text().split( ':', Qt::SkipEmptyParts );
 					if( busAddrList.count() != 2 )
 					{
 						AQError( "bool Virtual_Machine::Load_VM( const QString &file_name )",
@@ -4632,7 +4699,18 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 			
 			// Start DateTime
 			Start_DateTime = QDateTime::fromString( Child_Element.firstChildElement("Start_Date").text(), "dd.MM.yyyy HH:mm:ss" );
-			
+
+			// Use_TPM
+			Use_TPM = (Child_Element.firstChildElement("Use_TPM").text() == "true");
+
+			// Use_Custom_Audio_Backend
+			Use_Custom_Audio_Backend = (Child_Element.firstChildElement("Use_Custom_Audio_Backend").text() == "true");
+
+			// Audio_Backend
+			Audio_Backend = Child_Element.firstChildElement("Audio_Backend").text();
+			if( Audio_Backend.isEmpty() )
+				Audio_Backend = Get_Preferred_Audio_Backend();
+
 			// SPICE
 			Second_Element = Child_Element.firstChildElement( "SPICE" );
 			
@@ -5341,6 +5419,11 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	QStringList audio_list;
 	QStringList audio_device_args;
 	bool audio_enabled = false;
+	QString audio_backend = Use_Custom_Audio_Backend
+		? Audio_Backend.trimmed()
+		: ( Settings.contains( "QEMU_AUDIO/QEMU_AUDIO_DRV" )
+			? Settings.value( "QEMU_AUDIO/QEMU_AUDIO_DRV" ).toString().trimmed()
+			: Get_Preferred_Audio_Backend() );
 	
 	if( Audio_Card.Audio_sb16 &&  Current_Emulator_Devices.Audio_Card_List.Audio_sb16 )
 	{
@@ -5372,7 +5455,9 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 		audio_list << "ac97";
 		audio_device_args << "ac97";
 	}
-	if( Audio_Card.Audio_HDA && Current_Emulator_Devices.Audio_Card_List.Audio_HDA )
+	// HDA is a valid user choice even if the device list does not advertise it
+	// (some emulator profiles ship with incomplete capability detection).
+	if( Audio_Card.Audio_HDA )
 	{
 		audio_list << "hda";
 		audio_device_args << "intel-hda" << "hda-duplex";
@@ -5385,7 +5470,16 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	
 	if( audio_list.count() > 0 )
 	{
-		Args << "-audiodev" << "pa,id=audio0";
+		if( audio_backend.isEmpty() )
+			audio_backend = Settings.contains( "QEMU_AUDIO/QEMU_AUDIO_DRV" )
+				? Settings.value( "QEMU_AUDIO/QEMU_AUDIO_DRV" ).toString().trimmed()
+				: Get_Preferred_Audio_Backend();
+		if( audio_backend.isEmpty() )
+			audio_backend = Get_Preferred_Audio_Backend();
+		if( audio_backend.isEmpty() )
+			audio_backend = "pa";
+
+		Args << "-audiodev" << audio_backend + ",id=audio0";
 		audio_enabled = true;
 	}
 	
@@ -5476,6 +5570,13 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	// Exit instead of rebooting
 	if( No_Reboot )
 		Args << "-no-reboot";
+
+	// TPM device
+	if( Use_TPM )
+	{
+		Args << "-tpmdev" << "emulator,id=tpm0,chardev=chrtpm";
+		Args << "-device" << "tpm-tis,tpmdev=tpm0";
+	}
 	
 	if( Current_Emulator_Devices.PSO_Show_Cursor && Show_Cursor )
 		Args << "-show-cursor";
@@ -6875,7 +6976,7 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	{
 		QString tmp_str = Additional_Args;
 		tmp_str.replace( "\n", " " );
-		QStringList ad_args = tmp_str.split( " ", QString::SkipEmptyParts );
+		QStringList ad_args = tmp_str.split( " ", Qt::SkipEmptyParts );
 		
 		for( int ix = 0; ix < ad_args.count(); ix++ )
 			Args << ad_args[ ix ];
@@ -7088,7 +7189,34 @@ QStringList Virtual_Machine::Build_Shared_Folder_Args( VM_Shared_Folder folder, 
 
 bool Virtual_Machine::Start_impl()
 {
+    TEMPODEBUG( "bool Virtual_Machine::Start_impl()",
+                QString("entry vm_name=\"%1\" xml=\"%2\" uid=\"%3\" state=%4 load_mode=%5 start_cpu=%6 monitor_tcp=%7 vnc=%8 vnc_password=%9 use_custom_audio=%10")
+                .arg(Machine_Name)
+                .arg(Get_VM_XML_File_Path())
+                .arg(UID)
+                .arg(State)
+                .arg(Load_Mode)
+                .arg(Start_CPU)
+                .arg(Use_Monitor_TCP)
+                .arg(VNC)
+                .arg(VNC_Password)
+                .arg(Use_Custom_Audio_Backend) );
 
+    auto report_start_error = [this]( const QString &message ) -> bool
+    {
+        TEMPODEBUG( "bool Virtual_Machine::Start_impl()",
+                    QString("start error vm_name=\"%1\" xml=\"%2\" uid=\"%3\" message=\"%4\"")
+                    .arg(Machine_Name)
+                    .arg(Get_VM_XML_File_Path())
+                    .arg(UID)
+                    .arg(message) );
+        Show_QEMU_Error( message );
+        Start_Snapshot_Tag = "";
+        return false;
+    };
+
+    QEMU_Error_Log_Entries.clear();
+    AQEMU_Service::get().clear_error_log( Get_VM_XML_File_Path(), Get_UID() );
     delete QEMU_Error_Win;
     QEMU_Error_Win = new Error_Log_Window();
 
@@ -7096,9 +7224,14 @@ bool Virtual_Machine::Start_impl()
     if( (Current_Emulator_Devices.PSO_KVM || Current_Emulator_Devices.PSO_Enable_KVM ) &&
         Settings.value("Disable_KVM_Module_Check", "no").toString() != "yes" )
     {
+        TEMPODEBUG( "bool Virtual_Machine::Start_impl()",
+                    QString("KVM check enabled psokvm=%1 psodebugkvm=%2 disable_setting=%3")
+                    .arg(Current_Emulator_Devices.PSO_KVM)
+                    .arg(Current_Emulator_Devices.PSO_Enable_KVM)
+                    .arg(Settings.value("Disable_KVM_Module_Check", "no").toString()) );
         QProcess lsmod;
 
-        lsmod.start( "lsmod" );
+        lsmod.start( "lsmod", QStringList() );
 
         if( ! lsmod.waitForFinished(1000) )
         {
@@ -7197,27 +7330,64 @@ bool Virtual_Machine::Start_impl()
         }
     }
 
-    // QEMU Audio Environment
-    if( Settings.value("QEMU_AUDIO/Use_Default_Driver", "yes").toString() == "no" )
-    {
-        QStringList tmp_env = QProcess::systemEnvironment();
-        tmp_env << "QEMU_AUDIO_DRV=" + Settings.value("QEMU_AUDIO/QEMU_AUDIO_DRV", "alsa").toString();
-        QEMU_Process->setEnvironment( tmp_env );
-    }
+	// QEMU Audio Environment
+	QString audio_backend = Use_Custom_Audio_Backend
+		? Audio_Backend.trimmed()
+		: QString();
+
+	if( audio_backend.isEmpty() &&
+		Settings.value("QEMU_AUDIO/Use_Default_Driver", "yes").toString() == "no" )
+	{
+		audio_backend = Settings.contains( "QEMU_AUDIO/QEMU_AUDIO_DRV" )
+			? Settings.value("QEMU_AUDIO/QEMU_AUDIO_DRV" ).toString().trimmed()
+			: Get_Preferred_Audio_Backend();
+	}
+
+	if( audio_backend.isEmpty() )
+	{
+		audio_backend = Get_Preferred_Audio_Backend();
+	}
+
+	if( ! audio_backend.isEmpty() )
+	{
+	    QStringList tmp_env = QProcess::systemEnvironment();
+		tmp_env << "QEMU_AUDIO_DRV=" + audio_backend;
+		QEMU_Process->setEnvironment( tmp_env );
+        TEMPODEBUG( "bool Virtual_Machine::Start_impl()",
+                    QString("audio_backend=\"%1\" env_var_set").arg(audio_backend) );
+	}
 
     // User Args Only
     if( Use_User_Emulator_Binary && Only_User_Args )
     {
         QStringList tmp_list = this->Build_QEMU_Args();
+        TEMPODEBUG( "bool Virtual_Machine::Start_impl()",
+                    QString("user_args_only bin_name=\"%1\" arg_count=%2 args=\"%3\"")
+                    .arg(tmp_list.isEmpty() ? QString() : tmp_list.first())
+                    .arg(tmp_list.count())
+                    .arg(tmp_list.join(" ")) );
 
         if( tmp_list.count() < 1 )
         {
             AQError( "bool Virtual_Machine::Start()", "Cannot Start! Args is Empty!" );
+            return report_start_error( tr("Cannot start emulator: argument list is empty.") );
         }
         else
         {
             QString bin_name = tmp_list.takeAt( 0 );
             QEMU_Process->start( bin_name, tmp_list );
+            TEMPODEBUG( "bool Virtual_Machine::Start_impl()",
+                        QString("process start requested bin=\"%1\" args=\"%2\"")
+                        .arg(bin_name)
+                        .arg(tmp_list.join(" ")) );
+
+            if( ! QEMU_Process->waitForStarted( 2000 ) )
+            {
+                QString err = QEMU_Process->errorString().trimmed();
+                if( err.isEmpty() )
+                    err = tr("Cannot start emulator process.");
+                return report_start_error( err );
+            }
         }
     }
     else
@@ -7242,16 +7412,19 @@ bool Virtual_Machine::Start_impl()
         {
             AQGraphic_Error( "bool Virtual_Machine::Start()", tr("Error!"),
                              tr("Cannot start emulator! Binary path is empty!"), false );
-            Start_Snapshot_Tag = "";
-            return false;
+            return report_start_error( tr("Cannot start emulator! Binary path is empty!") );
         }
+
+        TEMPODEBUG( "bool Virtual_Machine::Start_impl()",
+                    QString("resolved binary name=\"%1\" path=\"%2\"")
+                    .arg(find_name)
+                    .arg(bin_path) );
 
         if( ! QFile::exists(bin_path) )
         {
             AQGraphic_Error( "bool Virtual_Machine::Start()", tr("Error!"),
                              tr("Emulator binary not exists! Check path: %1").arg(bin_path), false );
-            Start_Snapshot_Tag = "";
-            return false;
+            return report_start_error( tr("Emulator binary does not exist: %1").arg(bin_path) );
         }
 
         // Add VM USB devices to used USB list
@@ -7261,7 +7434,24 @@ bool Virtual_Machine::Start_impl()
                 System_Info::Add_To_Used_USB_List( usb_dev );
         }
 
-        QEMU_Process->start( bin_path, this->Build_QEMU_Args() );
+        QStringList qemu_args = this->Build_QEMU_Args();
+        TEMPODEBUG( "bool Virtual_Machine::Start_impl()",
+                    QString("qemu_args_count=%1 qemu_args=\"%2\"")
+                    .arg(qemu_args.count())
+                    .arg(qemu_args.join(" ")) );
+        QEMU_Process->start( bin_path, qemu_args );
+        TEMPODEBUG( "bool Virtual_Machine::Start_impl()",
+                    QString("process start requested bin=\"%1\" args=\"%2\"")
+                    .arg(bin_path)
+                    .arg(qemu_args.join(" ")) );
+
+        if( ! QEMU_Process->waitForStarted( 2000 ) )
+        {
+            QString err = QEMU_Process->errorString().trimmed();
+            if( err.isEmpty() )
+                err = tr("Cannot start emulator process.");
+            return report_start_error( err );
+        }
     }
 
     // Do NOT Start CPU
@@ -7309,6 +7499,8 @@ bool Virtual_Machine::Start_impl()
 
 bool Virtual_Machine::Start()
 {
+    TEMPODEBUG( "bool Virtual_Machine::Start()",
+                QString("entry vm_name=\"%1\" uid=\"%2\" xml=\"%3\"").arg(Machine_Name).arg(UID).arg(Get_VM_XML_File_Path()) );
     if ( Start_impl() )
     {
         // VNC Password
@@ -7465,9 +7657,23 @@ void Virtual_Machine::Show_Error_Log_Window()
 {
     if ( ! QEMU_Error_Win )
         QEMU_Error_Win = new Error_Log_Window();
+
+    QEMU_Error_Win->Set_Clear_Target( Get_VM_XML_File_Path(), Get_UID() );
+    if ( ! QEMU_Error_Log_Entries.isEmpty() )
+        QEMU_Error_Win->Restore_Log( QEMU_Error_Log_Entries );
+
+    QObject::connect( QEMU_Error_Win, SIGNAL(Clear_Log_Requested()),
+                      this, SLOT(Clear_QEMU_Error_Log()),
+                      Qt::UniqueConnection );
         
-	QEMU_Error_Win->setWindowTitle( tr("QEMU Error Log") + " (" + Machine_Name + ")" );
-	QEMU_Error_Win->show();
+    QEMU_Error_Win->setWindowTitle( tr("QEMU Error Log") + " (" + Machine_Name + ")" );
+    QEMU_Error_Win->show();
+    QEMU_Error_Win->raise();
+    QEMU_Error_Win->activateWindow();
+    TEMPODEBUG( "void Virtual_Machine::Show_Error_Log_Window()",
+                QString("shown vm_name=\"%1\" entry_count=%2")
+                .arg(Machine_Name)
+                .arg(QEMU_Error_Log_Entries.count()) );
 }
 
 void Virtual_Machine::Show_QEMU_Error( const QString &err_str )
@@ -7475,9 +7681,18 @@ void Virtual_Machine::Show_QEMU_Error( const QString &err_str )
     if ( err_str.simplified().isEmpty() )
         return;
 
+    TEMPODEBUG( "void Virtual_Machine::Show_QEMU_Error( const QString &err_str )",
+                QString("vm_name=\"%1\" uid=\"%2\" xml=\"%3\" error=\"%4\"")
+                .arg(Machine_Name)
+                .arg(UID)
+                .arg(Get_VM_XML_File_Path())
+                .arg(err_str) );
+    QEMU_Error_Log_Entries.append( err_str );
+
     if ( ! QEMU_Error_Win )
         QEMU_Error_Win = new Error_Log_Window();
 
+    QEMU_Error_Win->Set_Clear_Target( Get_VM_XML_File_Path(), Get_UID() );
 	QEMU_Error_Win->Add_to_Log( err_str );
 	
 	if( Settings.value( "No_Show_Error_Log_Forever", "no" ).toString() == "yes" ||
@@ -7495,6 +7710,19 @@ void Virtual_Machine::Show_QEMU_Error( const QString &err_str )
 	}
 }
 
+void Virtual_Machine::Clear_QEMU_Error_Log()
+{
+    TEMPODEBUG( "void Virtual_Machine::Clear_QEMU_Error_Log()",
+                QString("vm_name=\"%1\" uid=\"%2\" xml=\"%3\" count_before=%4")
+                .arg(Machine_Name)
+                .arg(UID)
+                .arg(Get_VM_XML_File_Path())
+                .arg(QEMU_Error_Log_Entries.count()) );
+
+    QEMU_Error_Log_Entries.clear();
+    AQEMU_Service::get().clear_error_log( Get_VM_XML_File_Path(), Get_UID() );
+}
+
 void Virtual_Machine::Hide_QEMU_Error_Log()
 {
     if ( QEMU_Error_Win )
@@ -7503,10 +7731,25 @@ void Virtual_Machine::Hide_QEMU_Error_Log()
     }
 }
 
+const QStringList &Virtual_Machine::Get_QEMU_Error_Log_Entries() const
+{
+    return QEMU_Error_Log_Entries;
+}
+
+QString Virtual_Machine::Get_QEMU_Error_Log_Text() const
+{
+    return QEMU_Error_Log_Entries.join( "\n" );
+}
+
+void Virtual_Machine::Set_QEMU_Error_Log_Entries( const QStringList &entries )
+{
+    QEMU_Error_Log_Entries = entries;
+}
+
 void Virtual_Machine::Show_VM_Load_Window()
 {
-	QDesktopWidget *des_widget = new QDesktopWidget();
-	QRect re = des_widget->screenGeometry( des_widget->primaryScreen() );
+	QScreen *screen = QGuiApplication::primaryScreen();
+	QRect re = screen ? screen->availableGeometry() : QRect();
 	
 	Load_VM_Window = new QWidget();
 	
@@ -7519,7 +7762,7 @@ void Virtual_Machine::Show_VM_Load_Window()
 	h_layout->addWidget( load_label );
 	Load_VM_Window->setLayout( h_layout );
 	
-	Load_VM_Window->move( re.height() / 2, re.width() / 2 );
+	Load_VM_Window->move( re.center() );
 	Load_VM_Window->show();
 }
 
@@ -7541,8 +7784,8 @@ void Virtual_Machine::Hide_VM_Load_Window()
 
 void Virtual_Machine::Show_VM_Save_Window()
 {
-	QDesktopWidget *des_widget = new QDesktopWidget();
-	QRect re = des_widget->screenGeometry( des_widget->primaryScreen() );
+	QScreen *screen = QGuiApplication::primaryScreen();
+	QRect re = screen ? screen->availableGeometry() : QRect();
 	
 	//Load_VM_Window = new QWidget();
 	Save_VM_Window = new QWidget();
@@ -7556,7 +7799,7 @@ void Virtual_Machine::Show_VM_Save_Window()
 	h_layout->addWidget( save_label );
 	Save_VM_Window->setLayout( h_layout );
 	
-	Save_VM_Window->move( re.height() / 2, re.width() / 2 );
+	Save_VM_Window->move( re.center() );
 	Save_VM_Window->show();
 }
 
@@ -7737,7 +7980,7 @@ const Available_Devices *Virtual_Machine::Get_Current_Emulator_Devices() const
 QString Virtual_Machine::Get_Current_Emulator_Binary_Path( const QString &names ) const
 {
 	QMap<QString, QString> bin_list = Current_Emulator.Get_Binary_Files();
-	QStringList nl = names.split( " ", QString::SkipEmptyParts );
+	QStringList nl = names.split( " ", Qt::SkipEmptyParts );
 	
 	if( bin_list.count() <= 0 || nl.count() <= 0 )
 	{
@@ -7928,6 +8171,26 @@ void Virtual_Machine::Set_Audio_Cards( VM::Sound_Cards card )
 	Audio_Card = card;
 }
 
+bool Virtual_Machine::Get_Use_Custom_Audio_Backend() const
+{
+	return Use_Custom_Audio_Backend;
+}
+
+void Virtual_Machine::Set_Use_Custom_Audio_Backend( bool use )
+{
+	Use_Custom_Audio_Backend = use;
+}
+
+const QString &Virtual_Machine::Get_Audio_Backend() const
+{
+	return Audio_Backend;
+}
+
+void Virtual_Machine::Set_Audio_Backend( const QString &backend )
+{
+	Audio_Backend = backend;
+}
+
 const QString &Virtual_Machine::Get_Video_Card() const
 {
 	return Video_Card;
@@ -8066,6 +8329,16 @@ bool Virtual_Machine::Use_No_Shutdown() const
 void Virtual_Machine::Use_No_Shutdown( bool use )
 {
 	No_Shutdown = use;
+}
+
+bool Virtual_Machine::Get_Use_TPM() const
+{
+	return Use_TPM;
+}
+
+void Virtual_Machine::Set_Use_TPM( bool use )
+{
+	Use_TPM = use;
 }
 
 bool Virtual_Machine::Use_Check_FDD_Boot_Sector() const
@@ -8464,7 +8737,7 @@ QString Virtual_Machine::Get_USB_Bus_Address( const QString &id )
 		return "";
 	}
 	
-	QStringList usbhost_dev_list = info_usbhost_res.split( "\n", QString::SkipEmptyParts );
+	QStringList usbhost_dev_list = info_usbhost_res.split( "\n", Qt::SkipEmptyParts );
 	
 	AQWarning( "IW", "Data: " + info_usbhost_res );
 	AQWarning( "IW", "End" );
@@ -8528,7 +8801,7 @@ QString Virtual_Machine::Get_USB_Bus_Address( const QString &id )
 		return "";
 	}
 	
-	QStringList usb_dev_list = info_usb_res.split( "\n", QString::SkipEmptyParts );
+	QStringList usb_dev_list = info_usb_res.split( "\n", Qt::SkipEmptyParts );
 	
 	if( usb_dev_list.count() <= 0 )
 	{
@@ -9066,8 +9339,14 @@ void Virtual_Machine::Parse_StdOut()
 	if( Use_Monitor_TCP == false )
 		convOutput = QEMU_Process->readAllStandardOutput();
 	else
-	#endif
+    #endif
 		convOutput = Monitor_Socket->readAll();
+
+    TEMPODEBUG( "void Virtual_Machine::Parse_StdOut()",
+                QString("vm_name=\"%1\" raw_stdout_size=%2 use_monitor_tcp=%3")
+                .arg(Machine_Name)
+                .arg(convOutput.size())
+                .arg(Use_Monitor_TCP) );
 
     // For whatever reason qemu doesn't write all errors to stderr,
     // which means we unfortunately need to filter output to stdout
@@ -9080,6 +9359,10 @@ void Virtual_Machine::Parse_StdOut()
 
 	QStringList splitOutput = convOutput.split( "[K" );
 	QString cleanOutput = splitOutput.last().remove( QRegExp("\[[KD].") );
+    TEMPODEBUG( "void Virtual_Machine::Parse_StdOut()",
+                QString("vm_name=\"%1\" clean_stdout=\"%2\"")
+                .arg(Machine_Name)
+                .arg(cleanOutput) );
 	
 	emit Clean_Console( cleanOutput );
 	emit Ready_StdOut( cleanOutput );
@@ -9106,6 +9389,10 @@ void Virtual_Machine::Parse_StdErr()
 {
 	// FIXME in monitor tcp mode no possible get error strings
 	QString convOutput = QEMU_Process->readAllStandardError();
+    TEMPODEBUG( "void Virtual_Machine::Parse_StdErr()",
+                QString("vm_name=\"%1\" raw_stderr_size=%2")
+                .arg(Machine_Name)
+                .arg(convOutput.size()) );
 	
 	emit Clean_Console( convOutput );
 	emit Ready_StdErr( convOutput );
@@ -9137,6 +9424,12 @@ void Virtual_Machine::Parse_StdErr()
 
 void Virtual_Machine::Send_Emulator_Command( const QString &text )
 {
+    TEMPODEBUG( "void Virtual_Machine::Send_Emulator_Command( const QString &text )",
+                QString("vm_name=\"%1\" monitor_tcp=%2 state=%3 command=\"%4\"")
+                .arg(Machine_Name)
+                .arg(Use_Monitor_TCP)
+                .arg(State)
+                .arg(text.trimmed()) );
 	#ifndef Q_OS_WIN32
 	if( Use_Monitor_TCP == false )
 	{
@@ -9161,6 +9454,14 @@ void Virtual_Machine::QEMU_Started()
 {
 	AQDebug( "void Virtual_Machine::QEMU_Started()",
 			 "QEMU Start" );
+    TEMPODEBUG( "void Virtual_Machine::QEMU_Started()",
+                QString("vm_name=\"%1\" uid=\"%2\" xml=\"%3\" state=%4 start_cpu=%5 load_mode=%6")
+                .arg(Machine_Name)
+                .arg(UID)
+                .arg(Get_VM_XML_File_Path())
+                .arg(State)
+                .arg(Start_CPU)
+                .arg(Load_Mode) );
 	
 	if( Start_CPU )
 	{
@@ -9177,7 +9478,11 @@ void Virtual_Machine::QEMU_Started()
 	if( ! Settings.value("Run_Before_QEMU", "").toString().isEmpty() )
 	{
 		QProcess *before_proc = new QProcess();
-		before_proc->start( Settings.value("Run_Before_QEMU", "").toString() );
+#ifndef Q_OS_WIN32
+		before_proc->start( "/bin/sh", QStringList() << "-c" << Settings.value("Run_Before_QEMU", "").toString() );
+#else
+		before_proc->start( "cmd.exe", QStringList() << "/C" << Settings.value("Run_Before_QEMU", "").toString() );
+#endif
 	}
 	
 	// Connect monitor?
@@ -9195,6 +9500,14 @@ void Virtual_Machine::QEMU_Finished( int exitCode, QProcess::ExitStatus exitStat
 {
 	AQDebug( "void Virtual_Machine::QEMU_Finished( int exitCode, QProcess::ExitStatus exitStatus )" ,
 			 "QEMU Finished" );
+    TEMPODEBUG( "void Virtual_Machine::QEMU_Finished( int exitCode, QProcess::ExitStatus exitStatus )",
+                QString("vm_name=\"%1\" uid=\"%2\" xml=\"%3\" exitCode=%4 exitStatus=%5 state_before=%6")
+                .arg(Machine_Name)
+                .arg(UID)
+                .arg(Get_VM_XML_File_Path())
+                .arg(exitCode)
+                .arg(exitStatus)
+                .arg(State) );
 	
 	emit QEMU_End();
 	
@@ -9227,8 +9540,53 @@ void Virtual_Machine::QEMU_Finished( int exitCode, QProcess::ExitStatus exitStat
 	if( ! Settings.value("Run_After_QEMU", "").toString().isEmpty() )
 	{
 		QProcess *after_proc = new QProcess();
-		after_proc->start( Settings.value("Run_After_QEMU", "").toString() );
+#ifndef Q_OS_WIN32
+		after_proc->start( "/bin/sh", QStringList() << "-c" << Settings.value("Run_After_QEMU", "").toString() );
+#else
+		after_proc->start( "cmd.exe", QStringList() << "/C" << Settings.value("Run_After_QEMU", "").toString() );
+#endif
 	}
+}
+
+void Virtual_Machine::QEMU_Error( QProcess::ProcessError error )
+{
+    QString message;
+    TEMPODEBUG( "void Virtual_Machine::QEMU_Error( QProcess::ProcessError error )",
+                QString("vm_name=\"%1\" uid=\"%2\" xml=\"%3\" process_error=%4 error_string=\"%5\"")
+                .arg(Machine_Name)
+                .arg(UID)
+                .arg(Get_VM_XML_File_Path())
+                .arg(error)
+                .arg(QEMU_Process ? QEMU_Process->errorString().trimmed() : QString()) );
+
+    switch( error )
+    {
+        case QProcess::FailedToStart:
+            message = tr("QEMU failed to start.");
+            break;
+        case QProcess::Crashed:
+            message = tr("QEMU crashed while starting.");
+            break;
+        case QProcess::Timedout:
+            message = tr("QEMU startup timed out.");
+            break;
+        case QProcess::ReadError:
+            message = tr("QEMU process read error.");
+            break;
+        case QProcess::WriteError:
+            message = tr("QEMU process write error.");
+            break;
+        case QProcess::UnknownError:
+        default:
+            message = tr("Unknown QEMU process error.");
+            break;
+    }
+
+    const QString detail = QEMU_Process->errorString().trimmed();
+    if( ! detail.isEmpty() )
+        message += "\n" + detail;
+
+    Show_QEMU_Error( message );
 }
 
 void Virtual_Machine::Resume_Finished( const QString &returned_text )

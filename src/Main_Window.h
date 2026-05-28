@@ -91,7 +91,6 @@ class Main_Window: public QMainWindow
 		void Set_Widgets_State( bool enabled );
 		void VM_Changed();
 		void Update_Emulator_Control( Virtual_Machine *cur_vm );
-		
         void SB_VNC_Display_changed(int);
         void SB_VNC_Display_Port_changed(int);
 

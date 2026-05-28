@@ -42,6 +42,7 @@ class Disable_User_Graphic_Warning
 void AQDebug( const QString &sender, const QString &mes );
 void AQWarning( const QString &sender, const QString &mes );
 void AQError( const QString &sender, const QString &mes );
+#define TEMPODEBUG(sender, mes) do { } while(0)
 
 void AQGraphic_Warning( const QString &caption, const QString &mes );
 void AQGraphic_Warning( const QString &sender, const QString &caption, const QString &mes, bool fatal = false );
@@ -97,5 +98,6 @@ void Checkbox_Dependend_Set_Enabled(QList<QWidget*>& children_to_enable, QCheckB
 
 double calculateContrast(const QColor& col1, const QColor& col2);
 
-#endif
+QString Get_Preferred_Audio_Backend();
 
+#endif

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>553</width>
-    <height>463</height>
+    <height>520</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -75,6 +75,76 @@
        </widget>
       </item>
       <item row="7" column="0">
+       <widget class="QCheckBox" name="CH_Advanced_TPM">
+        <property name="toolTip">
+         <string>Enable the QEMU TPM emulator and TPM-TIS device (-tpmdev emulator,id=tpm0,chardev=chrtpm -device tpm-tis,tpmdev=tpm0)</string>
+        </property>
+        <property name="text">
+         <string>Enable TPM device</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0">
+       <widget class="QCheckBox" name="CH_Use_Custom_Audio_Backend">
+        <property name="toolTip">
+         <string>Use a VM-specific audio backend instead of the global default audio backend.</string>
+        </property>
+        <property name="text">
+         <string>Override audio backend</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="1">
+       <widget class="QComboBox" name="CB_Audio_Backend">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="editable">
+         <bool>true</bool>
+        </property>
+        <item>
+         <property name="text">
+          <string>alsa</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>oss</string>
+         </property>
+        </item>
+	        <item>
+	         <property name="text">
+	          <string>pa</string>
+	         </property>
+	        </item>
+	        <item>
+	         <property name="text">
+	          <string>pipewire</string>
+	         </property>
+	        </item>
+	        <item>
+	         <property name="text">
+	          <string>esd</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>sdl</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>wav</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>none</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="9" column="0">
        <widget class="QCheckBox" name="CH_Start_Date">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
@@ -87,7 +157,7 @@
         </property>
        </widget>
       </item>
-      <item row="7" column="1">
+      <item row="9" column="1">
        <widget class="QDateTimeEdit" name="DTE_Start_Date">
         <property name="enabled">
          <bool>false</bool>

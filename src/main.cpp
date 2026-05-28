@@ -102,6 +102,14 @@ AQEMU_Main::~AQEMU_Main()
 
 int AQEMU_Main::main(int argc, char *argv[])
 {
+    QStringList raw_args;
+    for( int i = 0; i < argc; ++i )
+        raw_args << QString::fromLocal8Bit( argv[i] );
+    TEMPODEBUG( "AQEMU_Main::main",
+                QString("entry argc=%1 argv=[%2]")
+                .arg(argc)
+                .arg(raw_args.join(" | ")) );
+
     QString version = QString("aqemu ") + CURRENT_AQEMU_VERSION;
     std::map<std::string, docopt::value> args
         = docopt::docopt(USAGE,
@@ -111,6 +119,10 @@ int AQEMU_Main::main(int argc, char *argv[])
 
     // Create QApplication
     application = new QApplication( argc, argv );
+    TEMPODEBUG( "AQEMU_Main::main",
+                QString("QApplication created appDir=\"%1\" cwd=\"%2\"")
+                .arg(application->applicationDirPath())
+                .arg(QDir::currentPath()) );
 
     QString AQEMU_FILE;
     if ( args.at("<AQEMU_FILE>").isString() )
@@ -118,6 +130,20 @@ int AQEMU_Main::main(int argc, char *argv[])
 
     AQEMU_Service& service = AQEMU_Service::get();
     service.setMain(this);
+    TEMPODEBUG( "AQEMU_Main::main",
+                QString("service setup mode start=%1 stop=%2 shutdown=%3 reset=%4 pause=%5 save=%6 load=%7 monitor=%8 error=%9 control=%10 status=%11 list=%12")
+                .arg(args.at("start").asBool())
+                .arg(args.at("stop").asBool())
+                .arg(args.at("shutdown").asBool())
+                .arg(args.at("reset").asBool())
+                .arg(args.at("pause").asBool())
+                .arg(args.at("save").asBool())
+                .arg(args.at("load").asBool())
+                .arg(args.at("monitor").asBool())
+                .arg(args.at("error").asBool())
+                .arg(args.at("control").asBool())
+                .arg(args.at("status").asBool())
+                .arg(args.at("list").asBool()) );
 
     if ( args.at("start").asBool() )
         service.call("start",AQEMU_FILE,false);
@@ -144,6 +170,11 @@ int AQEMU_Main::main(int argc, char *argv[])
 
     if ( service.wasCalled() )
     {
+        TEMPODEBUG( "AQEMU_Main::main",
+                    QString("service was called external=%1 successfulInit=%2 machineCount=%3")
+                    .arg(service.isExternal())
+                    .arg(service.successfulInit())
+                    .arg(service.machineCount()) );
         if ( service.isExternal() ) // called the already running service
         {
             return 0;
@@ -165,6 +196,7 @@ int AQEMU_Main::main(int argc, char *argv[])
     }
 
     service.setMainWindow( true );
+    TEMPODEBUG( "AQEMU_Main::main", "main window mode starting" );
 
     int ret = main_window();
 
@@ -182,35 +214,58 @@ int AQEMU_Main::main(int argc, char *argv[])
 
 int AQEMU_Main::load_settings()
 {
+    TEMPODEBUG( "AQEMU_Main::load_settings", "start" );
     init_qsettings();
 
     log_settings();
+    TEMPODEBUG( "AQEMU_Main::load_settings",
+                QString("settings file=\"%1\"")
+                .arg(settings ? settings->fileName() : QString("<null>")) );
 
     Set_Show_Error_Window( true );
 
     // Init emulators settings "data base"
     System_Info::Update_VM_Computers_List();
+    TEMPODEBUG( "AQEMU_Main::load_settings", "System_Info::Update_VM_Computers_List done" );
 
     int ret = root_warning();
     if ( ret != 0 )
+    {
+        TEMPODEBUG( "AQEMU_Main::load_settings",
+                    QString("root_warning aborted ret=%1").arg(ret) );
         return ret;
+    }
 
     upgrade_settings();
+    TEMPODEBUG( "AQEMU_Main::load_settings", "upgrade_settings done" );
 
     ret = find_data_folders();
     if ( ret != 0 )
+    {
+        TEMPODEBUG( "AQEMU_Main::load_settings",
+                    QString("find_data_folders aborted ret=%1").arg(ret) );
         return ret;
+    }
 
     register_qresource();
+    TEMPODEBUG( "AQEMU_Main::load_settings", "register_qresource done" );
 
     first_start_wizard();
+    TEMPODEBUG( "AQEMU_Main::load_settings", "first_start_wizard done" );
 
     load_language();
+    TEMPODEBUG( "AQEMU_Main::load_settings",
+                QString("language=\"%1\"")
+                .arg(settings->value("Language", "").toString()) );
 
     vm_dir_exists_or_create();
+    TEMPODEBUG( "AQEMU_Main::load_settings",
+                QString("vm_dir=\"%1\"")
+                .arg(settings->value("VM_Directory", "").toString()) );
 
     // Check QEMU and KVM Versions
     Update_Emulators_List(); // FIXME
+    TEMPODEBUG( "AQEMU_Main::load_settings", "Update_Emulators_List done" );
 
     return 0;
 }
@@ -282,10 +337,15 @@ void AQEMU_Main::init_qsettings()
     // Set QSettings Data
     QCoreApplication::setOrganizationName( "aqemu" );
     QCoreApplication::setApplicationName( "AQEMU" );
-    #ifdef Q_OS_WIN32
+#ifdef Q_OS_WIN32
     QSettings::setDefaultFormat( QSettings::IniFormat );
-    #endif
+#endif
     settings = new QSettings();
+    TEMPODEBUG( "AQEMU_Main::init_qsettings",
+                QString("org=\"%1\" app=\"%2\" settings_file=\"%3\"")
+                .arg(QCoreApplication::organizationName())
+                .arg(QCoreApplication::applicationName())
+                .arg(settings->fileName()) );
 }
 
 void AQEMU_Main::upgrade_settings()
@@ -471,12 +531,24 @@ void AQEMU_Main::log_settings()
                         settings->value("Log/Save_Debug", "no").toString() == "yes",
                         settings->value("Log/Save_Warning", "yes").toString() == "yes",
                         settings->value("Log/Save_Error", "yes").toString() == "yes" );
+    TEMPODEBUG( "AQEMU_Main::log_settings",
+                QString("save_in_file=%1 log_path=\"%2\" print_stdout=%3 save_debug=%4 save_warning=%5 save_error=%6")
+                .arg(settings->value("Log/Save_In_File", "yes").toString())
+                .arg(settings->value("Log/Log_Path", "").toString())
+                .arg(settings->value("Log/Print_In_STDOUT", "yes").toString())
+                .arg(settings->value("Log/Save_Debug", "no").toString())
+                .arg(settings->value("Log/Save_Warning", "yes").toString())
+                .arg(settings->value("Log/Save_Error", "yes").toString()) );
 }
 
 int AQEMU_Main::root_warning()
 {
     // Check For First Start in root Mode
     #ifdef Q_OS_LINUX
+    TEMPODEBUG( "AQEMU_Main::root_warning",
+                QString("first_start=%1 uid=%2")
+                .arg(settings->value("First_Start", "yes").toString())
+                .arg(getuid()) );
     if( settings->value("First_Start", "yes").toString() == "yes" )
     {
         uid_t user_uid = getuid();
@@ -500,6 +572,10 @@ void AQEMU_Main::vm_dir_exists_or_create()
 {
     // VM Directory Exists?
     QDir vm_dir;
+    TEMPODEBUG( "AQEMU_Main::vm_dir_exists_or_create",
+                QString("vm_dir_setting=\"%1\" exists=%2")
+                .arg(settings->value("VM_Directory", "").toString())
+                .arg(vm_dir.exists(settings->value("VM_Directory", "").toString())) );
     if( ! vm_dir.exists(settings->value("VM_Directory", "").toString()) )
     {
         int ret = QMessageBox::question( NULL, QObject::tr("Warning!"),
@@ -513,6 +589,7 @@ void AQEMU_Main::vm_dir_exists_or_create()
             #else
             vm_dir.mkpath( QDir::homePath() + "/.aqemu" );
             #endif
+            TEMPODEBUG( "AQEMU_Main::vm_dir_exists_or_create", "vm directory create requested by user" );
         }
     }
 }

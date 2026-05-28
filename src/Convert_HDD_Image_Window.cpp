@@ -294,7 +294,7 @@ bool Convert_HDD_Image_Window::Get_QEMU_IMG_Info()
 			return false;
 		}
 		
-		QStringList formatsList = tmpList[ 1 ].split( ' ', QString::SkipEmptyParts );
+		QStringList formatsList = tmpList[ 1 ].split( ' ', Qt::SkipEmptyParts );
 		if( formatsList.isEmpty() )
 		{
 			AQError( "bool Convert_HDD_Image_Window::Get_QEMU_IMG_Info()",

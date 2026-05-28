@@ -347,7 +347,7 @@ bool Snapshots_Window::Update_Info()
 		// Snapshot Line RegExp:
 		// ([\d])+[\s]+([a-zA-Z0-9_]+)[\s]+([0-9KMG]+|[0-9]+.[0-9KMG]+)[\s]+(.+)[\s]{2,}(.+)
 		
-		QStringList snapshots_list = info_lines[1].split( "\n", QString::SkipEmptyParts );
+		QStringList snapshots_list = info_lines[1].split( "\n", Qt::SkipEmptyParts );
 		QRegExp snap_regexp = QRegExp( "([\\d])+[\\s]+([a-zA-Z0-9_]+)[\\s]+([0-9KMG]+|[0-9]+.[0-9KMG]+)[\\s]+(.+)[\\s]{2,}(.+)" );
 		
 		for( int sx = 0; sx < snapshots_list.count(); ++sx )

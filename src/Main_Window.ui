@@ -1053,10 +1053,7 @@
                      <property name="text">
                       <string>1 MB</string>
                      </property>
-                     <property name="buddy">
-                      <cstring></cstring>
-                     </property>
-                    </widget>
+                   </widget>
                    </item>
                    <item>
                     <spacer name="horizontalSpacer_11">
@@ -1109,10 +1106,7 @@
                      <property name="text">
                       <string>2048 MB</string>
                      </property>
-                     <property name="buddy">
-                      <cstring></cstring>
-                     </property>
-                    </widget>
+                   </widget>
                    </item>
                   </layout>
                  </item>
@@ -1341,9 +1335,6 @@
            <zorder>label_2</zorder>
            <zorder>label_3</zorder>
            <zorder>label_4</zorder>
-           <zorder>verticalSpacer_11</zorder>
-           <zorder>verticalSpacer_5</zorder>
-           <zorder>verticalSpacer_9</zorder>
           </widget>
           <widget class="QWidget" name="Tab_Media">
            <attribute name="icon">

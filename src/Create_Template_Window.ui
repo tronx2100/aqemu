@@ -26,7 +26,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <widget class="QGroupBox" name="groupBox">
+    <widget class="QGroupBox" name="groupBox_Template">
      <property name="title">
       <string>Create Template</string>
      </property>
@@ -167,7 +167,7 @@
     </spacer>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox">
+    <widget class="QGroupBox" name="groupBox_Options">
      <property name="title">
       <string>Options</string>
      </property>

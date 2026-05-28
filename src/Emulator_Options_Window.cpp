@@ -46,10 +46,6 @@ Emulator_Options_Window::Emulator_Options_Window( QWidget *parent )
 	ui.Table_Systems->setHorizontalHeader( hv );
 	
 	Update_Info = false;
-
-	#ifdef Q_OS_WIN32
-	ui.RB_KVM->setEnabled( false );
-	#endif
 }
 
 void Emulator_Options_Window::on_Button_Find_clicked()
@@ -262,47 +258,6 @@ void Emulator_Options_Window::on_Table_Systems_itemDoubleClicked( QTableWidgetIt
 		
 		Update_Info = true; // Update emulator info
 	}
-}
-
-void Emulator_Options_Window::on_RB_QEMU_toggled( bool checked )
-{
-	// Clear
-	ui.Table_Systems->clearContents();
-	while( ui.Table_Systems->rowCount() > 0 ) ui.Table_Systems->removeRow( 0 );
-	
-	// Add new items
-	QMap<QString, QString> bin_files = System_Info::Find_QEMU_Binary_Files( "" );
-	
-	for( QMap<QString, QString>::const_iterator iter = bin_files.constBegin(); iter != bin_files.constEnd(); iter++ )
-	{
-		ui.Table_Systems->insertRow( ui.Table_Systems->rowCount() );
-		
-		QTableWidgetItem *newItem = new QTableWidgetItem( iter.key() );
-		ui.Table_Systems->setItem( ui.Table_Systems->rowCount()-1, 0, newItem );
-	}
-	
-	Update_Info = true; // Update emulator info
-}
-
-
-void Emulator_Options_Window::on_RB_KVM_toggled( bool checked )
-{
-	/*// Clear
-	ui.Table_Systems->clearContents();
-	while( ui.Table_Systems->rowCount() > 0 ) ui.Table_Systems->removeRow( 0 );
-	
-	// Add new items
-	QMap<QString, QString> bin_files = System_Info::Find_KVM_Binary_Files( "" );
-	
-	for( QMap<QString, QString>::const_iterator iter = bin_files.constBegin(); iter != bin_files.constEnd(); iter++ )
-	{
-		ui.Table_Systems->insertRow( ui.Table_Systems->rowCount() );
-		
-		QTableWidgetItem *newItem = new QTableWidgetItem( iter.key() );
-		ui.Table_Systems->setItem( ui.Table_Systems->rowCount()-1, 0, newItem );
-	}
-	
-	Update_Info = true; // Update emulator info*/ //tobgle //FIXME?!
 }
 
 bool Emulator_Options_Window::Name_Valid( const QString &name )

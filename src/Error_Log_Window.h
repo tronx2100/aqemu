@@ -35,17 +35,25 @@ class Error_Log_Window: public QDialog
 		Error_Log_Window( QWidget *parent = 0 );
 		
 		void Add_to_Log( const QString& err_str );
+		void Restore_Log( const QStringList &entries );
+		void Set_Clear_Target( const QString &vm_xml, const QString &uid );
 		bool No_Show_Before_AQEMU_Restart() const;
 		bool No_Show_Before_VM_Restart() const;
         bool No_Show_Deprecated_Options_Error() const;
+
+	signals:
+        void Clear_Log_Requested();
 		
 	private slots:
+        void Clear_Log();
 		void done(int);
 		
 	private:
 		Ui::Error_Log_Window ui;
 		int Errors_Count;
 		QSettings Settings;
+        QString clear_vm_xml;
+        QString clear_uid;
 
         bool last_error_is_deprecated_option;
 };

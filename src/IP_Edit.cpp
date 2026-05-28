@@ -146,7 +146,7 @@ IP_Edit::IP_Edit(QWidget *parent) :
 
     QFontMetrics metrics(QApplication::font());
 
-    int width = metrics.width("888") + 24;
+    int width = metrics.horizontalAdvance("888") + 24;
 
     p1->setMaximumWidth(width);
     p2->setMaximumWidth(width);
@@ -210,4 +210,3 @@ QString IP_Edit::text()
 {
     return p1->text()+"."+p2->text()+"."+p3->text()+"."+p4->text();
 }
-

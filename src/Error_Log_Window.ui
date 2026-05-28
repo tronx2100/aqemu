@@ -159,6 +159,22 @@
    </hints>
   </connection>
   <connection>
+   <sender>Button_Clear_Log</sender>
+   <signal>clicked()</signal>
+   <receiver>Error_Log_Window</receiver>
+   <slot>Clear_Log()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>53</x>
+     <y>291</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>270</x>
+     <y>205</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
    <receiver>Error_Log_Window</receiver>

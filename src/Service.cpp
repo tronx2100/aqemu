@@ -29,6 +29,7 @@
 #include <QFile>
 #include <QtDBus>
 #include <QSettings>
+#include <QHash>
 
 #ifdef Q_OS_LINUX
 #include <unistd.h>
@@ -37,6 +38,7 @@
 #include <iostream>
 
 #include "Utils.h"
+#include "Error_Log_Window.h"
 
 #include "Run_Guard.h"
 
@@ -51,6 +53,50 @@ AQEMU_Service::AQEMU_Service()
     called_dbus = false;
     main_window = false;
     successful_init = false;
+}
+
+namespace
+{
+struct Archived_Error_Log
+{
+    QString uid;
+    QString vm_name;
+    QString vm_xml;
+    QStringList entries;
+};
+
+static QHash<QString, Archived_Error_Log> Archived_Error_Logs;
+static Error_Log_Window *Archived_Error_Window = nullptr;
+
+static void Show_Archived_Error_Log_Window( const QString &title,
+                                            const QString &vm_xml,
+                                            const QString &uid,
+                                            const QStringList &entries )
+{
+    if( Archived_Error_Window )
+    {
+        Archived_Error_Window->close();
+        Archived_Error_Window->deleteLater();
+        Archived_Error_Window = nullptr;
+    }
+
+    Archived_Error_Window = new Error_Log_Window();
+    QObject::connect( Archived_Error_Window, &QObject::destroyed, []()
+    {
+        Archived_Error_Window = nullptr;
+    } );
+    Archived_Error_Window->Set_Clear_Target( vm_xml, uid );
+    QObject::connect( Archived_Error_Window, &Error_Log_Window::Clear_Log_Requested,
+                      [vm_xml, uid]()
+    {
+        AQEMU_Service::get().clear_error_log( vm_xml, uid );
+    } );
+    Archived_Error_Window->Restore_Log( entries );
+    Archived_Error_Window->setWindowTitle( title );
+    Archived_Error_Window->show();
+    Archived_Error_Window->raise();
+    Archived_Error_Window->activateWindow();
+}
 }
 
 AQEMU_Service::~AQEMU_Service()
@@ -75,6 +121,16 @@ int AQEMU_Service::machineCount() const
 
 void AQEMU_Service::vm_state_changed(Virtual_Machine *vm, VM::VM_State s)
 {
+    TEMPODEBUG( "AQEMU_Service::vm_state_changed",
+                QString("vm_ptr=%1 uid=\"%2\" name=\"%3\" xml=\"%4\" state=%5 main_window=%6 machineCount=%7")
+                .arg(reinterpret_cast<quintptr>(vm))
+                .arg(vm ? vm->Get_UID() : QString())
+                .arg(vm ? vm->Get_Machine_Name() : QString())
+                .arg(vm ? vm->Get_VM_XML_File_Path() : QString())
+                .arg(s)
+                .arg(main_window)
+                .arg(machines.count()) );
+
     if (! QDBusConnection::sessionBus().isConnected())
     {
         fprintf(stderr, "Cannot connect to the D-Bus session bus.\n"
@@ -107,6 +163,19 @@ void AQEMU_Service::vm_state_changed(Virtual_Machine *vm, VM::VM_State s)
     //remove VM from service and shutdown the service, if there are no VMs running
     if ( s == VM::VMS_Power_Off )
     {
+        Archived_Error_Log archived;
+        archived.uid = vm->Get_UID();
+        archived.vm_name = vm->Get_Machine_Name();
+        archived.vm_xml = vm->Get_VM_XML_File_Path();
+        archived.entries = vm->Get_QEMU_Error_Log_Entries();
+        Archived_Error_Logs.insert( vm->Get_UID(), archived );
+
+        TEMPODEBUG( "AQEMU_Service::vm_state_changed",
+                    QString("archived error log uid=\"%1\" entries=%2 name=\"%3\" xml=\"%4\"")
+                    .arg(vm->Get_UID())
+                    .arg(archived.entries.count())
+                    .arg(archived.vm_name)
+                    .arg(archived.vm_xml) );
         machines.removeAll(vm);
         //delete vm; //Segfaults //Destructor was already called at this point //Investigate how/why
     }
@@ -128,12 +197,26 @@ bool AQEMU_Service::isActive()
 bool AQEMU_Service::call(const QString& command, const QList<QVariant>& params, bool noblock)
 {
     called_dbus = true;
+    QStringList params_debug;
+    for( const QVariant &param : params )
+        params_debug << param.toString();
+    TEMPODEBUG( "AQEMU_Service::call",
+                QString("command=\"%1\" params=[%2] noblock=%3 called_dbus=%4 successful_init=%5 main_window=%6 service_ptr=%7")
+                .arg(command)
+                .arg(params_debug.join(" | "))
+                .arg(noblock)
+                .arg(called_dbus)
+                .arg(successful_init)
+                .arg(main_window)
+                .arg(reinterpret_cast<quintptr>(service)) );
 
     if ( init_service() )
     {
         if ( main )
         {
             int ret = main->load_settings();
+            TEMPODEBUG( "AQEMU_Service::call",
+                        QString("main->load_settings returned=%1").arg(ret) );
             if ( ret != 0 )
                 return false;
         }
@@ -142,6 +225,9 @@ bool AQEMU_Service::call(const QString& command, const QList<QVariant>& params, 
     }
 
     if (!QDBusConnection::sessionBus().isConnected()) {
+        TEMPODEBUG( "AQEMU_Service::call",
+                    QString("DBus session bus not connected lastError=\"%1\"")
+                    .arg(QDBusConnection::sessionBus().lastError().message()) );
         fprintf(stderr, "Cannot connect to the D-Bus session bus.\n"
                 "To start it, run:\n"
                 "\teval `dbus-launch --auto-syntax`\n");
@@ -153,6 +239,7 @@ bool AQEMU_Service::call(const QString& command, const QList<QVariant>& params, 
         if ( noblock )
         {
             iface.callWithArgumentList(QDBus::NoBlock, command, params);
+            return true;
         }
         else
         {
@@ -162,11 +249,19 @@ bool AQEMU_Service::call(const QString& command, const QList<QVariant>& params, 
                 return true;
             }
 
+            TEMPODEBUG( "AQEMU_Service::call",
+                        QString("DBus call failed command=\"%1\" error=\"%2\"")
+                        .arg(command)
+                        .arg(reply.error().message()) );
             fprintf(stderr, "Call failed: %s\n", qPrintable(reply.error().message()));
             return false;
         }
     }
 
+    TEMPODEBUG( "AQEMU_Service::call",
+                QString("DBus interface invalid command=\"%1\" lastError=\"%2\"")
+                .arg(command)
+                .arg(QDBusConnection::sessionBus().lastError().message()) );
     fprintf(stderr, "%s\n",
             qPrintable(QDBusConnection::sessionBus().lastError().message()));
     return false;
@@ -202,8 +297,13 @@ bool AQEMU_Service::call(const QString &command, Virtual_Machine *vm, const QStr
 bool AQEMU_Service::init_service()
 {
     service = new Run_Guard( "Gmp[0Ab6000" ); //if service is already running, skip this
+    TEMPODEBUG( "AQEMU_Service::init_service",
+                QString("run_guard_ptr=%1 key_set service_ptr=%2")
+                .arg(reinterpret_cast<quintptr>(service))
+                .arg(reinterpret_cast<quintptr>(service)) );
     if (service->tryToRun() == false)
     {
+        TEMPODEBUG( "AQEMU_Service::init_service", "Run_Guard refused service startup" );
         delete service;
         service = nullptr;
         return false;
@@ -212,6 +312,9 @@ bool AQEMU_Service::init_service()
     //dbus listening stuff
 
     if (!QDBusConnection::sessionBus().isConnected()) {
+        TEMPODEBUG( "AQEMU_Service::init_service",
+                    QString("DBus session bus not connected lastError=\"%1\"")
+                    .arg(QDBusConnection::sessionBus().lastError().message()) );
         fprintf(stderr, "Cannot connect to the D-Bus session bus.\n"
                 "To start it, run:\n"
                 "\teval `dbus-launch --auto-syntax`\n");
@@ -219,40 +322,91 @@ bool AQEMU_Service::init_service()
     }
 
     if (!QDBusConnection::sessionBus().registerService(SERVICE_NAME)) {
+        TEMPODEBUG( "AQEMU_Service::init_service",
+                    QString("registerService failed lastError=\"%1\"")
+                    .arg(QDBusConnection::sessionBus().lastError().message()) );
         fprintf(stderr, "%s\n",
                 qPrintable(QDBusConnection::sessionBus().lastError().message()));
         return false;
     }
 
     QDBusConnection::sessionBus().registerObject("/", this, QDBusConnection::ExportAllSlots);
+    TEMPODEBUG( "AQEMU_Service::init_service",
+                QString("service registered name=\"%1\"").arg(SERVICE_NAME) );
     return true;
 }
 
 QString AQEMU_Service::start(const QString& s)
 {
+    return start( s, QString() );
+}
+
+QString AQEMU_Service::start(const QString& s, const QString& uid)
+{
+    TEMPODEBUG( "AQEMU_Service::start",
+                QString("request vm=\"%1\" uid=\"%2\" machineCount_before=%3")
+                .arg(s).arg(uid).arg(machines.count()) );
     QSettings settings;
     QString vm_dir = QDir::toNativeSeparators(settings.value("VM_Directory", QDir::homePath() + "/.aqemu/").toString());
     QString vm_file = vm_dir+s+".aqemu";
+    TEMPODEBUG( "AQEMU_Service::start",
+                QString("vm_dir=\"%1\" vm_file=\"%2\"").arg(vm_dir).arg(vm_file) );
 
     bool success = false;
 
     auto vm = new Virtual_Machine;
+    TEMPODEBUG( "AQEMU_Service::start",
+                QString("new VM ptr=%1").arg(reinterpret_cast<quintptr>(vm)) );
     if (QFileInfo(s).exists())
+    {
+        TEMPODEBUG( "AQEMU_Service::start",
+                    QString("loading direct path=\"%1\"").arg(s) );
         success = vm->Load_VM(s);
+        TEMPODEBUG( "AQEMU_Service::start",
+                    QString("direct load result=%1").arg(success) );
+    }
 
     if ( !success )
     {
         AQError("QString AQEMU_Service::start(const QString& s)",vm_file);
+        TEMPODEBUG( "AQEMU_Service::start",
+                    QString("direct load failed for \"%1\"; trying fallback vm_file").arg(s) );
 
         if(QFileInfo(vm_file).exists())
-            vm->Load_VM(vm_file);
+        {
+            TEMPODEBUG( "AQEMU_Service::start",
+                        QString("loading fallback path=\"%1\"").arg(vm_file) );
+            success = vm->Load_VM(vm_file);
+            TEMPODEBUG( "AQEMU_Service::start",
+                        QString("fallback load result=%1").arg(success) );
+        }
         else
+        {
+            TEMPODEBUG( "AQEMU_Service::start",
+                        QString("fallback vm_file missing=\"%1\"").arg(vm_file) );
             return QString("VM \"%1\" could not be started. No such VM found.").arg(s);
+        }
+    }
+
+    if( ! uid.isEmpty() )
+    {
+        TEMPODEBUG( "AQEMU_Service::start",
+                    QString("setting UID old=\"%1\" new=\"%2\"")
+                    .arg(vm->Get_UID()).arg(uid) );
+        vm->Set_UID( uid );
     }
 
     if ( vm->Start() )
     {
+        TEMPODEBUG( "AQEMU_Service::start",
+                    QString("vm->Start success ptr=%1 uid=\"%2\" name=\"%3\" xml=\"%4\"")
+                    .arg(reinterpret_cast<quintptr>(vm))
+                    .arg(vm->Get_UID())
+                    .arg(vm->Get_Machine_Name())
+                    .arg(vm->Get_VM_XML_File_Path()) );
         machines.append(vm);
+        TEMPODEBUG( "AQEMU_Service::start",
+                    QString("machine appended machineCount_after=%1").arg(machines.count()) );
 
         connect(vm,SIGNAL(State_Changed( Virtual_Machine*, VM::VM_State)),this,SLOT(vm_state_changed(Virtual_Machine*, VM::VM_State)));
 
@@ -260,20 +414,59 @@ QString AQEMU_Service::start(const QString& s)
         return QString("VM \"%1\" got started.").arg(s);
     }
 
+    TEMPODEBUG( "AQEMU_Service::start",
+                QString("vm->Start failed ptr=%1 uid=\"%2\" name=\"%3\" xml=\"%4\"")
+                .arg(reinterpret_cast<quintptr>(vm))
+                .arg(vm->Get_UID())
+                .arg(vm->Get_Machine_Name())
+                .arg(vm->Get_VM_XML_File_Path()) );
     return QString("VM \"%1\" could not be started.").arg(s);
 }
 
 Virtual_Machine* AQEMU_Service::getMachine(const QString& s)
 {
+    const QFileInfo requested_info( s );
+    const QString requested_canonical = requested_info.canonicalFilePath().isEmpty()
+        ? requested_info.absoluteFilePath()
+        : requested_info.canonicalFilePath();
+    TEMPODEBUG( "AQEMU_Service::getMachine",
+                QString("search vm=\"%1\" requested_canonical=\"%2\" machineCount=%3")
+                .arg(s).arg(requested_canonical).arg(machines.count()) );
+
     for ( int i = 0; i < machines.count(); i++ )
     {
-        if ( QFileInfo(machines.at(i)->Get_VM_XML_File_Path()) == QFileInfo(s) ||
+        const QFileInfo machine_info( machines.at(i)->Get_VM_XML_File_Path() );
+        const QString machine_canonical = machine_info.canonicalFilePath().isEmpty()
+            ? machine_info.absoluteFilePath()
+            : machine_info.canonicalFilePath();
+        TEMPODEBUG( "AQEMU_Service::getMachine",
+                    QString("candidate[%1] ptr=%2 uid=\"%3\" name=\"%4\" xml=\"%5\" canonical=\"%6\"")
+                    .arg(i)
+                    .arg(reinterpret_cast<quintptr>(machines.at(i)))
+                    .arg(machines.at(i)->Get_UID())
+                    .arg(machines.at(i)->Get_Machine_Name())
+                    .arg(machines.at(i)->Get_VM_XML_File_Path())
+                    .arg(machine_canonical) );
+
+        if ( ! requested_canonical.isEmpty() &&
+             requested_canonical == machine_canonical )
+        {
+            TEMPODEBUG( "AQEMU_Service::getMachine",
+                        QString("matched canonical index=%1").arg(i) );
+            return machines.at(i);
+        }
+
+        if ( machines.at(i)->Get_VM_XML_File_Path() == s ||
              machines.at(i)->Get_Machine_Name() == s )
         {
+            TEMPODEBUG( "AQEMU_Service::getMachine",
+                        QString("matched exact path/name index=%1").arg(i) );
             return machines.at(i);
         }
     }
 
+    TEMPODEBUG( "AQEMU_Service::getMachine",
+                QString("no machine matched vm=\"%1\"").arg(s) );
     return nullptr;
 }
 
@@ -346,12 +539,120 @@ QString AQEMU_Service::monitor(const QString& s)
 
 QString AQEMU_Service::error(const QString& s)
 {
+    return error( s, QString() );
+}
+
+QString AQEMU_Service::error(const QString& s, const QString& uid)
+{
+    TEMPODEBUG( "AQEMU_Service::error",
+                QString("request vm=\"%1\" uid=\"%2\" machineCount=%3")
+                .arg(s).arg(uid).arg(machines.count()) );
+    if( ! uid.isEmpty() )
+    {
+        for( int i = 0; i < machines.count(); i++ )
+        {
+            if( machines.at(i)->Get_UID() == uid )
+            {
+                TEMPODEBUG( "AQEMU_Service::error",
+                            QString("matched UID index=%1 ptr=%2 uid=\"%3\"")
+                            .arg(i)
+                            .arg(reinterpret_cast<quintptr>(machines.at(i)))
+                            .arg(machines.at(i)->Get_UID()) );
+                TEMPODEBUG( "AQEMU_Service::error",
+                            QString("log count=%1 first=\"%2\" last=\"%3\"")
+                            .arg(machines.at(i)->Get_QEMU_Error_Log_Entries().count())
+                            .arg(machines.at(i)->Get_QEMU_Error_Log_Entries().value(0))
+                            .arg(machines.at(i)->Get_QEMU_Error_Log_Entries().isEmpty()
+                                 ? QString()
+                                 : machines.at(i)->Get_QEMU_Error_Log_Entries().last()) );
+                if( ! machines.at(i)->Get_QEMU_Error_Log_Entries().isEmpty() )
+                {
+                    machines.at(i)->Show_Error_Log_Window();
+                    return QString("VM error log window of \"%1\" got shown.").arg(s);
+                }
+
+                const auto archived_it = Archived_Error_Logs.constFind( uid );
+                if( archived_it != Archived_Error_Logs.constEnd() && ! archived_it->entries.isEmpty() )
+                {
+                    TEMPODEBUG( "AQEMU_Service::error",
+                                QString("using archived logs uid=\"%1\" entries=%2")
+                                .arg(uid)
+                                .arg(archived_it->entries.count()) );
+                    Show_Archived_Error_Log_Window(
+                        QString("QEMU Error Log (%1)").arg(archived_it->vm_name.isEmpty() ? s : archived_it->vm_name),
+                        archived_it->vm_xml,
+                        archived_it->uid,
+                        archived_it->entries );
+                    return QString("VM error log window of \"%1\" got shown.").arg(s);
+                }
+                TEMPODEBUG( "AQEMU_Service::error",
+                            QString("active VM had no entries and no archive uid=\"%1\"").arg(uid) );
+                machines.at(i)->Show_Error_Log_Window();
+                return QString("VM error log window of \"%1\" got shown.").arg(s);
+            }
+        }
+        TEMPODEBUG( "AQEMU_Service::error",
+                    QString("UID not found uid=\"%1\"").arg(uid) );
+    }
+
+    const auto archived_it = Archived_Error_Logs.constFind( uid );
+    if( archived_it != Archived_Error_Logs.constEnd() && ! archived_it->entries.isEmpty() )
+    {
+        TEMPODEBUG( "AQEMU_Service::error",
+                    QString("opening archived logs uid=\"%1\" entries=%2")
+                    .arg(uid)
+                    .arg(archived_it->entries.count()) );
+        Show_Archived_Error_Log_Window(
+            QString("QEMU Error Log (%1)").arg(archived_it->vm_name.isEmpty() ? s : archived_it->vm_name),
+            archived_it->vm_xml,
+            archived_it->uid,
+            archived_it->entries );
+        return QString("VM error log window of \"%1\" got shown.").arg(s);
+    }
+
     if(auto machine = getMachine(s))
     {
+        TEMPODEBUG( "AQEMU_Service::error",
+                    QString("matched fallback ptr=%1 uid=\"%2\" name=\"%3\"")
+                    .arg(reinterpret_cast<quintptr>(machine))
+                    .arg(machine->Get_UID())
+                    .arg(machine->Get_Machine_Name()) );
+        TEMPODEBUG( "AQEMU_Service::error",
+                    QString("log count=%1 first=\"%2\" last=\"%3\"")
+                    .arg(machine->Get_QEMU_Error_Log_Entries().count())
+                    .arg(machine->Get_QEMU_Error_Log_Entries().value(0))
+                    .arg(machine->Get_QEMU_Error_Log_Entries().isEmpty()
+                         ? QString()
+                         : machine->Get_QEMU_Error_Log_Entries().last()) );
+        if( ! machine->Get_QEMU_Error_Log_Entries().isEmpty() )
+        {
+            machine->Show_Error_Log_Window();
+            return QString("VM error log window of \"%1\" got shown.").arg(s);
+        }
+
+        for( auto it = Archived_Error_Logs.begin(); it != Archived_Error_Logs.end(); ++it )
+        {
+            if( it.value().vm_xml == s && ! it.value().entries.isEmpty() )
+            {
+                TEMPODEBUG( "AQEMU_Service::error",
+                            QString("opening archived logs by xml vm=\"%1\" entries=%2")
+                            .arg(s)
+                            .arg(it.value().entries.count()) );
+                Show_Archived_Error_Log_Window(
+                    QString("QEMU Error Log (%1)").arg(it.value().vm_name.isEmpty() ? s : it.value().vm_name),
+                    it.value().vm_xml,
+                    it.value().uid,
+                    it.value().entries );
+                return QString("VM error log window of \"%1\" got shown.").arg(s);
+            }
+        }
+
         machine->Show_Error_Log_Window();
         return QString("VM error log window of \"%1\" got shown.").arg(s);
     }
 
+    TEMPODEBUG( "AQEMU_Service::error",
+                QString("could not resolve vm=\"%1\" uid=\"%2\"").arg(s).arg(uid) );
     return QString("VM error log window of \"%1\" could not be shown.").arg(s);
 }
 
@@ -433,4 +734,60 @@ QString AQEMU_Service::list()
 
     //return names of all available machines
     return list.join("\n");
+}
+
+void AQEMU_Service::clear_error_log(const QString& vm, const QString& uid)
+{
+    TEMPODEBUG( "AQEMU_Service::clear_error_log",
+                QString("request vm=\"%1\" uid=\"%2\" machineCount=%3 archiveCount=%4")
+                .arg(vm)
+                .arg(uid)
+                .arg(machines.count())
+                .arg(Archived_Error_Logs.count()) );
+
+    bool cleared_live = false;
+    bool cleared_archive = false;
+
+    for( Virtual_Machine *machine : machines )
+    {
+        if( machine == nullptr )
+            continue;
+
+        if( ( !uid.isEmpty() && machine->Get_UID() == uid ) ||
+            ( !vm.isEmpty() && (machine->Get_VM_XML_File_Path() == vm || machine->Get_Machine_Name() == vm) ) )
+        {
+            machine->Set_QEMU_Error_Log_Entries( QStringList() );
+            cleared_live = true;
+            TEMPODEBUG( "AQEMU_Service::clear_error_log",
+                        QString("cleared live log ptr=%1 uid=\"%2\" name=\"%3\" xml=\"%4\"")
+                        .arg(reinterpret_cast<quintptr>(machine))
+                        .arg(machine->Get_UID())
+                        .arg(machine->Get_Machine_Name())
+                        .arg(machine->Get_VM_XML_File_Path()) );
+        }
+    }
+
+    if( !uid.isEmpty() && Archived_Error_Logs.contains(uid) )
+    {
+        Archived_Error_Logs[uid].entries.clear();
+        cleared_archive = true;
+        TEMPODEBUG( "AQEMU_Service::clear_error_log",
+                    QString("cleared archived log by uid=\"%1\"").arg(uid) );
+    }
+
+    for( auto it = Archived_Error_Logs.begin(); it != Archived_Error_Logs.end(); ++it )
+    {
+        if( !vm.isEmpty() && (it.value().vm_xml == vm || it.value().vm_name == vm) )
+        {
+            it.value().entries.clear();
+            cleared_archive = true;
+            TEMPODEBUG( "AQEMU_Service::clear_error_log",
+                        QString("cleared archived log by vm=\"%1\" uid=\"%2\"")
+                        .arg(vm)
+                        .arg(it.key()) );
+        }
+    }
+
+    TEMPODEBUG( "AQEMU_Service::clear_error_log",
+                QString("result live=%1 archive=%2").arg(cleared_live).arg(cleared_archive) );
 }

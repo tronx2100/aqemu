@@ -95,7 +95,7 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QGroupBox" name="groupBox">
+           <widget class="QGroupBox" name="groupBox_Network">
             <property name="title">
              <string>Network</string>
             </property>
@@ -209,7 +209,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QGroupBox" name="groupBox">
+           <widget class="QGroupBox" name="groupBox_Media">
             <property name="title">
              <string>Image, Video and Audio</string>
             </property>
@@ -387,7 +387,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QGroupBox" name="groupBox">
+           <widget class="QGroupBox" name="groupBox_Security">
             <property name="title">
              <string>Security</string>
             </property>

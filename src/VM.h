@@ -46,12 +46,13 @@ class Virtual_Machine: public QObject
 
     // the following methods are private to give
     // AQEMU_Service exclusive access
-    private:
+	private:
         bool Start();
         void Pause(); // qemu command stop
         void Stop();  // qemu command quit
         void Shutdown();  // qemu command system_powerdown
         void Reset();
+        void Clear_QEMU_Error_Log();
         void Save_VM_State(); // Save default snapshot
         void Save_VM_State( const QString &tag, bool quit );
         void Load_VM_State( const QString &tag );
@@ -109,6 +110,9 @@ class Virtual_Machine: public QObject
 		// QEMU Log
 		void Show_QEMU_Error( const QString &err_str );
 		void Hide_QEMU_Error_Log();
+		const QStringList &Get_QEMU_Error_Log_Entries() const;
+		QString Get_QEMU_Error_Log_Text() const;
+		void Set_QEMU_Error_Log_Entries( const QStringList &entries );
 		
 		// Plase wait win
 		void Show_VM_Load_Window();
@@ -171,11 +175,17 @@ class Virtual_Machine: public QObject
 		const QString &Get_Video_Card() const;
 		void Set_Video_Card( const QString &card );
 		
-		VM::Sound_Cards Get_Audio_Cards() const;
-		void Set_Audio_Cards( VM::Sound_Cards card );
-		
-		int Get_Memory_Size() const;
-		void Set_Memory_Size( int megs );
+			VM::Sound_Cards Get_Audio_Cards() const;
+			void Set_Audio_Cards( VM::Sound_Cards card );
+
+			bool Get_Use_Custom_Audio_Backend() const;
+			void Set_Use_Custom_Audio_Backend( bool use );
+
+			const QString &Get_Audio_Backend() const;
+			void Set_Audio_Backend( const QString &backend );
+
+			int Get_Memory_Size() const;
+			void Set_Memory_Size( int megs );
 		
 		bool Get_Remove_RAM_Size_Limitation() const;
 		void Set_Remove_RAM_Size_Limitation( bool on );
@@ -206,7 +216,10 @@ class Virtual_Machine: public QObject
 		
 		bool Use_No_Shutdown() const;
 		void Use_No_Shutdown( bool use );
-		
+
+		bool Get_Use_TPM() const;
+		void Set_Use_TPM( bool use );
+
 		const VM_Storage_Device &Get_FD0() const;
 		void Set_FD0( const VM_Storage_Device &floppy );
 		
@@ -456,6 +469,7 @@ class Virtual_Machine: public QObject
 
 		void QEMU_Started();
 		void QEMU_Finished( int exitCode, QProcess::ExitStatus exitStatus );
+		void QEMU_Error( QProcess::ProcessError error );
 		
 		void Resume_Finished( const QString &neturned_text );
 		void Suspend_Finished( const QString &neturned_text );
@@ -499,6 +513,7 @@ class Virtual_Machine: public QObject
 		QString Snapshot_Name_String;
 		QString Last_Output;
 		QStringList Output_Parts;
+        QStringList QEMU_Error_Log_Entries;
 		
 		QString Icon_Path; // OS Logo Icon
 		QString Screenshot_Path; // Screenshot in save mode
@@ -511,10 +526,12 @@ class Virtual_Machine: public QObject
 		QString Keyboard_Layout; // language en, ru, jp...
 		QList<VM::Boot_Order> Boot_Order_List; // New boot order
 		bool Show_Boot_Menu; // Enable interactive boot menu
-        QString Video_Card; // std vga, cirus logic
-		VM::Sound_Cards Audio_Card; // sb16, es1370
-		bool Remove_RAM_Size_Limitation; // true - limitation off
-		int Memory_Size; // RAM Size
+			QString Video_Card; // std vga, cirus logic
+			VM::Sound_Cards Audio_Card; // sb16, es1370
+			bool Use_Custom_Audio_Backend;
+			QString Audio_Backend;
+			bool Remove_RAM_Size_Limitation; // true - limitation off
+			int Memory_Size; // RAM Size
 		
 		// General Tab Options
 		bool Fullscreen;
@@ -526,6 +543,7 @@ class Virtual_Machine: public QObject
 		bool Start_CPU;
 		bool No_Reboot;
 		bool No_Shutdown;
+		bool Use_TPM;
 		
 		// storage devices
 		VM_Storage_Device FD0; // floppy 0

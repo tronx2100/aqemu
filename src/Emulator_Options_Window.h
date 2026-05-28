@@ -46,8 +46,6 @@ class Emulator_Options_Window: public QDialog
 		void on_Button_Find_clicked();
 		void on_TB_Browse_clicked();
 		void on_Table_Systems_itemDoubleClicked( QTableWidgetItem *item );
-		void on_RB_QEMU_toggled( bool checked );
-		void on_RB_KVM_toggled( bool checked );
 		
 		bool Name_Valid( const QString &name );
 		void Update_Emulator();

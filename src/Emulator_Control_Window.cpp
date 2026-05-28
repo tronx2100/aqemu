@@ -28,7 +28,8 @@
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QMessageBox>
-#include <QDesktopWidget>
+#include <QGuiApplication>
+#include <QScreen>
 #include <QClipboard>
 
 #ifdef Q_OS_WIN32
@@ -73,8 +74,8 @@ void Emulator_Control_Window::Apply_Full_Size( int w, int h )
 	{
 		setMaximumSize( w, h + menuWidget()->height() );
 		
-		QDesktopWidget desktop;
-		if( desktop.screenGeometry(desktop.primaryScreen()).width() > w )
+		QScreen *screen = QGuiApplication::primaryScreen();
+		if( screen && screen->availableGeometry().width() > w )
 			resize( w, h + menuWidget()->height() );
 	}
 	else
@@ -125,13 +126,13 @@ void Emulator_Control_Window::Create_Connect_Menu()
 	QString list = Cur_VM->Get_Removable_Devices_List();
 	
 	// Parse
-	QStringList devices = list.split( '\n', QString::SkipEmptyParts );
+	QStringList devices = list.split( '\n', Qt::SkipEmptyParts );
 	ui.menuConnectNew->clear();
 	Removable_Devies_Map.clear();
 	
 	for( int ix = 0; ix < devices.count()-1; ++ix )
 	{
-		QStringList curDev = devices[ ix ].split( ' ', QString::SkipEmptyParts );
+		QStringList curDev = devices[ ix ].split( ' ', Qt::SkipEmptyParts );
 		
 		// Data in curDev look like this:		
 		// ide0-hd0: removable=0 io-status=ok file=/tmp/vl.0x5urG backing_file=/mnt/os/vm/winxp_empty.qcow2 ro=0 drv=qcow2 encrypted=0
@@ -427,7 +428,7 @@ void Emulator_Control_Window::Connect_Device()
 	
 	if( act )
 	{
-		QStringList nameAndPath = act->data().toString().split( '\n', QString::SkipEmptyParts );
+		QStringList nameAndPath = act->data().toString().split( '\n', Qt::SkipEmptyParts );
 		if( nameAndPath.count() < 2 )
 		{
 			AQError( "void Emulator_Control_Window::Connect_Device()",

@@ -33,8 +33,11 @@
 #include <QProcess>
 #include <QStringList>
 #include <QTextStream>
+#include <QRandomGenerator>
+#include <QtGlobal>
 
 #include <cmath>
+#include <algorithm>
 
 #ifdef Q_OS_WIN32
 #include <iostream>
@@ -387,7 +390,7 @@ QList<QString> Get_Templates_List()
 		all_templates.append( user_templates_list[ix].absoluteFilePath() );
 	
 	// sort
-	qSort( all_templates );
+	std::sort( all_templates.begin(), all_templates.end() );
 	
 	return all_templates;
 }
@@ -813,9 +816,7 @@ int Get_Random( int min, int max )
 		return -1;
 	}
 	
-	qsrand( QTime::currentTime().msec() );
-	
-	return int( qrand() / (RAND_MAX + 1.0) * (max + 1 - min) + min );
+	return QRandomGenerator::global()->bounded( max - min + 1 ) + min;
 }
 
 void Load_Recent_Images_List()
@@ -997,4 +998,24 @@ double calculateContrast(const QColor& col1, const QColor& col2)
            0.0722 * pow((double)col2.blue()/255.0, 2.2) );
 
     return (l1 > l2) ? (l1 / l2) : (l2 / l1);
+}
+
+QString Get_Preferred_Audio_Backend()
+{
+#ifdef Q_OS_WIN32
+    return "pa";
+#else
+    QString runtimeDir = qEnvironmentVariable( "PIPEWIRE_RUNTIME_DIR" );
+    if( runtimeDir.isEmpty() )
+        runtimeDir = qEnvironmentVariable( "XDG_RUNTIME_DIR" );
+
+    if( ! runtimeDir.isEmpty() )
+    {
+        QString pipewireSocket = QDir( runtimeDir ).filePath( "pipewire-0" );
+        if( QFile::exists( pipewireSocket ) )
+            return "pipewire";
+    }
+
+    return "pa";
+#endif
 }

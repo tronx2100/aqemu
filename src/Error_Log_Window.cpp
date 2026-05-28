@@ -22,6 +22,7 @@
 ****************************************************************************/
 
 #include "Utils.h"
+#include "Service.h"
 #include "Error_Log_Window.h"
 
 Error_Log_Window::Error_Log_Window( QWidget *parent )
@@ -54,6 +55,36 @@ void Error_Log_Window::Add_to_Log( const QString& err_str )
     {
         last_error_is_deprecated_option = false;
     }
+}
+
+void Error_Log_Window::Clear_Log()
+{
+    ui.Edit_Log->clear();
+    Errors_Count = 0;
+    last_error_is_deprecated_option = false;
+    TEMPODEBUG( "Error_Log_Window::Clear_Log",
+                QString("clear_vm_xml=\"%1\" clear_uid=\"%2\"")
+                .arg(clear_vm_xml)
+                .arg(clear_uid) );
+    AQEMU_Service::get().clear_error_log( clear_vm_xml, clear_uid );
+    emit Clear_Log_Requested();
+}
+
+void Error_Log_Window::Restore_Log( const QStringList &entries )
+{
+    ui.Edit_Log->clear();
+    Errors_Count = 0;
+
+    for( const QString &entry : entries )
+    {
+        Add_to_Log( entry );
+    }
+}
+
+void Error_Log_Window::Set_Clear_Target( const QString &vm_xml, const QString &uid )
+{
+    clear_vm_xml = vm_xml;
+    clear_uid = uid;
 }
 
 bool Error_Log_Window::No_Show_Before_AQEMU_Restart() const

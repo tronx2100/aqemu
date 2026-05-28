@@ -44,6 +44,8 @@ VM::Disk_Info HDD_Image_Info::Get_Disk_Info() const
 
 void HDD_Image_Info::Update_Disk_Info( const QString &path )
 {
+    TEMPODEBUG( "void HDD_Image_Info::Update_Disk_Info( const QString &path )",
+                QString("path=\"%1\"").arg(path) );
 	Info.Image_File_Name = path;
 	
 	if( Info.Image_File_Name.isEmpty() )
@@ -67,6 +69,10 @@ void HDD_Image_Info::Update_Disk_Info( const QString &path )
 		QEMU_IMG_Proc = new QProcess( this );
 		QSettings settings;
 		QEMU_IMG_Proc->start( settings.value("QEMU-IMG_Path", "qemu-img").toString(), args );
+        TEMPODEBUG( "void HDD_Image_Info::Update_Disk_Info( const QString &path )",
+                    QString("qemu_img_path=\"%1\" args=\"%2\"")
+                    .arg(settings.value("QEMU-IMG_Path", "qemu-img").toString())
+                    .arg(args.join(" ")) );
 		
 		connect( QEMU_IMG_Proc, SIGNAL(finished(int, QProcess::ExitStatus)),
 				 this, SLOT(Parse_Info(int, QProcess::ExitStatus)), Qt::DirectConnection );
@@ -80,6 +86,8 @@ void HDD_Image_Info::Clear_Info()
 {
 	AQDebug( "void HDD_Image_Info::Clear_Info()",
 			 "HDD Info Not Read!" );
+    TEMPODEBUG( "void HDD_Image_Info::Clear_Info()",
+                QString("image=\"%1\"").arg(Info.Image_File_Name) );
 	
 	VM_HDD tmp_hdd;
 	Info.Disk_Format = "";
@@ -92,6 +100,11 @@ void HDD_Image_Info::Clear_Info()
 
 void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )
 {
+    TEMPODEBUG( "void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )",
+                QString("image=\"%1\" exitCode=%2 exitStatus=%3")
+                .arg(Info.Image_File_Name)
+                .arg(exitCode)
+                .arg(exitStatus) );
 
 
 	QByteArray info_str_ba = QEMU_IMG_Proc->readAll();
@@ -100,16 +113,22 @@ void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )
 	{
 		AQDebug( "void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )",
 				 "Data is empty." );
+        TEMPODEBUG( "void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )",
+                    QString("empty output image=\"%1\"").arg(Info.Image_File_Name) );
 		return;
 	}
 	
 	QRegExp RegInfo = QRegExp( ".*image:[\\s]+([^\n\r]+).*file format:[\\s]+([\\w\\d]+).*virtual size:[\\s]+([\\d]+[.]*[\\d]*[KMG]+).*disk size:[\\s]+([\\d]+[.]*[\\d]*[KMG]+).*cluster_size:[\\s]+([\\d]+).*" );
 	
 	bool cluster = true;
-		if( ! RegInfo.exactMatch(info_str) )
+	if( ! RegInfo.exactMatch(info_str) )
 	{
 		AQWarning( "void QEMU_IMG_Thread::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )",
 				   "QRegExp With Cluster Size Not Matched!" );
+        TEMPODEBUG( "void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )",
+                    QString("cluster-regex failed image=\"%1\" data=\"%2\"")
+                    .arg(Info.Image_File_Name)
+                    .arg(info_str) );
 		
         RegInfo = QRegExp( QString(".*image:[\\s]+([^\n\r]+).*")+
                            QString("file format:[\\s]+([\\w\\d]+).*")+
@@ -120,6 +139,10 @@ void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )
 		{
 			AQError( "void QEMU_IMG_Thread::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )",
 					 "QRegExp Without Cluster Size Not Matched! Image: " + Info.Image_File_Name + "\nData: " + info_str );
+            TEMPODEBUG( "void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )",
+                        QString("regex without cluster failed image=\"%1\" data=\"%2\"")
+                        .arg(Info.Image_File_Name)
+                        .arg(info_str) );
 			Clear_Info();
 			return;
 		}
@@ -135,6 +158,8 @@ void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )
 	{
 		AQError( "void QEMU_IMG_Thread::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )",
 				 "info_str.count() != 6" );
+        TEMPODEBUG( "void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )",
+                    QString("unexpected capture count=%1 image=\"%2\"").arg(info_lines.count()).arg(Info.Image_File_Name) );
 		Clear_Info();
 		return;
 	}
@@ -142,6 +167,8 @@ void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )
 	{
 		AQError( "void QEMU_IMG_Thread::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )",
 				 "info_str.count() != 5" );
+        TEMPODEBUG( "void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )",
+                    QString("unexpected capture count=%1 image=\"%2\"").arg(info_lines.count()).arg(Info.Image_File_Name) );
 		Clear_Info();
 		return;
 	}
@@ -158,6 +185,13 @@ void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )
 	Info.Disk_Size = tmp_hdd.String_to_Device_Size( info_lines[4] );
 	if( cluster ) Info.Cluster_Size = info_lines[ 5 ].toInt();
 	else Info.Cluster_Size = 0;
+    TEMPODEBUG( "void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )",
+                QString("parsed image=\"%1\" format=\"%2\" virtual_size=\"%3\" disk_size=\"%4\" cluster_size=%5")
+                .arg(Info.Image_File_Name)
+                .arg(Info.Disk_Format)
+                .arg(info_lines[3])
+                .arg(info_lines[4])
+                .arg(Info.Cluster_Size) );
 	
 	emit Completed( true );
 }

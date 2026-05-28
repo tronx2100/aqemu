@@ -76,6 +76,8 @@ Main_Window::Main_Window( QWidget *parent )
 
     ui.setupUi( this );
 	ui_ao.setupUi( Advanced_Options );
+    Advanced_Options->setMinimumSize( 1000, 800 );
+    Advanced_Options->resize( 1000, 800 );
 
     connect(ui_ao.CH_Start_Date,SIGNAL(toggled(bool)),this,SLOT(adv_on_CH_Start_Date_toggled(bool)));
 
@@ -553,6 +555,21 @@ void Main_Window::Connect_Signals()
 	connect( ui_ao.CH_Use_User_Binary, SIGNAL(clicked()),
 			 this, SLOT(VM_Changed()) );
 
+	connect( ui_ao.CH_Advanced_TPM, SIGNAL(clicked()),
+			 this, SLOT(VM_Changed()) );
+
+	connect( ui_ao.CH_Use_Custom_Audio_Backend, SIGNAL(toggled(bool)),
+			 ui_ao.CB_Audio_Backend, SLOT(setEnabled(bool)) );
+
+	connect( ui_ao.CH_Use_Custom_Audio_Backend, SIGNAL(clicked()),
+			 this, SLOT(VM_Changed()) );
+
+	connect( ui_ao.CB_Audio_Backend, SIGNAL(currentIndexChanged(int)),
+			 this, SLOT(VM_Changed()) );
+
+	connect( ui_ao.CB_Audio_Backend, SIGNAL(editTextChanged(const QString &)),
+			 this, SLOT(VM_Changed()) );
+
 	// Hardware Virtualization Tab
 
 	/*connect( ui_kvm.CH_No_KVM_IRQChip, SIGNAL(clicked()),
@@ -856,6 +873,8 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 	snd_card.Audio_cs4231a = ui.CH_cs4231a->isChecked();
 
 	tmp_vm->Set_Audio_Cards( snd_card );
+	tmp_vm->Set_Use_Custom_Audio_Backend( ui_ao.CH_Use_Custom_Audio_Backend->isChecked() );
+	tmp_vm->Set_Audio_Backend( ui_ao.CB_Audio_Backend->currentText() );
 
 	// Memory
 	tmp_vm->Set_Memory_Size( ui.Memory_Size->value() );
@@ -874,6 +893,7 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 	tmp_vm->Use_Start_CPU( ui_ao.CH_Start_CPU->isChecked() );
 	tmp_vm->Use_No_Reboot( ui_ao.CH_No_Reboot->isChecked() );
 	tmp_vm->Use_No_Shutdown( ui_ao.CH_No_Shutdown->isChecked() );
+	tmp_vm->Set_Use_TPM( ui_ao.CH_Advanced_TPM->isChecked() );
 
 	tmp_vm->Set_FD0( Dev_Manager->Floppy1 );
 	tmp_vm->Set_FD1( Dev_Manager->Floppy2 );
@@ -1524,6 +1544,10 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 	ui_ao.CH_No_Shutdown->setChecked( tmp_vm->Use_No_Shutdown() );
 	ui_ao.CH_No_Reboot->setChecked( tmp_vm->Use_No_Reboot() );
 	ui_ao.CH_Start_CPU->setChecked( tmp_vm->Use_Start_CPU() );
+	ui_ao.CH_Advanced_TPM->setChecked( tmp_vm->Get_Use_TPM() );
+	ui_ao.CH_Use_Custom_Audio_Backend->setChecked( tmp_vm->Get_Use_Custom_Audio_Backend() );
+	ui_ao.CB_Audio_Backend->setCurrentText( tmp_vm->Get_Audio_Backend() );
+	ui_ao.CB_Audio_Backend->setEnabled( tmp_vm->Get_Use_Custom_Audio_Backend() );
 
 	// Start Date
 	ui_ao.CH_Start_Date->setChecked( tmp_vm->Use_Start_Date() );
@@ -3319,10 +3343,19 @@ void Main_Window::on_actionPower_On_triggered()
         return;
 
     Virtual_Machine *cur_vm = Get_Current_VM();
+    TEMPODEBUG( "Main_Window::on_actionPower_On_triggered",
+                QString("cur_vm ptr=%1 uid=\"%2\" name=\"%3\" xml=\"%4\" state=%5")
+                .arg(reinterpret_cast<quintptr>(cur_vm))
+                .arg(cur_vm ? cur_vm->Get_UID() : QString())
+                .arg(cur_vm ? cur_vm->Get_Machine_Name() : QString())
+                .arg(cur_vm ? cur_vm->Get_VM_XML_File_Path() : QString())
+                .arg(cur_vm ? cur_vm->Get_State() : -1) );
 
 	if( ! Boot_Is_Correct(cur_vm) ) return;
 
-    if( ! AQEMU_Service::get().call( "start" , cur_vm ) )
+    TEMPODEBUG( "Main_Window::on_actionPower_On_triggered",
+                QString("calling service start uid=\"%1\"").arg(cur_vm->Get_UID()) );
+    if( ! AQEMU_Service::get().call( "start" , cur_vm, cur_vm->Get_UID(), true ) )
         AQError( "void Main_Window::on_action_Power_On_triggered()", "Cannot Start VM!" );
 }
 
@@ -3718,15 +3751,29 @@ void Main_Window::on_actionShow_QEMU_Error_Log_Window_triggered()
 	if( VM_List.count() < 0 || ui.Machines_List->currentRow() < 0 ) return;
 
 	Virtual_Machine *cur_vm = Get_Current_VM();
+    TEMPODEBUG( "Main_Window::on_actionShow_QEMU_Error_Log_Window_triggered",
+                QString("cur_vm ptr=%1 uid=\"%2\" name=\"%3\" xml=\"%4\" error_count=%5")
+                .arg(reinterpret_cast<quintptr>(cur_vm))
+                .arg(cur_vm ? cur_vm->Get_UID() : QString())
+                .arg(cur_vm ? cur_vm->Get_Machine_Name() : QString())
+                .arg(cur_vm ? cur_vm->Get_VM_XML_File_Path() : QString())
+                .arg(cur_vm ? cur_vm->Get_QEMU_Error_Log_Entries().count() : -1) );
 
 	if( cur_vm == NULL )
 	{
 		AQError( "void Main_Window::on_actionShow_QEMU_Error_Log_Window_triggered()",
 				 "cur_vm == NULL" );
 		return;
-	}
+    }
 
-    AQEMU_Service::get().call( "error" , cur_vm );
+    TEMPODEBUG( "Main_Window::on_actionShow_QEMU_Error_Log_Window_triggered",
+                QString("calling service error uid=\"%1\"").arg(cur_vm->Get_UID()) );
+    if( ! AQEMU_Service::get().call( "error", cur_vm, cur_vm->Get_UID(), false ) )
+    {
+        TEMPODEBUG( "Main_Window::on_actionShow_QEMU_Error_Log_Window_triggered",
+                    QString("service call failed, local fallback show error window") );
+        cur_vm->Show_Error_Log_Window();
+    }
 }
 
 void Main_Window::on_Memory_Size_valueChanged( int value )

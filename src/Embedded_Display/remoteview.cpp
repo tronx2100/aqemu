@@ -163,7 +163,13 @@ void RemoteView::setGrabAllKeys(bool grabAllKeys)
 
 QPixmap RemoteView::takeScreenshot()
 {
-    return grab();
+    QPixmap screenshot(size());
+    if ( screenshot.isNull() )
+        return screenshot;
+
+    screenshot.fill(Qt::transparent);
+    render(&screenshot);
+    return screenshot;
 }
 
 void RemoteView::showDotCursor(DotCursorState state)

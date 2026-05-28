@@ -51,7 +51,8 @@ Advanced_Settings_Window::Advanced_Settings_Window( QWidget *parent )
 	ui.Emulators_Table->setHorizontalHeader( hv );
 	
 	// Minimum Size
-	resize( minimumSizeHint().width(), minimumSizeHint().height() );
+	setMinimumSize( 1000, 800 );
+	resize( 1000, 800 );
 	
 	// Execute Before Start QEMU
 	ui.Edit_Before_Start_Command->setText( Settings.value("Run_Before_QEMU", "").toString() );
@@ -183,10 +184,17 @@ Advanced_Settings_Window::Advanced_Settings_Window( QWidget *parent )
 	ui.CH_Audio_Default->setChecked( Settings.value("QEMU_AUDIO/Use_Default_Driver", "yes").toString() == "no" );
 	
 	// QEMU_AUDIO_DRV
+	QString audio_backend = Settings.contains( "QEMU_AUDIO/QEMU_AUDIO_DRV" )
+		? Settings.value("QEMU_AUDIO/QEMU_AUDIO_DRV").toString().trimmed()
+		: Get_Preferred_Audio_Backend();
+
+	if( audio_backend.isEmpty() )
+		audio_backend = Get_Preferred_Audio_Backend();
+
 	for( int ix = 0; ix < ui.CB_Host_Sound_System->count(); ++ix )
 	{
 		if( ui.CB_Host_Sound_System->itemText(ix) ==
-			Settings.value("QEMU_AUDIO/QEMU_AUDIO_DRV", "alsa").toString() )
+			audio_backend )
 		{
 			ui.CB_Host_Sound_System->setCurrentIndex( ix );
 		}

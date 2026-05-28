@@ -97,7 +97,7 @@
         <number>7</number>
        </property>
        <item row="2" column="1">
-        <widget class="QWidget" name="widget" native="true">
+        <widget class="QWidget" name="Widget_Emulator_Buttons" native="true">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -1518,14 +1518,19 @@ with embedded display</string>
                     <string>oss</string>
                    </property>
                   </item>
-                  <item>
-                   <property name="text">
-                    <string>pa</string>
-                   </property>
-                  </item>
-                  <item>
-                   <property name="text">
-                    <string>esd</string>
+	                  <item>
+	                   <property name="text">
+	                    <string>pa</string>
+	                   </property>
+	                  </item>
+	                  <item>
+	                   <property name="text">
+	                    <string>pipewire</string>
+	                   </property>
+	                  </item>
+	                  <item>
+	                   <property name="text">
+	                    <string>esd</string>
                    </property>
                   </item>
                   <item>
@@ -2220,7 +2225,7 @@ Supports only USB &amp;1.1 controller emulation.</string>
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout_25">
             <item>
-             <widget class="QWidget" name="widget" native="true">
+             <widget class="QWidget" name="Widget_USB_Device_ID" native="true">
               <layout class="QVBoxLayout" name="verticalLayout_16">
                <property name="leftMargin">
                 <number>10</number>

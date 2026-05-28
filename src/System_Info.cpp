@@ -1889,7 +1889,7 @@ Available_Devices System_Info::Get_Emulator_Info( const QString &path, bool *ok,
 		// Parse vga devices list string
 		if( rx.capturedTexts().count() > 1 )
 		{
-			QStringList vga_devices_list = rx.capturedTexts()[1].split( "|", QString::SkipEmptyParts );
+			QStringList vga_devices_list = rx.capturedTexts()[1].split( "|", Qt::SkipEmptyParts );
 			
 			if( vga_devices_list.isEmpty() )
 			{
@@ -2005,7 +2005,7 @@ Available_Devices System_Info::Get_Emulator_Info( const QString &path, bool *ok,
 		QString all_models = tmp.mid( tmp.indexOf("models:") + QString("models:").count(), tmp.count() );
 		all_models.remove( QChar(' ') ); // Remove all spaces
 		
-		QStringList net_cards_models = all_models.split( ',', QString::SkipEmptyParts );
+		QStringList net_cards_models = all_models.split( ',', Qt::SkipEmptyParts );
 		
 		if( net_cards_models.isEmpty() )
 		{

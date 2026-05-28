@@ -78,6 +78,7 @@ class AQEMU_Service : public QObject
 
     public slots:
         QString start(const QString& vm);
+        QString start(const QString& vm, const QString& uid);
         QString stop(const QString& vm);
         QString shutdown(const QString& vm);
         QString pause(const QString& vm);
@@ -85,11 +86,13 @@ class AQEMU_Service : public QObject
         QString save(const QString& vm);
         QString monitor(const QString& vm);
         QString error(const QString& vm);
+        QString error(const QString& vm, const QString& uid);
         QString control(const QString& vm);
         QString status(const QString& vm);
         QString status();
         QString command(const QString& vm, const QString& command);
         QString list();
+        void clear_error_log(const QString& vm, const QString& uid);
 
     signals:
         QString callProcessed();
