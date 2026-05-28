@@ -1,5 +1,6 @@
 builddir*/
 dist/
+*.bz2
 compile.sh
 create-deb.sh
 push.sh
