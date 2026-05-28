@@ -2,3 +2,4 @@ builddir*/
 dist/
 compile.sh
 create-deb.sh
+push.sh
