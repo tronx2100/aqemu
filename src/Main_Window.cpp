@@ -678,8 +678,28 @@ const QMap<QString, Available_Devices> Main_Window::Get_Devices_Info( bool *ok )
 		return retList;
 	}
 
+	QMap<QString, QString> tmpBinFiles = curEmul.Get_Binary_Files();
+	for( QMap<QString, QString>::const_iterator it = tmpBinFiles.constBegin(); it != tmpBinFiles.constEnd(); ++it )
+	{
+		if( ! it.value().isEmpty() )
+		{
+			bool ok = false;
+			Available_Devices tmpDev = System_Info::Get_Emulator_Info( it.value(), &ok, curEmul.Get_Version(), it.key() );
+			if( ok ) retList[ it.key() ] = tmpDev;
+		}
+	}
+
+	if( retList.isEmpty() )
+		retList = curEmul.Get_Devices();
+
+	if( retList.isEmpty() )
+	{
+		*ok = false;
+		return retList;
+	}
+
 	*ok = true;
-	return curEmul.Get_Devices();
+	return retList;
 }
 
 Available_Devices Main_Window::Get_Current_Machine_Devices( bool *ok ) const

@@ -1927,30 +1927,35 @@ Available_Devices System_Info::Get_Emulator_Info( const QString &path, bool *ok,
 	
 	// Get Audio Cards Models
 	args_list.clear();
-	args_list << "-soundhw" << "?";
+	args_list << "-device" << "?";
 	QString audio_list_str = Get_Emulator_Output( path, args_list );
 	text_stream = new QTextStream( &audio_list_str );
 	
+	bool in_sound_section = false;
 	do
 	{
 		tmp = text_stream->readLine();
 		QString qemu_dev_name = "";
 		
-		// This target platform support soundhw?
-		if( tmp.contains("not supported") ) break;
+		if( tmp.startsWith("Sound devices:") )
+		{
+			in_sound_section = true;
+			continue;
+		}
+		else if( tmp.startsWith("Misc devices:") )
+		{
+			in_sound_section = false;
+			continue;
+		}
 		
-		// This description?
-		if( tmp.isEmpty() ||
-			tmp.startsWith("Valid sound card names") ||
-			tmp.startsWith("-soundhw") ||
-			tmp.indexOf(QRegExp("/^\\S+$/"), 0) != -1 ) continue;
+		if( ! in_sound_section || tmp.isEmpty() )
+			continue;
 		
-		// Get QEMU ID String
-		QRegExp tmp_rx = QRegExp( "([\\w-.]+)\\s+.*" );
+		QRegExp tmp_rx = QRegExp( "^name \"([^\"]+)\".*" );
 		if( tmp_rx.exactMatch(tmp) )
 		{
 			QStringList rx_list = tmp_rx.capturedTexts();
-			if( rx_list.count() > 1 ) qemu_dev_name = rx_list[ 1 ];
+			if( rx_list.count() > 1 ) qemu_dev_name = rx_list[ 1 ].toLower();
 			else
 			{
 				AQError( "Available_Devices System_Info::Get_Emulator_Info( const QString &path, bool *ok,"
@@ -1966,7 +1971,10 @@ Available_Devices System_Info::Get_Emulator_Info( const QString &path, bool *ok,
 		else if( qemu_dev_name == "adlib" ) tmp_dev.Audio_Card_List.Audio_Adlib = true;
 		else if( qemu_dev_name == "pcspk" ) tmp_dev.Audio_Card_List.Audio_PC_Speaker = true;
 		else if( qemu_dev_name == "ac97" ) tmp_dev.Audio_Card_List.Audio_AC97 = true;
-		else if( qemu_dev_name == "hda" ) tmp_dev.Audio_Card_List.Audio_HDA = true;
+		else if( qemu_dev_name == "hda" || qemu_dev_name == "intel-hda" || qemu_dev_name == "ich9-intel-hda" )
+			 tmp_dev.Audio_Card_List.Audio_HDA = true;
+		else if( qemu_dev_name == "hda-duplex" || qemu_dev_name == "hda-output" || qemu_dev_name == "hda-micro" )
+			 tmp_dev.Audio_Card_List.Audio_HDA = true;
 		else if( qemu_dev_name == "cs4231a" ) tmp_dev.Audio_Card_List.Audio_cs4231a = true;
 		else
 		{

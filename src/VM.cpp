@@ -5339,32 +5339,70 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	
 	// Audio
 	QStringList audio_list;
+	QStringList audio_device_args;
+	bool audio_enabled = false;
 	
-	if( Audio_Card.Audio_sb16 &&  Current_Emulator_Devices.Audio_Card_List.Audio_sb16 ) audio_list << "sb16";
-	if( Audio_Card.Audio_es1370 && Current_Emulator_Devices.Audio_Card_List.Audio_es1370 ) audio_list << "es1370";
-	if( Audio_Card.Audio_Adlib && Current_Emulator_Devices.Audio_Card_List.Audio_Adlib ) audio_list << "adlib";
-	if( Audio_Card.Audio_PC_Speaker && Current_Emulator_Devices.Audio_Card_List.Audio_PC_Speaker ) audio_list << "pcspk";
-	if( Audio_Card.Audio_GUS && Current_Emulator_Devices.Audio_Card_List.Audio_GUS ) audio_list << "gus";
-	if( Audio_Card.Audio_AC97 && Current_Emulator_Devices.Audio_Card_List.Audio_AC97 ) audio_list << "ac97";
-	if( Audio_Card.Audio_HDA && Current_Emulator_Devices.Audio_Card_List.Audio_HDA ) audio_list << "hda";
-	if( Audio_Card.Audio_cs4231a && Current_Emulator_Devices.Audio_Card_List.Audio_cs4231a ) audio_list << "cs4231a";
+	if( Audio_Card.Audio_sb16 &&  Current_Emulator_Devices.Audio_Card_List.Audio_sb16 )
+	{
+		audio_list << "sb16";
+		audio_device_args << "sb16";
+	}
+	if( Audio_Card.Audio_es1370 && Current_Emulator_Devices.Audio_Card_List.Audio_es1370 )
+	{
+		audio_list << "es1370";
+		audio_device_args << "es1370";
+	}
+	if( Audio_Card.Audio_Adlib && Current_Emulator_Devices.Audio_Card_List.Audio_Adlib )
+	{
+		audio_list << "adlib";
+		audio_device_args << "adlib";
+	}
+	if( Audio_Card.Audio_PC_Speaker && Current_Emulator_Devices.Audio_Card_List.Audio_PC_Speaker )
+	{
+		audio_list << "pcspk";
+		audio_device_args << "pcspk";
+	}
+	if( Audio_Card.Audio_GUS && Current_Emulator_Devices.Audio_Card_List.Audio_GUS )
+	{
+		audio_list << "gus";
+		audio_device_args << "gus";
+	}
+	if( Audio_Card.Audio_AC97 && Current_Emulator_Devices.Audio_Card_List.Audio_AC97 )
+	{
+		audio_list << "ac97";
+		audio_device_args << "ac97";
+	}
+	if( Audio_Card.Audio_HDA && Current_Emulator_Devices.Audio_Card_List.Audio_HDA )
+	{
+		audio_list << "hda";
+		audio_device_args << "intel-hda" << "hda-duplex";
+	}
+	if( Audio_Card.Audio_cs4231a && Current_Emulator_Devices.Audio_Card_List.Audio_cs4231a )
+	{
+		audio_list << "cs4231a";
+		audio_device_args << "cs4231a";
+	}
 	
 	if( audio_list.count() > 0 )
 	{
-		Args << "-soundhw";
-		
-		QString all_cards = "";
-		
-		for( int ax = 0; ax < audio_list.count(); ++ax )
+		Args << "-audiodev" << "pa,id=audio0";
+		audio_enabled = true;
+	}
+	
+	if( audio_enabled && audio_device_args.count() > 0 )
+	{
+		for( int ax = 0; ax < audio_device_args.count(); ++ax )
 		{
-			// Next card end?
-			if( ax != audio_list.count()-1 )
-				all_cards += audio_list[ ax ] + ",";
+			QString dev = audio_device_args[ ax ];
+			if( dev == "intel-hda" )
+				Args << "-device" << dev;
+			else if( dev == "hda-duplex" )
+				Args << "-device" << "hda-duplex,audiodev=audio0";
+			else if( dev == "pcspk" )
+				Args << "-device" << dev;
 			else
-				all_cards += audio_list[ ax ];
+				Args << "-device" << dev + ",audiodev=audio0";
 		}
-		
-		Args << all_cards;
 	}
 	
 	// Machine Type
