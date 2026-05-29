@@ -739,6 +739,9 @@ void Advanced_Settings_Window::done(int r)
 		    Settings.setValue( "Use_VNC_Display", "no" );
 		    Settings.setValue( "Include_Emulator_Control", "no" );
 	    }
+
+	    if( ! Save_Emulators_Info() )
+		    return;
     }
     QDialog::done(r);
 }
@@ -819,14 +822,20 @@ void Advanced_Settings_Window::on_TB_Delete_Emulator_clicked()
 	
 	if( cur_index >= 0 && cur_index < Emulators.count() )
 	{
+		bool deletedWasDefault = Emulators[ cur_index ].Get_Default();
 		Emulators.removeAt( cur_index );
 		ui.Emulators_Table->removeRow( cur_index );
 
-		for( int ex = 0; ex < Emulators.count(); ++ex )
+		if( deletedWasDefault && Emulators.count() > 0 )
 		{
-			Emulators[ ex ].Set_Default( true );
-			ui.Emulators_Table->item( ex, 3 )->setText( tr("Yes") );
-			break;
+			for( int ex = 0; ex < Emulators.count(); ++ex )
+			{
+				Emulators[ ex ].Set_Default( false );
+				ui.Emulators_Table->item( ex, 3 )->setText( tr("No") );
+			}
+
+			Emulators[ 0 ].Set_Default( true );
+			ui.Emulators_Table->item( 0, 3 )->setText( tr("Yes") );
 		}
 	}
 }
@@ -857,12 +866,14 @@ void Advanced_Settings_Window::on_TB_Use_Default_clicked()
 	
 	if( cur_index >= 0 && cur_index < Emulators.count() )
 	{
-		Emulators[ cur_index ].Set_Default( true );
-		
 		for( int ix = 0; ix < Emulators.count(); ix++ )
 		{
-            Emulators[ ix ].Set_Default( false );
+			Emulators[ ix ].Set_Default( false );
+			ui.Emulators_Table->item( ix, 3 )->setText( tr("No") );
 		}
+
+		Emulators[ cur_index ].Set_Default( true );
+		ui.Emulators_Table->item( cur_index, 3 )->setText( tr("Yes") );
 		
 		Update_Emulators_Info();
 	}
