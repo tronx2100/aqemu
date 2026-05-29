@@ -1750,6 +1750,13 @@ with embedded display</string>
              </property>
             </widget>
            </item>
+           <item row="34" column="0">
+            <widget class="QCheckBox" name="CH_UEFI">
+             <property name="text">
+              <string>UEFI (OVMF)</string>
+             </property>
+            </widget>
+           </item>
            <item row="35" column="0">
             <widget class="QCheckBox" name="CH_ROM_File">
              <property name="text">

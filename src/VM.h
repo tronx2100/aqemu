@@ -354,6 +354,15 @@ class Virtual_Machine: public QObject
 		
 		const QString &Get_PFlash_File() const;
 		void Set_PFlash_File( const QString &file );
+
+		bool Use_UEFI() const;
+		void Use_UEFI( bool use );
+
+		const QString &Get_UEFI_Code_File() const;
+		void Set_UEFI_Code_File( const QString &file );
+
+		const QString &Get_UEFI_Vars_File() const;
+		void Set_UEFI_Vars_File( const QString &file );
 		
 		bool Use_KVM() const;
 		void Use_KVM( bool use );
@@ -603,6 +612,10 @@ class Virtual_Machine: public QObject
 		
 		bool PFlash;
 		QString PFlash_File;
+		
+		bool UEFI;
+		QString UEFI_Code_File;
+		QString UEFI_Vars_File;
 		
 		bool Enable_KVM;
 		bool KVM_IRQChip;

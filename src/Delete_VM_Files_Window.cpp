@@ -247,6 +247,28 @@ void Delete_VM_Files_Window::Set_VM( Virtual_Machine *vm )
 		File_List_Items << tmp;
 		Add_To_Files_List( tmp );
 	}
+
+	// UEFI Code File
+	if( Path_Valid(vm->Get_UEFI_Code_File()) )
+	{
+		tmp.Hard_Drive = false;
+		tmp.Name = tr( "UEFI Code File" );
+		tmp.Path = vm->Get_UEFI_Code_File();
+
+		File_List_Items << tmp;
+		Add_To_Files_List( tmp );
+	}
+
+	// UEFI Vars File
+	if( Path_Valid(vm->Get_UEFI_Vars_File()) )
+	{
+		tmp.Hard_Drive = false;
+		tmp.Name = tr( "UEFI Vars File" );
+		tmp.Path = vm->Get_UEFI_Vars_File();
+
+		File_List_Items << tmp;
+		Add_To_Files_List( tmp );
+	}
 	
 	// bzImage
 	if( Path_Valid(vm->Get_bzImage_Path()) )

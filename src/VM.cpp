@@ -250,6 +250,10 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 	
 	this->PFlash = vm.Use_PFlash_File();
 	this->PFlash_File = vm.Get_PFlash_File();
+
+	this->UEFI = vm.Use_UEFI();
+	this->UEFI_Code_File = vm.Get_UEFI_Code_File();
+	this->UEFI_Vars_File = vm.Get_UEFI_Vars_File();
 	
 	this->Enable_KVM = vm.Use_KVM();
 	this->KVM_IRQChip = vm.Use_KVM_IRQChip();
@@ -456,6 +460,10 @@ void Virtual_Machine::Shared_Constructor()
 	PFlash = false;
 	PFlash_File = "";
 	
+	UEFI = false;
+	UEFI_Code_File = "";
+	UEFI_Vars_File = "";
+	
 	Enable_KVM = true;
 	KVM_IRQChip = false;
 	No_KVM_Pit = false;
@@ -558,6 +566,9 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
 		this->SecureDigital_File == vm.Get_SecureDigital_File() &&
 		this->PFlash == vm.Use_PFlash_File() &&
 		this->PFlash_File == vm.Get_PFlash_File() &&
+		this->UEFI == vm.Use_UEFI() &&
+		this->UEFI_Code_File == vm.Get_UEFI_Code_File() &&
+		this->UEFI_Vars_File == vm.Get_UEFI_Vars_File() &&
 		this->Enable_KVM == vm.Use_KVM() &&
 		this->KVM_IRQChip == vm.Use_KVM_IRQChip() &&
 		this->No_KVM_Pit == vm.Use_No_KVM_Pit() &&
@@ -844,6 +855,10 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	
 	this->PFlash = vm.Use_PFlash_File();
 	this->PFlash_File = vm.Get_PFlash_File();
+
+	this->UEFI = vm.Use_UEFI();
+	this->UEFI_Code_File = vm.Get_UEFI_Code_File();
+	this->UEFI_Vars_File = vm.Get_UEFI_Vars_File();
 	
 	this->Enable_KVM = vm.Use_KVM();
 	this->KVM_IRQChip = vm.Use_KVM_IRQChip();
@@ -3001,6 +3016,29 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 	VM_Element.appendChild( Dom_Element );
 	Dom_Text = New_Dom_Document.createTextNode( PFlash_File );
 	Dom_Element.appendChild( Dom_Text );
+
+	// Use UEFI
+	Dom_Element = New_Dom_Document.createElement( "Use_UEFI" );
+	VM_Element.appendChild( Dom_Element );
+
+	if( UEFI )
+		Dom_Text = New_Dom_Document.createTextNode( "true" );
+	else
+		Dom_Text = New_Dom_Document.createTextNode( "false" );
+
+	Dom_Element.appendChild( Dom_Text );
+
+	// UEFI Code File
+	Dom_Element = New_Dom_Document.createElement( "UEFI_Code_File" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( UEFI_Code_File );
+	Dom_Element.appendChild( Dom_Text );
+
+	// UEFI Vars File
+	Dom_Element = New_Dom_Document.createElement( "UEFI_Vars_File" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( UEFI_Vars_File );
+	Dom_Element.appendChild( Dom_Text );
 	
 	// Additional Arguments
 	Dom_Element = New_Dom_Document.createElement( "Additional_Args" );
@@ -4675,6 +4713,15 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 			
 			// PFlash File
 			PFlash_File = Child_Element.firstChildElement( "PFlash_File" ).text();
+
+			// Use UEFI
+			UEFI = (Child_Element.firstChildElement("Use_UEFI").text() == "true" );
+
+			// UEFI Code File
+			UEFI_Code_File = Child_Element.firstChildElement( "UEFI_Code_File" ).text();
+
+			// UEFI Vars File
+			UEFI_Vars_File = Child_Element.firstChildElement( "UEFI_Vars_File" ).text();
 			
 			// Enable KVM
 			Enable_KVM = ! (Child_Element.firstChildElement("Enable_KVM").text() == "false" );
@@ -6803,6 +6850,25 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 			Args << "-pflash" << "\"" + PFlash_File + "\"";
 		else
 			Args << "-pflash" << PFlash_File;
+	}
+
+	// UEFI (OVMF) pflash drives
+	if( UEFI )
+	{
+		if( ! UEFI_Code_File.isEmpty() )
+		{
+			if( Build_QEMU_Args_for_Script_Mode )
+				Args << "-drive" << "if=pflash,format=raw,readonly=on,file=\"" + UEFI_Code_File + "\"";
+			else
+				Args << "-drive" << "if=pflash,format=raw,readonly=on,file=" + UEFI_Code_File;
+		}
+		if( ! UEFI_Vars_File.isEmpty() )
+		{
+			if( Build_QEMU_Args_for_Script_Mode )
+				Args << "-drive" << "if=pflash,format=raw,file=\"" + UEFI_Vars_File + "\"";
+			else
+				Args << "-drive" << "if=pflash,format=raw,file=" + UEFI_Vars_File;
+		}
 	}
 	
 	// Set the initial graphical resolution and depth
@@ -9104,6 +9170,36 @@ void Virtual_Machine::Set_PFlash_File( const QString &file )
 	PFlash_File = file;
 }
 
+bool Virtual_Machine::Use_UEFI() const
+{
+	return UEFI;
+}
+
+void Virtual_Machine::Use_UEFI( bool use )
+{
+	UEFI = use;
+}
+
+const QString &Virtual_Machine::Get_UEFI_Code_File() const
+{
+	return UEFI_Code_File;
+}
+
+void Virtual_Machine::Set_UEFI_Code_File( const QString &file )
+{
+	UEFI_Code_File = file;
+}
+
+const QString &Virtual_Machine::Get_UEFI_Vars_File() const
+{
+	return UEFI_Vars_File;
+}
+
+void Virtual_Machine::Set_UEFI_Vars_File( const QString &file )
+{
+	UEFI_Vars_File = file;
+}
+
 bool Virtual_Machine::Use_KVM() const
 {
 	return Enable_KVM;
@@ -10859,6 +10955,28 @@ QString Virtual_Machine::GenerateHTMLInfoText(int info_mode)
             {
                 im_info = QFileInfo( Get_PFlash_File() );
                 cell_cursor.insertText( im_info.fileName(), format );
+            }
+            else
+            {
+                cell_cursor.insertText( tr("No"), format );
+            }
+
+            table->insertRows( table->rows(), 1 );
+        }
+
+        // UEFI (OVMF)
+        if( Settings.value("Info/UEFI", "no").toString() == "yes" )
+        {
+            cell = table->cellAt( table->rows()-1, 1 );
+            cell_cursor = cell.firstCursorPosition();
+            cell_cursor.insertText( tr("UEFI (OVMF):"), format );
+
+            cell = table->cellAt( table->rows()-1, 2 );
+            cell_cursor = cell.firstCursorPosition();
+
+            if( Use_UEFI() )
+            {
+                cell_cursor.insertText( tr("Yes"), format );
             }
             else
             {

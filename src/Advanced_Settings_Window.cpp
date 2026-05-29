@@ -140,6 +140,7 @@ Advanced_Settings_Window::Advanced_Settings_Window( QWidget *parent )
 	ui.CH_MTDBlock->setChecked( Settings.value("Info/MTDBlock", "no").toString() == "yes" );
 	ui.CH_SD_Image->setChecked( Settings.value("Info/SD_Image", "no").toString() == "yes" );
 	ui.CH_PFlash->setChecked( Settings.value("Info/PFlash", "no").toString() == "yes" );
+	ui.CH_UEFI->setChecked( Settings.value("Info/UEFI", "no").toString() == "yes" );
 	
 	ui.CH_Linux_Boot->setChecked( Settings.value("Info/Linux_Boot", "no").toString() == "yes" );
 	ui.CH_VNC->setChecked( Settings.value("Info/VNC", "no").toString() == "yes" );
@@ -546,6 +547,7 @@ void Advanced_Settings_Window::done(int r)
 	    Settings.setValue( "Info/MTDBlock", ui.CH_MTDBlock->isChecked() ? "yes" : "no" );
 	    Settings.setValue( "Info/SD_Image", ui.CH_SD_Image->isChecked() ? "yes" : "no" );
 	    Settings.setValue( "Info/PFlash", ui.CH_PFlash->isChecked() ? "yes" : "no" );
+	    Settings.setValue( "Info/UEFI", ui.CH_UEFI->isChecked() ? "yes" : "no" );
 	
 	    Settings.setValue( "Info/Linux_Boot", ui.CH_Linux_Boot->isChecked() ? "yes" : "no" );
 	    Settings.setValue( "Info/VNC", ui.CH_VNC->isChecked() ? "yes" : "no" );

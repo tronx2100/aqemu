@@ -183,6 +183,10 @@ class Main_Window: public QMainWindow
 		void on_TB_MTDBlock_File_Browse_clicked();
 		void on_TB_SD_Image_File_Browse_clicked();
 		void on_TB_PFlash_File_Browse_clicked();
+		void on_TB_OVMF_Code_Browse_clicked();
+		void on_TB_OVMF_Vars_Browse_clicked();
+		void on_TB_OVMF_Vars_Create_clicked();
+		void GB_UEFI_toggled( bool on );
 		
 	protected:
 		void closeEvent( QCloseEvent *event );
@@ -227,6 +231,7 @@ class Main_Window: public QMainWindow
 		QString Get_Current_Binary_Name();
 		bool Boot_Is_Correct( Virtual_Machine *tmp_vm );
 		bool No_Device_Found( const QString &name, const QString &path, VM::Boot_Device type );
+		QString Find_Default_OVMF_Code();
 		
 		QString Copy_VM_Hard_Drive( const QString &vm_name, const QString &hd_name, const VM_HDD &hd );
 		QString Copy_VM_Floppy( const QString &vm_name, const QString &fd_name, const VM_Storage_Device &fd );

@@ -649,6 +649,19 @@ void Main_Window::Connect_Signals()
 	connect( ui.Edit_PFlash_File, SIGNAL(textChanged(const QString &)),
 			 this, SLOT(VM_Changed()) );
 
+	// UEFI
+	connect( ui.GB_UEFI, SIGNAL(toggled(bool)),
+			 this, SLOT(VM_Changed()) );
+
+	connect( ui.GB_UEFI, SIGNAL(toggled(bool)),
+			 this, SLOT(GB_UEFI_toggled(bool)) );
+
+	connect( ui.Edit_OVMF_Code_File, SIGNAL(textChanged(const QString &)),
+			 this, SLOT(VM_Changed()) );
+
+	connect( ui.Edit_OVMF_Vars_File, SIGNAL(textChanged(const QString &)),
+			 this, SLOT(VM_Changed()) );
+
 	// Boot Linux Kernel
 	connect( ui.CH_Use_Linux_Boot, SIGNAL(clicked()),
 			 this, SLOT(VM_Changed()) );
@@ -1080,6 +1093,11 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 	// Parallel Flash Image
 	tmp_vm->Use_PFlash_File( ui.CH_PFlash->isChecked() );
 	tmp_vm->Set_PFlash_File( ui.Edit_PFlash_File->text() );
+
+	// UEFI (OVMF)
+	tmp_vm->Use_UEFI( ui.GB_UEFI->isChecked() );
+	tmp_vm->Set_UEFI_Code_File( ui.Edit_OVMF_Code_File->text() );
+	tmp_vm->Set_UEFI_Vars_File( ui.Edit_OVMF_Vars_File->text() );
 
 	// Additional QEMU Arguments
 	tmp_vm->Set_Additional_Args( ui_ao.Edit_Additional_Args->toPlainText() );
@@ -1707,6 +1725,29 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 	ui.CH_PFlash->setChecked( tmp_vm->Use_PFlash_File() );
 	ui.Edit_PFlash_File->setText( tmp_vm->Get_PFlash_File() );
 
+	// UEFI (OVMF)
+	ui.GB_UEFI->setChecked( tmp_vm->Use_UEFI() );
+	ui.Edit_OVMF_Code_File->setText( tmp_vm->Get_UEFI_Code_File() );
+	ui.Edit_OVMF_Vars_File->setText( tmp_vm->Get_UEFI_Vars_File() );
+
+	// Auto-detect OVMF code path if empty
+	if( tmp_vm->Get_UEFI_Code_File().isEmpty() )
+	{
+		QString defaultCode = Find_Default_OVMF_Code();
+		if( ! defaultCode.isEmpty() )
+			ui.Edit_OVMF_Code_File->setText( defaultCode );
+	}
+
+	// Default VARS path to VM directory if empty
+	if( tmp_vm->Get_UEFI_Vars_File().isEmpty() && tmp_vm->Use_UEFI() )
+	{
+		QString vmName = tmp_vm->Get_Machine_Name();
+		QString varsPath = QDir::toNativeSeparators(
+			QDir::homePath() + "/.aqemu/" +
+			vmName.replace(" ", "_") + "_VARS.fd" );
+		ui.Edit_OVMF_Vars_File->setText( varsPath );
+	}
+
 	/*// Disable KVM kernel mode PIC/IOAPIC/LAPIC
 	ui_kvm.CH_No_KVM_IRQChip->setChecked( tmp_vm->Use_KVM_IRQChip() );
 
@@ -1903,6 +1944,9 @@ void Main_Window::Update_Disabled_Controls()
 
 	if( curComp.PSO_PFlash ) ui.CH_PFlash->setEnabled( true );
 	else ui.CH_PFlash->setEnabled( false );
+
+	// UEFI (always enabled if emulator supports -drive)
+	ui.GB_UEFI->setEnabled( true );
 
 	//if( curComp.PSO_Name )
 	//else
@@ -2854,6 +2898,38 @@ bool Main_Window::Boot_Is_Correct( Virtual_Machine *tmp_vm )
 			{
 				ui.CH_PFlash->setChecked( false );
 				tmp_vm->Use_PFlash_File( false );
+			}
+		}
+	}
+
+	// UEFI (OVMF)
+	if( tmp_vm->Use_UEFI() )
+	{
+		if( ! tmp_vm->Get_UEFI_Code_File().isEmpty() &&
+			! QFile::exists(tmp_vm->Get_UEFI_Code_File()) )
+		{
+			if( ! No_Device_Found(tr("UEFI Code"), tmp_vm->Get_UEFI_Code_File(), VM::Boot_None) )
+			{
+				return false;
+			}
+			else
+			{
+				ui.Edit_OVMF_Code_File->clear();
+				tmp_vm->Set_UEFI_Code_File( "" );
+			}
+		}
+
+		if( ! tmp_vm->Get_UEFI_Vars_File().isEmpty() &&
+			! QFile::exists(tmp_vm->Get_UEFI_Vars_File()) )
+		{
+			if( ! No_Device_Found(tr("UEFI Vars"), tmp_vm->Get_UEFI_Vars_File(), VM::Boot_None) )
+			{
+				return false;
+			}
+			else
+			{
+				ui.Edit_OVMF_Vars_File->clear();
+				tmp_vm->Set_UEFI_Vars_File( "" );
 			}
 		}
 	}
@@ -4706,6 +4782,135 @@ void Main_Window::on_TB_PFlash_File_Browse_clicked()
 
 	if( ! flash_file.isEmpty() )
 		ui.Edit_PFlash_File->setText( QDir::toNativeSeparators(flash_file) );
+}
+
+void Main_Window::on_TB_OVMF_Code_Browse_clicked()
+{
+	QString file = QFileDialog::getOpenFileName( this, tr("Select OVMF Code File"),
+												   Get_Last_Dir_Path(ui.Edit_OVMF_Code_File->text()),
+												   tr("All Files (*)") );
+
+	if( ! file.isEmpty() )
+		ui.Edit_OVMF_Code_File->setText( QDir::toNativeSeparators(file) );
+}
+
+void Main_Window::GB_UEFI_toggled( bool on )
+{
+	if( ! on ) return;
+
+	// Auto-detect OVMF code path if empty
+	if( ui.Edit_OVMF_Code_File->text().isEmpty() )
+	{
+		QString defaultCode = Find_Default_OVMF_Code();
+		if( ! defaultCode.isEmpty() )
+			ui.Edit_OVMF_Code_File->setText( defaultCode );
+	}
+
+	// Default VARS path if empty
+	if( ui.Edit_OVMF_Vars_File->text().isEmpty() )
+	{
+		Virtual_Machine *cur_vm = Get_Current_VM();
+		if( cur_vm )
+		{
+			QString vmName = cur_vm->Get_Machine_Name();
+			QString varsPath = QDir::toNativeSeparators(
+				QDir::homePath() + "/.aqemu/" +
+				vmName.replace(" ", "_") + "_VARS.fd" );
+			ui.Edit_OVMF_Vars_File->setText( varsPath );
+		}
+	}
+}
+
+void Main_Window::on_TB_OVMF_Vars_Browse_clicked()
+{
+	QString file = QFileDialog::getSaveFileName( this, tr("Select OVMF Vars File"),
+												   Get_Last_Dir_Path(ui.Edit_OVMF_Vars_File->text()),
+												   tr("All Files (*)") );
+
+	if( ! file.isEmpty() )
+		ui.Edit_OVMF_Vars_File->setText( QDir::toNativeSeparators(file) );
+}
+
+void Main_Window::on_TB_OVMF_Vars_Create_clicked()
+{
+	QString targetPath = ui.Edit_OVMF_Vars_File->text();
+
+	if( targetPath.isEmpty() )
+	{
+		AQGraphic_Warning( tr("Error!"), tr("Please specify a target path for the OVMF VARS file first.") );
+		return;
+	}
+
+	if( QFile::exists(targetPath) )
+	{
+		AQGraphic_Warning( tr("Error!"), tr("The target VARS file already exists.") );
+		return;
+	}
+
+	// Detect template vars file from OVMF code path
+	QString codeFile = ui.Edit_OVMF_Code_File->text();
+	QString templateVars;
+
+	if( ! codeFile.isEmpty() )
+	{
+		QFileInfo cfi(codeFile);
+		QString dir = cfi.absolutePath();
+		QString base = cfi.completeBaseName();
+
+		// Replace CODE -> VARS in basename
+		QString varsBase = base;
+		varsBase.replace( "CODE", "VARS" );
+		varsBase.replace( "code", "vars" );
+
+		QStringList candidates;
+		candidates << dir + "/" + varsBase + ".fd"
+				   << dir + "/OVMF_VARS.fd"
+				   << dir + "/OVMF_VARS_4M.fd"
+				   << "/usr/share/OVMF/OVMF_VARS.fd"
+				   << "/usr/share/OVMF/OVMF_VARS_4M.fd";
+
+		for( int ix = 0; ix < candidates.size(); ix++ )
+		{
+			if( QFile::exists(candidates[ix]) )
+			{
+				templateVars = candidates[ix];
+				break;
+			}
+		}
+	}
+
+	if( templateVars.isEmpty() )
+	{
+		AQGraphic_Warning( tr("Error!"), tr("Cannot find OVMF VARS template. Please copy it manually.") );
+		return;
+	}
+
+	if( QFile::copy(templateVars, targetPath) )
+	{
+		QMessageBox::information( this, tr("Done"), tr("OVMF VARS file created successfully.") );
+	}
+	else
+	{
+		AQGraphic_Warning( tr("Error!"), tr("Failed to create OVMF VARS file.") );
+	}
+}
+
+QString Main_Window::Find_Default_OVMF_Code()
+{
+	QStringList candidates;
+	candidates << "/usr/share/OVMF/OVMF_CODE_4M.secboot.fd"
+			   << "/usr/share/OVMF/OVMF_CODE_4M.fd"
+			   << "/usr/share/OVMF/OVMF_CODE.fd"
+			   << "/usr/share/edk2-ovmf/x64/OVMF_CODE.fd"
+			   << "/usr/share/qemu-efi/x64/qemu-efi-code.fd";
+
+	for( int ix = 0; ix < candidates.size(); ix++ )
+	{
+		if( QFile::exists(candidates[ix]) )
+			return candidates[ix];
+	}
+
+	return "";
 }
 
 QString Main_Window::Copy_VM_Hard_Drive( const QString &vm_name, const QString &hd_name, const VM_HDD &hd )
