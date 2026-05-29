@@ -56,6 +56,7 @@
 #include "Emulator_Control_Window.h"
 #include "Boot_Device_Window.h"
 #include "SMP_Settings_Window.h"
+#include "VFIO_PCI_Editor_Window.h"
 #include "Settings_Widget.h"
 #include "Utils.h"
 #include "Service.h"
@@ -1116,6 +1117,12 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 	tmp_vm->Set_Parallel_Ports( Ports_Tab->Get_Parallel_Ports() );
 	tmp_vm->Set_USB_Ports( Ports_Tab->Get_USB_Ports() );
 
+	// PCI Devices (VFIO passthrough)
+	if ( Has_Pending_PCI_Changes )
+		tmp_vm->Set_PCI_Devices( Pending_PCI_Devices );
+	else
+		tmp_vm->Set_PCI_Devices( old_vm->Get_PCI_Devices() );
+
 	// Other Page
 	tmp_vm->Set_Use_Linux_Boot( ui.CH_Use_Linux_Boot->isChecked() );
 	tmp_vm->Set_bzImage_Path( ui.Edit_Linux_bzImage_Path->text() );
@@ -1439,6 +1446,8 @@ bool Main_Window::Save_Virtual_Machines()
 void Main_Window::Update_VM_Ui(bool update_info_tab)
 {
     Block_VM_Changed_Signals bvmcs(this);
+
+	Has_Pending_PCI_Changes = false;
 
 	Update_VM_Port_Number();
 
@@ -4519,6 +4528,38 @@ void Main_Window::on_TB_Show_Advanced_Options_Window_clicked()
     Discard_Changes ( Advanced_Options );
 }
 
+void Main_Window::on_TB_Show_VFIO_PCI_Editor_Window_clicked()
+{
+	Virtual_Machine *cur_vm = Get_Current_VM();
+	if( ! cur_vm )
+	{
+		AQGraphic_Warning( tr("Error!"), tr("No VM selected!") );
+		return;
+	}
+
+	VFIO_PCI_Editor_Window *editor = new VFIO_PCI_Editor_Window( this );
+	editor->Set_PCI_Devices( cur_vm->Get_PCI_Devices() );
+
+	if( editor->exec() == QDialog::Accepted )
+	{
+		QList<VM_PCI_Device> newDevices = editor->Get_PCI_Devices();
+
+		QList<VM_PCI_Device> oldDevices = Has_Pending_PCI_Changes
+			? Pending_PCI_Devices
+			: cur_vm->Get_PCI_Devices();
+
+		// Only trigger VM_Changed if something actually changed
+		if( newDevices != oldDevices )
+		{
+			Pending_PCI_Devices = newDevices;
+			Has_Pending_PCI_Changes = true;
+			VM_Changed();
+		}
+	}
+
+	delete editor;
+}
+
 void Main_Window::on_TB_Show_SMP_Settings_Window_clicked()
 {
 	if( ! Validate_CPU_Count(ui.CB_CPU_Count->currentText()) ) return;
@@ -4661,6 +4702,7 @@ void Main_Window::on_Button_Apply_clicked()
 	// For VM Changes Signals
 	ui.Button_Apply->setEnabled( false );
 	ui.Button_Cancel->setEnabled( false );
+	Has_Pending_PCI_Changes = false;
 }
 
 void Main_Window::on_Button_Cancel_clicked()

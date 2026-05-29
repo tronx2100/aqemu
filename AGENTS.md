@@ -59,6 +59,27 @@ No test targets were found in `CMakeLists.txt` or `meson.build`.
 - Embedded VNC display is optional and can be disabled with `WITHOUT_EMBEDDED_DISPLAY` (CMake) but Meson always links `libvncclient` (see `meson.build`).
 - CLI control relies on DBus service state; some commands expect an already running VM (see `USAGE` in `src/main.cpp`).
 
+### VFIO PCIe Passthrough Editor
+
+**New files**:
+- `src/VM_PCI_Device.h/.cpp` — Data model for VFIO passthrough device configuration (Host_Address, Bus, Addr, Multifunction, XVGA, ROMFile, Disable_VGA, Disable_Idle, Additional_Flags). Includes `PCI_Host_Device` struct for runtime-detected info (IOMMU group, driver, device name). `To_QEMU_Device_Arg()` builds the `-device vfio-pci,host=...` string. `Build_Root_Port_Args()` auto-generates `ioh3420` root port devices based on unique bus IDs.
+- `src/VFIO_PCI_Editor_Window.h/.cpp` — QDialog with:
+  - Filter text field + "Show All Devices" checkbox
+  - QTableWidget showing PCI devices with columns: selection checkbox, IOMMU group, status LED (green = alone in group, yellow = shared), address, device name, vendor:device ID, driver
+  - Flag configuration panel (shown for selected device): Bus, Addr, Multifunction, x-vga, Disable VGA, Disable Idle, ROM file browse, additional custom flags list
+  - Reads `/sys/bus/pci/devices/` for device list, IOMMU groups, driver bindings; parses `lspci -nns` output for human-readable names
+
+**Modified files**:
+- `src/VM.h` / `VM.cpp` — Added `QList<VM_PCI_Device> PCI_Devices` member with getter/setter, copy constructor, operator==, operator=, destructor cleanup, XML save/load (numbered element names like `PCI_Device_0`), QEMU arg generation in `Build_QEMU_Args()` (both vfio-pci and ioh3420 root port devices)
+- `src/Main_Window.h/.cpp` — Added `on_TB_Show_VFIO_PCI_Editor_Window_clicked()` slot; toolbar button "VFIO PCI" in `Tool_Bar_VM_Manage`; copies PCI devices in `Create_VM_From_Ui()`
+- `CMakeLists.txt` — Added new source/header files
+
+**QEMU output example**:
+```
+-device vfio-pci,host=04:00.0,bus=root.1,addr=00.0,multifunction=on,x-vga=on
+-device ioh3420,bus=pcie.0,addr=10.0,multifunction=on,port=1,chassis=1,id=root.1
+```
+
 ## Fixes applied (May 2026)
 
 ### VM state never propagated to Main_Window after Power On

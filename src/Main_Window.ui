@@ -709,8 +709,19 @@
                  </property>
                 </widget>
                </item>
-               <item row="6" column="5" colspan="2">
-                <widget class="QComboBox" name="CB_Keyboard_Layout">
+                <item row="7" column="4" colspan="3">
+                 <widget class="QPushButton" name="TB_Show_VFIO_PCI_Editor_Window">
+                  <property name="text">
+                   <string>PCIe VFIO</string>
+                  </property>
+                  <property name="icon">
+                   <iconset resource="../resources/icons.qrc">
+                    <normaloff>:/configure.png</normaloff>:/configure.png</iconset>
+                  </property>
+                 </widget>
+                </item>
+                <item row="6" column="5" colspan="2">
+                 <widget class="QComboBox" name="CB_Keyboard_Layout">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
                    <horstretch>0</horstretch>
@@ -895,8 +906,8 @@
                  </item>
                 </widget>
                </item>
-               <item row="0" column="3" rowspan="7">
-                <widget class="QWidget" name="Widget_for_General_Tab" native="true">
+                <item row="0" column="3" rowspan="8">
+                 <widget class="QWidget" name="Widget_for_General_Tab" native="true">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
                    <horstretch>0</horstretch>
@@ -917,8 +928,8 @@
                  </property>
                 </widget>
                </item>
-               <item row="0" column="7" rowspan="7">
-                <spacer name="horizontalSpacer_4">
+                <item row="0" column="7" rowspan="8">
+                 <spacer name="horizontalSpacer_4">
                  <property name="orientation">
                   <enum>Qt::Horizontal</enum>
                  </property>

@@ -73,6 +73,8 @@ SET( aqemu_headers
 	src/Utils.h
 	src/VM.h
 	src/VM_Devices.h
+	src/VM_PCI_Device.h
+	src/VFIO_PCI_Editor_Window.h
 	src/VM_Wizard_Window.h
 	src/VNC_Password_Window.h
 )
@@ -124,6 +126,8 @@ SET( aqemu_sources
 	src/Utils.cpp
 	src/VM.cpp
 	src/VM_Devices.cpp
+	src/VM_PCI_Device.cpp
+	src/VFIO_PCI_Editor_Window.cpp
 	src/VM_Wizard_Window.cpp
 	src/VNC_Password_Window.cpp
 )

@@ -138,6 +138,7 @@ class Main_Window: public QMainWindow
 		void on_TB_Show_Architecture_Options_Window_clicked();
 		void on_TB_Show_Accelerator_Options_Window_clicked();
 		void on_TB_Show_Advanced_Options_Window_clicked();
+		void on_TB_Show_VFIO_PCI_Editor_Window_clicked();
 		void on_TB_Show_SMP_Settings_Window_clicked();
 		bool Validate_CPU_Count( const QString &text );
 		void Apply_Emulator( int mode );
@@ -289,6 +290,8 @@ class Main_Window: public QMainWindow
         SPICE_Settings_Widget* SPICE_Widget;
 
         bool block_VM_changed_signals;
+        QList<VM_PCI_Device> Pending_PCI_Devices;
+        bool Has_Pending_PCI_Changes = false;
 };
 
 #endif

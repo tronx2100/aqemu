@@ -104,9 +104,11 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 {
 	QEMU_Process = new QProcess();
 	Monitor_Socket = new QTcpSocket( this );
+	Monitor_Local_Socket = new QLocalSocket( this );
 	Use_Monitor_TCP = false;
 	Monitor_Hostname = "localhost";
 	Monitor_Port = 6000;
+	Monitor_Path.clear();
 	State = vm.Get_State();
 	Emu_Ctl = new Emulator_Control_Window();
 	VM_XML_File_Path = vm.Get_VM_XML_File_Path();
@@ -278,6 +280,7 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 	this->RTC_TD_Hack = vm.Use_RTC_TD_Hack();
 	this->No_Defaults = vm.Use_No_Defaults();
 	this->Display_Type = vm.Get_Display_Type();
+	this->PCI_Devices = vm.Get_PCI_Devices();
 
 	this->Start_Date = vm.Use_Start_Date();
 	this->Start_DateTime = vm.Get_Start_Date();
@@ -317,6 +320,7 @@ Virtual_Machine::~Virtual_Machine()
 	Network_Cards.clear();
 	Network_Redirections.clear();
 	USB_Ports.clear();
+	PCI_Devices.clear();
     QEMU_Error_Log_Entries.clear();
 	
 	delete Load_VM_Window;
@@ -328,9 +332,11 @@ void Virtual_Machine::Shared_Constructor()
 {
 	QEMU_Process = new QProcess();
 	Monitor_Socket = new QTcpSocket( this );
+	Monitor_Local_Socket = new QLocalSocket( this );
 	Use_Monitor_TCP = false;
 	Monitor_Hostname = "localhost";
 	Monitor_Port = 6000;
+	Monitor_Path.clear();
 	this->State = VM::VMS_Power_Off;
 	Emu_Ctl = new Emulator_Control_Window();
 	Removable_Devices_List = "";
@@ -356,12 +362,14 @@ void Virtual_Machine::Shared_Constructor()
 
 	QObject::connect( Monitor_Socket, SIGNAL(readyRead()),
 					  this, SLOT(Parse_StdOut()) );
-	
+	QObject::connect( Monitor_Local_Socket, SIGNAL(readyRead()),
+					  this, SLOT(Parse_StdOut()) );
+
 	QObject::connect( QEMU_Process, SIGNAL(started()),
 					  this, SLOT(QEMU_Started()) );
-	
-	QObject::connect( QEMU_Process, SIGNAL(finished(int, QProcess::ExitStatus)),
-					  this, SLOT(QEMU_Finished(int, QProcess::ExitStatus)) );
+
+	QObject::connect( QEMU_Process, SIGNAL(finished(int,QProcess::ExitStatus)),
+					  this, SLOT(QEMU_Finished(int,QProcess::ExitStatus)) );
 
 	QObject::connect( QEMU_Process, SIGNAL(errorOccurred(QProcess::ProcessError)),
 					  this, SLOT(QEMU_Error(QProcess::ProcessError)) );
@@ -601,6 +609,7 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
 		this->RTC_TD_Hack == vm.Use_RTC_TD_Hack() &&
 		this->No_Defaults == vm.Use_No_Defaults() &&
 		this->Display_Type == vm.Get_Display_Type() &&
+		this->PCI_Devices == vm.Get_PCI_Devices() &&
 		this->Start_Date == vm.Use_Start_Date() &&
 		this->Start_DateTime == vm.Get_Start_Date() &&
 		this->SPICE == vm.Get_SPICE() &&
@@ -725,10 +734,12 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 {
 	QEMU_Process = new QProcess();
 	Monitor_Socket = new QTcpSocket( this );
+	Monitor_Local_Socket = new QLocalSocket( this );
 	Use_Monitor_TCP = false;
 	Monitor_Hostname = "localhost";
 	Monitor_Port = 6000;
-    delete Emu_Ctl;
+	Monitor_Path.clear();
+	delete Emu_Ctl;
 	Emu_Ctl = new Emulator_Control_Window();
 	VM_XML_File_Path = vm.Get_VM_XML_File_Path();
 	State = vm.Get_State();
@@ -751,10 +762,12 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 
 	QObject::connect( Monitor_Socket, SIGNAL(readyRead()),
 					  this, SLOT(Parse_StdOut()) );
-	
+	QObject::connect( Monitor_Local_Socket, SIGNAL(readyRead()),
+					  this, SLOT(Parse_StdOut()) );
+
 	QObject::connect( QEMU_Process, SIGNAL(started()),
 					  this, SLOT(QEMU_Started()) );
-	
+
 	QObject::connect( QEMU_Process, SIGNAL(finished(int,QProcess::ExitStatus)),
 					  this, SLOT(QEMU_Finished(int,QProcess::ExitStatus)) );
 
@@ -900,6 +913,7 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->RTC_TD_Hack = vm.Use_RTC_TD_Hack();
 	this->No_Defaults = vm.Use_No_Defaults();
 	this->Display_Type = vm.Get_Display_Type();
+	this->PCI_Devices = vm.Get_PCI_Devices();
 
 	this->Start_Date = vm.Use_Start_Date();
 	this->Start_DateTime = vm.Get_Start_Date();
@@ -3292,6 +3306,78 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 	Dom_Text = New_Dom_Document.createTextNode( Display_Type );
 	Dom_Element.appendChild( Dom_Text );
 
+	// PCI Devices (VFIO passthrough)
+	Dom_Element = New_Dom_Document.createElement( "PCI_Device_Count" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( QString::number(PCI_Devices.count()) );
+	Dom_Element.appendChild( Dom_Text );
+
+	for( int px = 0; px < PCI_Devices.count(); px++ )
+	{
+		Dom_Element = New_Dom_Document.createElement( "PCI_Device_" + QString::number(px) );
+		VM_Element.appendChild( Dom_Element );
+
+		TXML2QDOM::QDomElement tmpElement = New_Dom_Document.createElement( "Enabled" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].IsEnabled() ? "true" : "false" ) );
+		Dom_Element.appendChild( tmpElement );
+
+		tmpElement = New_Dom_Document.createElement( "Host_Address" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_Host_Address() ) );
+		Dom_Element.appendChild( tmpElement );
+
+		tmpElement = New_Dom_Document.createElement( "Bus" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_Bus() ) );
+		Dom_Element.appendChild( tmpElement );
+
+		tmpElement = New_Dom_Document.createElement( "Addr" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_Addr() ) );
+		Dom_Element.appendChild( tmpElement );
+
+		tmpElement = New_Dom_Document.createElement( "Multifunction" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_Multifunction() ? "true" : "false" ) );
+		Dom_Element.appendChild( tmpElement );
+
+		tmpElement = New_Dom_Document.createElement( "XVGA" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_XVGA() ? "true" : "false" ) );
+		Dom_Element.appendChild( tmpElement );
+
+		tmpElement = New_Dom_Document.createElement( "Use_ROM_File" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_Use_ROM_File() ? "true" : "false" ) );
+		Dom_Element.appendChild( tmpElement );
+
+		tmpElement = New_Dom_Document.createElement( "ROM_File" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_ROM_File() ) );
+		Dom_Element.appendChild( tmpElement );
+
+		tmpElement = New_Dom_Document.createElement( "Use_ROM_Bar" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_Use_ROM_Bar() ? "true" : "false" ) );
+		Dom_Element.appendChild( tmpElement );
+
+		tmpElement = New_Dom_Document.createElement( "ROM_Bar" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_ROM_Bar() ) );
+		Dom_Element.appendChild( tmpElement );
+
+		tmpElement = New_Dom_Document.createElement( "Disable_VGA" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_Disable_VGA() ? "true" : "false" ) );
+		Dom_Element.appendChild( tmpElement );
+
+		tmpElement = New_Dom_Document.createElement( "Disable_Idle" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_Disable_Idle() ? "true" : "false" ) );
+		Dom_Element.appendChild( tmpElement );
+
+		QStringList addFlags = PCI_Devices[px].Get_Additional_Flags();
+		tmpElement = New_Dom_Document.createElement( "Additional_Flags_Count" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( QString::number(addFlags.count()) ) );
+		Dom_Element.appendChild( tmpElement );
+
+		for( int fx = 0; fx < addFlags.count(); fx++ )
+		{
+			TXML2QDOM::QDomElement flagElement = New_Dom_Document.createElement( "Additional_Flag" );
+			flagElement.appendChild( New_Dom_Document.createTextNode( addFlags[fx] ) );
+			Dom_Element.appendChild( flagElement );
+		}
+	}
+
 	// Use RTC_TD_Hack
 	Dom_Element = New_Dom_Document.createElement( "RTC_TD_Hack" );
 	VM_Element.appendChild( Dom_Element );
@@ -4847,11 +4933,69 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 			// Curses
 			Curses = (Child_Element.firstChildElement("Curses").text() == "true");
 
-			// Display Type
-			Display_Type = Child_Element.firstChildElement( "Display_Type" ).text();
+		// Display Type
+		Display_Type = Child_Element.firstChildElement( "Display_Type" ).text();
 
-			// RTC_TD_Hack
-			RTC_TD_Hack = (Child_Element.firstChildElement("RTC_TD_Hack").text() == "true");
+		// PCI Devices (VFIO passthrough)
+		PCI_Devices.clear();
+		int PCIDevicesCount = Child_Element.firstChildElement( "PCI_Device_Count" ).text().toInt();
+		for( int px = 0; px < PCIDevicesCount; px++ )
+		{
+			TXML2QDOM::QDomElement PCIDevicesElement = Child_Element.firstChildElement( "PCI_Device_" + QString::number(px) );
+			if( PCIDevicesElement.isNull() ) continue;
+
+			VM_PCI_Device dev;
+			TXML2QDOM::QDomElement tmpElement = PCIDevicesElement.firstChildElement( "Enabled" );
+			dev.SetEnabled( tmpElement.text() == "true" );
+
+			tmpElement = PCIDevicesElement.firstChildElement( "Host_Address" );
+			dev.Set_Host_Address( tmpElement.text() );
+
+			tmpElement = PCIDevicesElement.firstChildElement( "Bus" );
+			dev.Set_Bus( tmpElement.text() );
+
+			tmpElement = PCIDevicesElement.firstChildElement( "Addr" );
+			dev.Set_Addr( tmpElement.text() );
+
+			tmpElement = PCIDevicesElement.firstChildElement( "Multifunction" );
+			dev.Set_Multifunction( tmpElement.text() == "true" );
+
+			tmpElement = PCIDevicesElement.firstChildElement( "XVGA" );
+			dev.Set_XVGA( tmpElement.text() == "true" );
+
+			tmpElement = PCIDevicesElement.firstChildElement( "Use_ROM_File" );
+			dev.Set_Use_ROM_File( tmpElement.text() == "true" );
+
+			tmpElement = PCIDevicesElement.firstChildElement( "ROM_File" );
+			dev.Set_ROM_File( tmpElement.text() );
+
+			tmpElement = PCIDevicesElement.firstChildElement( "Use_ROM_Bar" );
+			dev.Set_Use_ROM_Bar( tmpElement.text() == "true" );
+
+			tmpElement = PCIDevicesElement.firstChildElement( "ROM_Bar" );
+			dev.Set_ROM_Bar( tmpElement.text() );
+
+			tmpElement = PCIDevicesElement.firstChildElement( "Disable_VGA" );
+			dev.Set_Disable_VGA( tmpElement.text() == "true" );
+
+			tmpElement = PCIDevicesElement.firstChildElement( "Disable_Idle" );
+			dev.Set_Disable_Idle( tmpElement.text() == "true" );
+
+			QStringList addFlags;
+			int flagCount = PCIDevicesElement.firstChildElement( "Additional_Flags_Count" ).text().toInt();
+			QList<TXML2QDOM::QDomElement> flagNodes = PCIDevicesElement.childNodes();
+			for( int fx = 0; fx < flagNodes.count(); fx++ )
+			{
+				if( flagNodes[fx].tagName() == "Additional_Flag" )
+					addFlags << flagNodes[fx].text();
+			}
+			dev.Set_Additional_Flags( addFlags );
+
+			PCI_Devices << dev;
+		}
+
+		// RTC_TD_Hack
+		RTC_TD_Hack = (Child_Element.firstChildElement("RTC_TD_Hack").text() == "true");
 
 			// No default devices
 			No_Defaults = (Child_Element.firstChildElement("No_Defaults").text() == "true");
@@ -5495,11 +5639,14 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 
 		Monitor_Hostname = Settings.value("Emulator_Monitor_Hostname", "localhost").toString();
 		Monitor_Port = (unsigned int)Settings.value("Emulator_MonGitor_Port", 6000).toInt() + Embedded_Display_Port;
+		Use_Monitor_TCP = true;
 	}
 	else if( Settings.value("Emulator_Monitor_Type", "stdio").toString() == "unix" )
 	{
 		QString mon_path = Settings.value("Emulator_Monitor_UNIX_Path", "/tmp/0.qmon").toString();
 		Args << "-monitor" << QString("unix:%1,server=on,wait=off").arg(mon_path);
+		Monitor_Path = mon_path;
+		Use_Monitor_TCP = true;
 	}
 	else
 	{
@@ -5796,6 +5943,23 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	// Display backend (modern -display argument)
 	if( ! Display_Type.isEmpty() )
 		Args << "-display" << Display_Type;
+
+	// Generate root port devices for VFIO topology (must be before vfio-pci)
+	QStringList rootPorts = VM_PCI_Device::Build_Root_Port_Args( PCI_Devices );
+	for( int rx = 0; rx < rootPorts.count(); rx++ )
+		Args << "-device" << rootPorts[rx];
+
+	// VFIO PCI passthrough devices
+	for( int px = 0; px < PCI_Devices.count(); px++ )
+	{
+		const VM_PCI_Device &dev = PCI_Devices[px];
+		if( ! dev.IsEnabled() )
+			continue;
+
+		QString devArg = dev.To_QEMU_Device_Arg();
+		if( ! devArg.isEmpty() )
+			Args << "-device" << devArg;
+	}
 	
 	if( Current_Emulator_Devices.PSO_No_Shutdown && No_Shutdown )
 		Args << "-no-shutdown";
@@ -9504,6 +9668,16 @@ void Virtual_Machine::Set_Display_Type( const QString &type )
 	Display_Type = type;
 }
 
+const QList<VM_PCI_Device> &Virtual_Machine::Get_PCI_Devices() const
+{
+	return PCI_Devices;
+}
+
+void Virtual_Machine::Set_PCI_Devices( const QList<VM_PCI_Device> &devices )
+{
+	PCI_Devices = devices;
+}
+
 bool Virtual_Machine::Use_RTC_TD_Hack() const
 {
 	return RTC_TD_Hack;
@@ -9678,7 +9852,12 @@ void Virtual_Machine::Parse_StdOut()
 		convOutput = QEMU_Process->readAllStandardOutput();
 	else
     #endif
-		convOutput = Monitor_Socket->readAll();
+	{
+		if( ! Monitor_Path.isEmpty() && Monitor_Local_Socket->bytesAvailable() > 0 )
+			convOutput = Monitor_Local_Socket->readAll();
+		else
+			convOutput = Monitor_Socket->readAll();
+	}
 
     TEMPODEBUG( "void Virtual_Machine::Parse_StdOut()",
                 QString("vm_name=\"%1\" raw_stdout_size=%2 use_monitor_tcp=%3")
@@ -9776,14 +9955,34 @@ void Virtual_Machine::Send_Emulator_Command( const QString &text )
 	else
 	#endif
 	{
-		if( Monitor_Socket->state() != QAbstractSocket::ConnectedState )
+		if( ! Monitor_Path.isEmpty() )
 		{
-			AQError( "void Virtual_Machine::Send_Emulator_Command( const QString &text )",
-					 "Monitor socket not connected!" );
+			// UNIX socket
+			if( Monitor_Local_Socket->state() != QLocalSocket::ConnectedState )
+			{
+				// Retry: QEMU may not have created the socket when QEMU_Started() fired
+				Monitor_Local_Socket->connectToServer( Monitor_Path, QIODevice::ReadWrite );
+				if( ! Monitor_Local_Socket->waitForConnected( 3000 ) )
+				{
+					AQError( "void Virtual_Machine::Send_Emulator_Command( const QString &text )",
+							 "Monitor local socket not connected!" );
+					return;
+				}
+			}
+			Monitor_Local_Socket->write( qPrintable(text) );
 		}
 		else
 		{
-			Monitor_Socket->write( qPrintable(text) );
+			// TCP socket
+			if( Monitor_Socket->state() != QAbstractSocket::ConnectedState )
+			{
+				AQError( "void Virtual_Machine::Send_Emulator_Command( const QString &text )",
+						 "Monitor socket not connected!" );
+			}
+			else
+			{
+				Monitor_Socket->write( qPrintable(text) );
+			}
 		}
 	}
 }
@@ -9828,7 +10027,16 @@ void Virtual_Machine::QEMU_Started()
 	if( Use_Monitor_TCP == true )
 	#endif
 	{
-		Monitor_Socket->connectToHost( Monitor_Hostname, Monitor_Port, QIODevice::ReadWrite );
+		if( ! Monitor_Path.isEmpty() )
+		{
+			// UNIX socket
+			Monitor_Local_Socket->connectToServer( Monitor_Path, QIODevice::ReadWrite );
+		}
+		else
+		{
+			// TCP socket
+			Monitor_Socket->connectToHost( Monitor_Hostname, Monitor_Port, QIODevice::ReadWrite );
+		}
 	}
 
 	emit QEMU_Start();

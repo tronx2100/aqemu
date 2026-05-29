@@ -27,9 +27,11 @@
 #include <QDateTime>
 #include <QProcess>
 #include <QTcpSocket>
+#include <QLocalSocket>
 #include <QFile>
 
 #include "VM_Devices.h"
+#include "VM_PCI_Device.h"
 #include "Error_Log_Window.h"
 #include "Create_Template_Window.h"
 #include "QDom.h"
@@ -414,6 +416,9 @@ class Virtual_Machine: public QObject
 		bool Use_Curses() const;
 		void Use_Curses( bool use );
 
+		const QList<VM_PCI_Device> &Get_PCI_Devices() const;
+		void Set_PCI_Devices( const QList<VM_PCI_Device> &devices );
+
 		const QString &Get_Display_Type() const;
 		void Set_Display_Type( const QString &type );
 		
@@ -515,10 +520,12 @@ class Virtual_Machine: public QObject
 
 		QProcess *QEMU_Process;
 
-		QTcpSocket *Monitor_Socket; // Used for "-monitor tcp" connection type
+		QTcpSocket   *Monitor_Socket;       // Used for "-monitor tcp" connection type
+		QLocalSocket *Monitor_Local_Socket;  // Used for "-monitor unix" connection type
 		bool Use_Monitor_TCP; // This value set in VM start time and no changes after
 		QString Monitor_Hostname;
 		unsigned int Monitor_Port;
+		QString Monitor_Path;                // UNIX socket path for "-monitor unix"
 
 		VM::VM_State State; // Saved, Running, etc...
 		VM::VM_State Old_State;
@@ -655,6 +662,7 @@ class Virtual_Machine: public QObject
 		bool No_Defaults;
 
 		QString Display_Type;
+		QList<VM_PCI_Device> PCI_Devices;
 
 		// DateTime
 		bool Start_Date;
