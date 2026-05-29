@@ -176,10 +176,13 @@ Advanced_Settings_Window::Advanced_Settings_Window( QWidget *parent )
 	ui.RB_Monitor_STDIO->setEnabled( false );
 	ui.RB_Monitor_TCP->setChecked( true );
 	#else
-	ui.RB_Monitor_TCP->setChecked( Settings.value("Emulator_Monitor_Type", "stdio").toString() == "tcp" );
+	QString mon_type = Settings.value("Emulator_Monitor_Type", "stdio").toString();
+	ui.RB_Monitor_TCP->setChecked( mon_type == "tcp" );
+	ui.RB_Monitor_UNIX->setChecked( mon_type == "unix" );
 	#endif
 	ui.CB_Monitor_Hostname->setEditText( Settings.value("Emulator_Monitor_Hostname", "localhost").toString() );
 	ui.SB_Monitor_Port->setValue( Settings.value("Emulator_MonGitor_Port", 6000).toInt() );
+	ui.Edit_Monitor_UNIX_Path->setText( Settings.value("Emulator_Monitor_UNIX_Path", "/tmp/0.qmon").toString() );
 
 	// QEMU_AUDIO
 	ui.CH_Audio_Default->setChecked( Settings.value("QEMU_AUDIO/Use_Default_Driver", "yes").toString() == "no" );
@@ -598,10 +601,14 @@ void Advanced_Settings_Window::done(int r)
 	    #ifdef Q_OS_WIN32
 	    Settings.setValue( "Emulator_Monitor_Type", "tcp" );
 	    #else
-	    Settings.setValue( "Emulator_Monitor_Type", ui.RB_Monitor_TCP->isChecked() ? "tcp" : "stdio" );
+	    QString mon_type = "stdio";
+	    if( ui.RB_Monitor_TCP->isChecked() ) mon_type = "tcp";
+	    else if( ui.RB_Monitor_UNIX->isChecked() ) mon_type = "unix";
+	    Settings.setValue( "Emulator_Monitor_Type", mon_type );
 	    #endif
 	    Settings.setValue( "Emulator_Monitor_Hostname", ui.CB_Monitor_Hostname->currentText() );
 	    Settings.setValue( "Emulator_Monitor_Port", ui.SB_Monitor_Port->value() );
+	    Settings.setValue( "Emulator_Monitor_UNIX_Path", ui.Edit_Monitor_UNIX_Path->text() );
 	
 	    // USB	
 	    if( ui.RB_USB_Style_device->isChecked() )

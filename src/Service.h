@@ -96,6 +96,7 @@ class AQEMU_Service : public QObject
 
     signals:
         QString callProcessed();
+        void vm_state_changed_signal(Virtual_Machine *vm, VM::VM_State s);
 
     private slots:
         void vm_state_changed(Virtual_Machine *vm, VM::VM_State s);

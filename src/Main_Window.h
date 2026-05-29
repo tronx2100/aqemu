@@ -79,6 +79,7 @@ class Main_Window: public QMainWindow
 
     public slots:
         void VM_State_Changed(const QString& vm, int state);
+        void VM_State_Changed_Direct(Virtual_Machine *vm, VM::VM_State s);
 		
 	private slots:
 		void on_Machines_List_currentItemChanged( QListWidgetItem *current,

@@ -137,7 +137,7 @@ class Virtual_Machine: public QObject
         QString Get_State_Text() const;
 		VM::VM_State Get_State() const;
 		void Set_State( VM::VM_State s, bool real_poewer_off = false );
-		
+
 		const QString &Get_Icon_Path() const;
 		void Set_Icon_Path( const QString &file_name );
 		
@@ -357,16 +357,22 @@ class Virtual_Machine: public QObject
 		const QString &Get_PFlash_File() const;
 		void Set_PFlash_File( const QString &file );
 
-		bool Use_UEFI() const;
-		void Use_UEFI( bool use );
+	bool Use_UEFI() const;
+	void Use_UEFI( bool use );
 
-		const QString &Get_UEFI_Code_File() const;
-		void Set_UEFI_Code_File( const QString &file );
+	const QString &Get_UEFI_Code_File() const;
+	void Set_UEFI_Code_File( const QString &file );
 
-		const QString &Get_UEFI_Vars_File() const;
-		void Set_UEFI_Vars_File( const QString &file );
-		
-		bool Use_KVM() const;
+	const QString &Get_UEFI_Vars_File() const;
+	void Set_UEFI_Vars_File( const QString &file );
+
+	bool Use_Guest_Agent() const;
+	void Use_Guest_Agent( bool use );
+
+	const QString &Get_GA_Socket_Path() const;
+	void Set_GA_Socket_Path( const QString &path );
+
+	bool Use_KVM() const;
 		void Use_KVM( bool use );
 		
 		bool Use_KVM_IRQChip() const;
@@ -407,10 +413,16 @@ class Virtual_Machine: public QObject
 		
 		bool Use_Curses() const;
 		void Use_Curses( bool use );
+
+		const QString &Get_Display_Type() const;
+		void Set_Display_Type( const QString &type );
 		
 		bool Use_RTC_TD_Hack() const;
 		void Use_RTC_TD_Hack( bool use );
-		
+
+		bool Use_No_Defaults() const;
+		void Use_No_Defaults( bool use );
+
 		bool Use_Start_Date() const;
 		void Use_Start_Date( bool use );
 		
@@ -616,11 +628,14 @@ class Virtual_Machine: public QObject
 		bool PFlash;
 		QString PFlash_File;
 		
-		bool UEFI;
-		QString UEFI_Code_File;
-		QString UEFI_Vars_File;
-		
-		bool Enable_KVM;
+	bool UEFI;
+	QString UEFI_Code_File;
+	QString UEFI_Vars_File;
+
+	bool Guest_Agent;
+	QString GA_Socket_Path;
+	
+	bool Enable_KVM;
 		bool KVM_IRQChip;
 		bool No_KVM_Pit;
 		bool KVM_No_Pit_Reinjection;
@@ -637,7 +652,10 @@ class Virtual_Machine: public QObject
 		bool Show_Cursor;
 		bool Curses;
 		bool RTC_TD_Hack;
-		
+		bool No_Defaults;
+
+		QString Display_Type;
+
 		// DateTime
 		bool Start_Date;
 		QDateTime Start_DateTime;

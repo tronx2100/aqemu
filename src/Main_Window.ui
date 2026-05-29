@@ -244,216 +244,658 @@
                 <number>3</number>
                </property>
                <item row="0" column="0">
-                <layout class="QGridLayout" name="gridLayout_7">
-                 <item row="0" column="1" colspan="2">
-                  <widget class="QLineEdit" name="Edit_Machine_Name">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="maxLength">
-                    <number>256</number>
-                   </property>
-                   <property name="placeholderText">
-                    <string>The Machine</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="1">
-                  <widget class="QComboBox" name="CB_Computer_Type">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="currentIndex">
-                    <number>-1</number>
-                   </property>
-                   <property name="maxCount">
-                    <number>64</number>
-                   </property>
-                   <property name="sizeAdjustPolicy">
-                    <enum>QComboBox::AdjustToMinimumContentsLength</enum>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="3" column="1">
-                  <widget class="QComboBox" name="CB_CPU_Count">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="editable">
-                    <bool>true</bool>
-                   </property>
-                   <property name="maxCount">
-                    <number>16</number>
-                   </property>
-                   <property name="sizeAdjustPolicy">
-                    <enum>QComboBox::AdjustToMinimumContentsLength</enum>
-                   </property>
-                   <item>
-                    <property name="text">
-                     <string>1</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>2</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>4</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>8</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>16</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>32</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>64</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>128</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>255</string>
-                    </property>
-                   </item>
-                  </widget>
-                 </item>
-                 <item row="2" column="0">
-                  <widget class="QLabel" name="Label_Computer_Type">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="text">
-                    <string>Architecture</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="3" column="0">
-                  <widget class="QLabel" name="Label_CPU_Count">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="text">
-                    <string>CP&amp;Us:</string>
-                   </property>
-                   <property name="buddy">
-                    <cstring>CB_CPU_Count</cstring>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="3" column="2">
-                  <widget class="QToolButton" name="TB_Show_SMP_Settings_Window">
-                   <property name="enabled">
-                    <bool>false</bool>
-                   </property>
-                   <property name="text">
-                    <string/>
-                   </property>
-                   <property name="icon">
-                    <iconset resource="../resources/icons.qrc">
-                     <normaloff>:/configure.png</normaloff>:/configure.png</iconset>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="1">
-                  <widget class="QComboBox" name="CB_Machine_Accelerator">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="sizeAdjustPolicy">
-                    <enum>QComboBox::AdjustToMinimumContentsLength</enum>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="2">
-                  <widget class="QToolButton" name="TB_Show_Architecture_Options_Window">
-                   <property name="text">
-                    <string>...</string>
-                   </property>
-                   <property name="icon">
-                    <iconset resource="../resources/icons.qrc">
-                     <normaloff>:/configure.png</normaloff>:/configure.png</iconset>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="Label_Machine_Accelerator">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="text">
-                    <string>Accelerator:</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="2">
-                  <widget class="QToolButton" name="TB_Show_Accelerator_Options_Window">
-                   <property name="text">
-                    <string>Options</string>
-                   </property>
-                   <property name="icon">
-                    <iconset resource="../resources/icons.qrc">
-                     <normaloff>:/configure.png</normaloff>:/configure.png</iconset>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="Label_Machine_Name">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="text">
-                    <string>&amp;Name:</string>
-                   </property>
-                   <property name="buddy">
-                    <cstring>Edit_Machine_Name</cstring>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
+                <widget class="QLabel" name="Label_Machine_Name">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>&amp;Name:</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>Edit_Machine_Name</cstring>
+                 </property>
+                </widget>
                </item>
-               <item row="0" column="1">
+               <item row="0" column="1" colspan="2">
+                <widget class="QLineEdit" name="Edit_Machine_Name">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="maxLength">
+                  <number>256</number>
+                 </property>
+                 <property name="placeholderText">
+                  <string>The Machine</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="4" colspan="3">
+                <widget class="QPushButton" name="TB_Show_Advanced_Options_Window">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Advanced</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../resources/icons.qrc">
+                   <normaloff>:/configure.png</normaloff>:/configure.png</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="Label_Machine_Accelerator">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Accelerator:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QComboBox" name="CB_Machine_Accelerator">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="sizeAdjustPolicy">
+                  <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="QToolButton" name="TB_Show_Accelerator_Options_Window">
+                 <property name="text">
+                  <string>Options</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../resources/icons.qrc">
+                   <normaloff>:/configure.png</normaloff>:/configure.png</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="4">
+                <widget class="QLabel" name="Label_Boot_Priority">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>&amp;Boot:</string>
+                 </property>
+                 <property name="textInteractionFlags">
+                  <set>Qt::LinksAccessibleByMouse</set>
+                 </property>
+                 <property name="buddy">
+                  <cstring>CB_Boot_Priority</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="5">
+                <widget class="QComboBox" name="CB_Boot_Priority">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="currentIndex">
+                  <number>0</number>
+                 </property>
+                 <property name="maxCount">
+                  <number>64</number>
+                 </property>
+                 <property name="sizeAdjustPolicy">
+                  <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Floppy</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>HDD</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>CD-ROM</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Network</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>None</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item row="1" column="6">
+                <widget class="QToolButton" name="TB_Show_Boot_Settings_Window">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../resources/icons.qrc">
+                   <normaloff>:/configure.png</normaloff>:/configure.png</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="Label_Computer_Type">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Architecture</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QComboBox" name="CB_Computer_Type">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="currentIndex">
+                  <number>-1</number>
+                 </property>
+                 <property name="maxCount">
+                  <number>64</number>
+                 </property>
+                 <property name="sizeAdjustPolicy">
+                  <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="2">
+                <widget class="QToolButton" name="TB_Show_Architecture_Options_Window">
+                 <property name="text">
+                  <string>...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../resources/icons.qrc">
+                   <normaloff>:/configure.png</normaloff>:/configure.png</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="4" colspan="3" rowspan="3">
+                <widget class="QGroupBox" name="GB_UEFI">
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="checked">
+                  <bool>false</bool>
+                 </property>
+                 <property name="title">
+                  <string>UEFI &amp;Boot (OVMF)</string>
+                 </property>
+                 <layout class="QGridLayout" name="gridLayout_GB_UEFI">
+                  <property name="leftMargin">
+                   <number>10</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>6</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>6</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>6</number>
+                  </property>
+                  <property name="horizontalSpacing">
+                   <number>6</number>
+                  </property>
+                  <property name="verticalSpacing">
+                   <number>4</number>
+                  </property>
+                  <item row="0" column="0">
+                   <widget class="QLabel" name="Label_OVMF_Code">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string>OVMF &amp;Code:</string>
+                    </property>
+                    <property name="buddy">
+                     <cstring>Edit_OVMF_Code_File</cstring>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="1">
+                   <widget class="QLineEdit" name="Edit_OVMF_Code_File">
+                    <property name="placeholderText">
+                     <string>/usr/share/OVMF/OVMF_CODE.fd</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="2">
+                   <widget class="QToolButton" name="TB_OVMF_Code_Browse">
+                    <property name="text">
+                     <string>...</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../resources/icons.qrc">
+                      <normaloff>:/open-file.png</normaloff>:/open-file.png</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="0">
+                   <widget class="QLabel" name="Label_OVMF_Vars">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string>OVMF &amp;Vars:</string>
+                    </property>
+                    <property name="buddy">
+                     <cstring>Edit_OVMF_Vars_File</cstring>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="1">
+                   <widget class="QLineEdit" name="Edit_OVMF_Vars_File">
+                    <property name="placeholderText">
+                     <string>/path/to/OVMF_VARS.fd</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="2">
+                   <widget class="QToolButton" name="TB_OVMF_Vars_Browse">
+                    <property name="text">
+                     <string>...</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../resources/icons.qrc">
+                      <normaloff>:/open-file.png</normaloff>:/open-file.png</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="3">
+                   <widget class="QToolButton" name="TB_OVMF_Vars_Create">
+                    <property name="text">
+                     <string>Create</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../resources/icons.qrc">
+                      <normaloff>:/add.png</normaloff>:/add.png</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QLabel" name="Label_CPU_Count">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>CP&amp;Us:</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>CB_CPU_Count</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <widget class="QComboBox" name="CB_CPU_Count">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="editable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="maxCount">
+                  <number>16</number>
+                 </property>
+                 <property name="sizeAdjustPolicy">
+                  <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>1</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>2</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>4</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>8</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>16</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>32</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>64</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>128</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>255</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item row="3" column="2">
+                <widget class="QToolButton" name="TB_Show_SMP_Settings_Window">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../resources/icons.qrc">
+                   <normaloff>:/configure.png</normaloff>:/configure.png</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item row="5" column="4">
+                <widget class="QLabel" name="Label_Video_Card">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>&amp;Graphics:</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>CB_Video_Card</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="5" column="5" colspan="2">
+                <widget class="QComboBox" name="CB_Video_Card">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="currentIndex">
+                  <number>-1</number>
+                 </property>
+                 <property name="maxCount">
+                  <number>64</number>
+                 </property>
+                 <property name="maxVisibleItems">
+                  <number>20</number>
+                 </property>
+                 <property name="sizeAdjustPolicy">
+                  <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+                 </property>
+                </widget>
+               </item>
+               <item row="6" column="4">
+                <widget class="QLabel" name="Label_Keyboard_Layout">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>&amp;Keyboard:</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>CB_Keyboard_Layout</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="6" column="5" colspan="2">
+                <widget class="QComboBox" name="CB_Keyboard_Layout">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="maxCount">
+                  <number>128</number>
+                 </property>
+                 <property name="sizeAdjustPolicy">
+                  <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>en-us (default)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>ar</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>da</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>de</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>de-ch</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>en-gb</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>en-us</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>es</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>et</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>fi</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>fo</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>fr</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>fr-be</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>fr-ca</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>fr-ch</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>hr</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>hu</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>is</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>it</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>ja</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>lt</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>lv</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>mk</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>nl</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>nl-be</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>no</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>pl</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>pt</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>pt-br</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>ru</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>sl</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>sv</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>th</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>tr</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item row="0" column="3" rowspan="7">
                 <widget class="QWidget" name="Widget_for_General_Tab" native="true">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
@@ -475,455 +917,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="0" column="2">
-                <layout class="QGridLayout" name="gridLayout_8">
-                 <property name="sizeConstraint">
-                  <enum>QLayout::SetDefaultConstraint</enum>
-                 </property>
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="Label_Advanced_Options">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="text">
-                    <string/>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="Label_Boot_Priority">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="text">
-                    <string>&amp;Boot:</string>
-                   </property>
-                   <property name="textInteractionFlags">
-                    <set>Qt::LinksAccessibleByMouse</set>
-                   </property>
-                   <property name="buddy">
-                    <cstring>CB_Boot_Priority</cstring>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="1">
-                  <widget class="QComboBox" name="CB_Boot_Priority">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="currentIndex">
-                    <number>0</number>
-                   </property>
-                   <property name="maxCount">
-                    <number>64</number>
-                   </property>
-                   <property name="sizeAdjustPolicy">
-                    <enum>QComboBox::AdjustToMinimumContentsLength</enum>
-                   </property>
-                   <item>
-                    <property name="text">
-                     <string>Floppy</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>HDD</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>CD-ROM</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>Network</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>None</string>
-                    </property>
-                   </item>
-                  </widget>
-                 </item>
-                  <item row="4" column="0">
-                   <widget class="QLabel" name="Label_Video_Card">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="text">
-                    <string>&amp;Graphics:</string>
-                   </property>
-                   <property name="buddy">
-                    <cstring>CB_Video_Card</cstring>
-                   </property>
-                  </widget>
-                 </item>
-                  <item row="4" column="1" colspan="2">
-                   <widget class="QComboBox" name="CB_Video_Card">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="currentIndex">
-                    <number>-1</number>
-                   </property>
-                   <property name="maxCount">
-                    <number>64</number>
-                   </property>
-                   <property name="maxVisibleItems">
-                    <number>20</number>
-                   </property>
-                   <property name="sizeAdjustPolicy">
-                    <enum>QComboBox::AdjustToMinimumContentsLength</enum>
-                   </property>
-                  </widget>
-                 </item>
-                  <item row="5" column="0">
-                   <widget class="QLabel" name="Label_Keyboard_Layout">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="text">
-                    <string>&amp;Keyboard:</string>
-                   </property>
-                   <property name="buddy">
-                    <cstring>CB_Keyboard_Layout</cstring>
-                   </property>
-                  </widget>
-                 </item>
-                  <item row="5" column="1" colspan="2">
-                   <widget class="QComboBox" name="CB_Keyboard_Layout">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="maxCount">
-                    <number>128</number>
-                   </property>
-                   <property name="sizeAdjustPolicy">
-                    <enum>QComboBox::AdjustToMinimumContentsLength</enum>
-                   </property>
-                   <item>
-                    <property name="text">
-                     <string>en-us (default)</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>ar</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>da</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>de</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>de-ch</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>en-gb</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>en-us</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>es</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>et</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>fi</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>fo</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>fr</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>fr-be</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>fr-ca</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>fr-ch</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>hr</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>hu</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>is</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>it</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>ja</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>lt</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>lv</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>mk</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>nl</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>nl-be</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>no</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>pl</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>pt</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>pt-br</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>ru</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>sl</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>sv</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>th</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
-                     <string>tr</string>
-                    </property>
-                   </item>
-                  </widget>
-                 </item>
-                  <item row="1" column="2">
-                   <widget class="QToolButton" name="TB_Show_Boot_Settings_Window">
-                    <property name="enabled">
-                     <bool>false</bool>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                    <property name="icon">
-                     <iconset resource="../resources/icons.qrc">
-                      <normaloff>:/configure.png</normaloff>:/configure.png</iconset>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="2" column="0" colspan="3">
-                   <widget class="QGroupBox" name="GB_UEFI">
-                    <property name="checkable">
-                     <bool>true</bool>
-                    </property>
-                    <property name="checked">
-                     <bool>false</bool>
-                    </property>
-                    <property name="title">
-                     <string>UEFI &amp;Boot (OVMF)</string>
-                    </property>
-                    <layout class="QGridLayout" name="gridLayout_GB_UEFI">
-                     <item row="0" column="0">
-                      <widget class="QLabel" name="Label_OVMF_Code">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>OVMF &amp;Code:</string>
-                       </property>
-                       <property name="buddy">
-                        <cstring>Edit_OVMF_Code_File</cstring>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="0" column="1">
-                      <widget class="QLineEdit" name="Edit_OVMF_Code_File">
-                       <property name="placeholderText">
-                        <string>/usr/share/OVMF/OVMF_CODE.fd</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="0" column="2">
-                      <widget class="QToolButton" name="TB_OVMF_Code_Browse">
-                       <property name="text">
-                        <string>...</string>
-                       </property>
-                       <property name="icon">
-                        <iconset resource="../resources/icons.qrc">
-                         <normaloff>:/open-file.png</normaloff>:/open-file.png</iconset>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="1" column="0">
-                      <widget class="QLabel" name="Label_OVMF_Vars">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>OVMF &amp;Vars:</string>
-                       </property>
-                       <property name="buddy">
-                        <cstring>Edit_OVMF_Vars_File</cstring>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="1" column="1">
-                      <widget class="QLineEdit" name="Edit_OVMF_Vars_File">
-                       <property name="placeholderText">
-                        <string>/path/to/OVMF_VARS.fd</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="1" column="2">
-                      <widget class="QToolButton" name="TB_OVMF_Vars_Browse">
-                       <property name="text">
-                        <string>...</string>
-                       </property>
-                       <property name="icon">
-                        <iconset resource="../resources/icons.qrc">
-                         <normaloff>:/open-file.png</normaloff>:/open-file.png</iconset>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="1" column="3">
-                      <widget class="QToolButton" name="TB_OVMF_Vars_Create">
-                       <property name="text">
-                        <string>Create</string>
-                       </property>
-                       <property name="icon">
-                        <iconset resource="../resources/icons.qrc">
-                         <normaloff>:/add.png</normaloff>:/add.png</iconset>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                  <item row="0" column="1" colspan="2">
-                   <widget class="QPushButton" name="TB_Show_Advanced_Options_Window">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="text">
-                     <string>Advanced</string>
-                    </property>
-                    <property name="icon">
-                     <iconset resource="../resources/icons.qrc">
-                      <normaloff>:/configure.png</normaloff>:/configure.png</iconset>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-               </item>
-               <item row="0" column="3">
+               <item row="0" column="7" rowspan="7">
                 <spacer name="horizontalSpacer_4">
                  <property name="orientation">
                   <enum>Qt::Horizontal</enum>
@@ -2119,8 +2113,64 @@
                 <string>QEMU Window</string>
                </attribute>
                <layout class="QVBoxLayout" name="verticalLayout_3">
-                <item>
-                 <widget class="QCheckBox" name="CH_No_Frame">
+                 <item>
+                  <layout class="QHBoxLayout" name="horizontalLayout_DisplayType">
+                   <item>
+                    <widget class="QLabel" name="Label_Display_Type">
+                     <property name="text">
+                      <string>D&amp;isplay backend:</string>
+                     </property>
+                     <property name="buddy">
+                      <cstring>CB_Display_Type</cstring>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QComboBox" name="CB_Display_Type">
+                     <item>
+                      <property name="text">
+                       <string>Default</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>GTK</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>SDL</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>Curses</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>None</string>
+                      </property>
+                     </item>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_DisplayType">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="CH_No_Frame">
                   <property name="text">
                    <string>Show QEMU window without frame and window decorations</string>
                   </property>

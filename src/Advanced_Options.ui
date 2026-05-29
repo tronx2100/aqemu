@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>553</width>
-    <height>520</height>
+    <height>570</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -44,15 +44,25 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
-       <widget class="QCheckBox" name="CH_Start_CPU">
-        <property name="text">
-         <string>Start CP&amp;U at startup</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QCheckBox" name="CH_FDD_Boot">
+       <item row="4" column="0">
+        <widget class="QCheckBox" name="CH_No_Defaults">
+         <property name="toolTip">
+          <string>Disable all default devices (serial, parallel, floppy, etc.)</string>
+         </property>
+         <property name="text">
+          <string>&amp;No default devices (-nodefaults)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QCheckBox" name="CH_Start_CPU">
+         <property name="text">
+          <string>Start CP&amp;U at startup</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QCheckBox" name="CH_FDD_Boot">
         <property name="toolTip">
          <string>Check Floppy Disk boot signature in VM BIOS</string>
         </property>
@@ -61,8 +71,8 @@
         </property>
        </widget>
       </item>
-      <item row="6" column="0">
-       <widget class="QCheckBox" name="CH_ACPI">
+       <item row="7" column="0">
+        <widget class="QCheckBox" name="CH_ACPI">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -74,8 +84,8 @@
         </property>
        </widget>
       </item>
-      <item row="7" column="0">
-       <widget class="QCheckBox" name="CH_Advanced_TPM">
+      <item row="8" column="0">
+        <widget class="QCheckBox" name="CH_Advanced_TPM">
         <property name="toolTip">
          <string>Enable the QEMU TPM emulator and TPM-TIS device (-tpmdev emulator,id=tpm0,chardev=chrtpm -device tpm-tis,tpmdev=tpm0)</string>
         </property>
@@ -84,8 +94,8 @@
         </property>
        </widget>
       </item>
-      <item row="8" column="0">
-       <widget class="QCheckBox" name="CH_Use_Custom_Audio_Backend">
+      <item row="9" column="0">
+        <widget class="QCheckBox" name="CH_Use_Custom_Audio_Backend">
         <property name="toolTip">
          <string>Use a VM-specific audio backend instead of the global default audio backend.</string>
         </property>
@@ -94,8 +104,8 @@
         </property>
        </widget>
       </item>
-      <item row="8" column="1">
-       <widget class="QComboBox" name="CB_Audio_Backend">
+      <item row="9" column="1">
+        <widget class="QComboBox" name="CB_Audio_Backend">
         <property name="enabled">
          <bool>false</bool>
         </property>
@@ -144,8 +154,8 @@
         </item>
        </widget>
       </item>
-      <item row="9" column="0">
-       <widget class="QCheckBox" name="CH_Start_Date">
+       <item row="10" column="0">
+        <widget class="QCheckBox" name="CH_Start_Date">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -157,8 +167,8 @@
         </property>
        </widget>
       </item>
-      <item row="9" column="1">
-       <widget class="QDateTimeEdit" name="DTE_Start_Date">
+       <item row="10" column="1">
+        <widget class="QDateTimeEdit" name="DTE_Start_Date">
         <property name="enabled">
          <bool>false</bool>
         </property>
@@ -208,8 +218,41 @@
      </layout>
     </widget>
    </item>
-   <item row="1" column="0">
-    <widget class="QGroupBox" name="groupBox_CLI">
+    <item row="1" column="0">
+     <widget class="QGroupBox" name="groupBox_GA">
+      <property name="title">
+       <string>QEMU Guest Agent</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_GA">
+       <item row="0" column="0">
+        <widget class="QCheckBox" name="CH_Advanced_GA">
+         <property name="text">
+          <string>Enable Guest Agent (virtio-serial + virtserialport)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_GA_Path">
+         <property name="text">
+          <string>Socket path:</string>
+         </property>
+         <property name="buddy">
+          <cstring>Edit_Advanced_GA_Path</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLineEdit" name="Edit_Advanced_GA_Path">
+         <property name="text">
+          <string>/tmp/qga.sock</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QGroupBox" name="groupBox_CLI">
      <property name="title">
       <string>Custom QEMU Command Line Arguments</string>
      </property>
@@ -244,8 +287,8 @@
      </layout>
     </widget>
    </item>
-   <item row="2" column="0">
-    <widget class="Dialog_Button_Box" name="buttonBox">
+    <item row="3" column="0">
+     <widget class="Dialog_Button_Box" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>

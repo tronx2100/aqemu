@@ -121,6 +121,8 @@ int AQEMU_Service::machineCount() const
 
 void AQEMU_Service::vm_state_changed(Virtual_Machine *vm, VM::VM_State s)
 {
+    emit vm_state_changed_signal(vm, s);
+    
     TEMPODEBUG( "AQEMU_Service::vm_state_changed",
                 QString("vm_ptr=%1 uid=\"%2\" name=\"%3\" xml=\"%4\" state=%5 main_window=%6 machineCount=%7")
                 .arg(reinterpret_cast<quintptr>(vm))
@@ -396,6 +398,11 @@ QString AQEMU_Service::start(const QString& s, const QString& uid)
         vm->Set_UID( uid );
     }
 
+    // Connect state changes BEFORE Start(), because QEMU_Started()
+    // (which emits State_Changed(VMS_Running)) can fire during
+    // waitForStarted() inside Start_impl().
+    connect(vm,SIGNAL(State_Changed( Virtual_Machine*, VM::VM_State)),this,SLOT(vm_state_changed(Virtual_Machine*, VM::VM_State)));
+
     if ( vm->Start() )
     {
         TEMPODEBUG( "AQEMU_Service::start",
@@ -407,8 +414,6 @@ QString AQEMU_Service::start(const QString& s, const QString& uid)
         machines.append(vm);
         TEMPODEBUG( "AQEMU_Service::start",
                     QString("machine appended machineCount_after=%1").arg(machines.count()) );
-
-        connect(vm,SIGNAL(State_Changed( Virtual_Machine*, VM::VM_State)),this,SLOT(vm_state_changed(Virtual_Machine*, VM::VM_State)));
 
         AQError("QString AQEMU_Service::start(const QString& s)",s);
         return QString("VM \"%1\" got started.").arg(s);

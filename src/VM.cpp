@@ -255,7 +255,10 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 	this->UEFI = vm.Use_UEFI();
 	this->UEFI_Code_File = vm.Get_UEFI_Code_File();
 	this->UEFI_Vars_File = vm.Get_UEFI_Vars_File();
-	
+
+	this->Guest_Agent = vm.Use_Guest_Agent();
+	this->GA_Socket_Path = vm.Get_GA_Socket_Path();
+
 	this->Enable_KVM = vm.Use_KVM();
 	this->KVM_IRQChip = vm.Use_KVM_IRQChip();
 	this->No_KVM_Pit = vm.Use_No_KVM_Pit();
@@ -273,7 +276,9 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 	this->Show_Cursor = vm.Use_Show_Cursor();
 	this->Curses = vm.Use_Curses();
 	this->RTC_TD_Hack = vm.Use_RTC_TD_Hack();
-	
+	this->No_Defaults = vm.Use_No_Defaults();
+	this->Display_Type = vm.Get_Display_Type();
+
 	this->Start_Date = vm.Use_Start_Date();
 	this->Start_DateTime = vm.Get_Start_Date();
 	
@@ -465,7 +470,10 @@ void Virtual_Machine::Shared_Constructor()
 	UEFI = false;
 	UEFI_Code_File = "";
 	UEFI_Vars_File = "";
-	
+
+	Guest_Agent = false;
+	GA_Socket_Path = "/tmp/qga.sock";
+
 	Enable_KVM = true;
 	KVM_IRQChip = false;
 	No_KVM_Pit = false;
@@ -483,6 +491,8 @@ void Virtual_Machine::Shared_Constructor()
 	Show_Cursor = false;
 	Curses = false;
 	RTC_TD_Hack = false;
+	No_Defaults = false;
+	Display_Type = "";
 	
 	Start_Date = false;
 	Start_DateTime = QDateTime::fromString( "20.10.2000 23:59:00", "dd.MM.yyyy HH:mm:ss" );
@@ -572,6 +582,8 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
 		this->UEFI == vm.Use_UEFI() &&
 		this->UEFI_Code_File == vm.Get_UEFI_Code_File() &&
 		this->UEFI_Vars_File == vm.Get_UEFI_Vars_File() &&
+		this->Guest_Agent == vm.Use_Guest_Agent() &&
+		this->GA_Socket_Path == vm.Get_GA_Socket_Path() &&
 		this->Enable_KVM == vm.Use_KVM() &&
 		this->KVM_IRQChip == vm.Use_KVM_IRQChip() &&
 		this->No_KVM_Pit == vm.Use_No_KVM_Pit() &&
@@ -587,6 +599,8 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
 		this->Show_Cursor == vm.Use_Show_Cursor() &&
 		this->Curses == vm.Use_Curses() &&
 		this->RTC_TD_Hack == vm.Use_RTC_TD_Hack() &&
+		this->No_Defaults == vm.Use_No_Defaults() &&
+		this->Display_Type == vm.Get_Display_Type() &&
 		this->Start_Date == vm.Use_Start_Date() &&
 		this->Start_DateTime == vm.Get_Start_Date() &&
 		this->SPICE == vm.Get_SPICE() &&
@@ -863,7 +877,10 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->UEFI = vm.Use_UEFI();
 	this->UEFI_Code_File = vm.Get_UEFI_Code_File();
 	this->UEFI_Vars_File = vm.Get_UEFI_Vars_File();
-	
+
+	this->Guest_Agent = vm.Use_Guest_Agent();
+	this->GA_Socket_Path = vm.Get_GA_Socket_Path();
+
 	this->Enable_KVM = vm.Use_KVM();
 	this->KVM_IRQChip = vm.Use_KVM_IRQChip();
 	this->No_KVM_Pit = vm.Use_No_KVM_Pit();
@@ -881,7 +898,9 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->Show_Cursor = vm.Use_Show_Cursor();
 	this->Curses = vm.Use_Curses();
 	this->RTC_TD_Hack = vm.Use_RTC_TD_Hack();
-	
+	this->No_Defaults = vm.Use_No_Defaults();
+	this->Display_Type = vm.Get_Display_Type();
+
 	this->Start_Date = vm.Use_Start_Date();
 	this->Start_DateTime = vm.Get_Start_Date();
 	
@@ -3049,7 +3068,24 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 	VM_Element.appendChild( Dom_Element );
 	Dom_Text = New_Dom_Document.createTextNode( UEFI_Vars_File );
 	Dom_Element.appendChild( Dom_Text );
-	
+
+	// Use Guest Agent
+	Dom_Element = New_Dom_Document.createElement( "Use_Guest_Agent" );
+	VM_Element.appendChild( Dom_Element );
+
+	if( Guest_Agent )
+		Dom_Text = New_Dom_Document.createTextNode( "true" );
+	else
+		Dom_Text = New_Dom_Document.createTextNode( "false" );
+
+	Dom_Element.appendChild( Dom_Text );
+
+	// Guest Agent Socket Path
+	Dom_Element = New_Dom_Document.createElement( "GA_Socket_Path" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( GA_Socket_Path );
+	Dom_Element.appendChild( Dom_Text );
+
 	// Additional Arguments
 	Dom_Element = New_Dom_Document.createElement( "Additional_Args" );
 	VM_Element.appendChild( Dom_Element );
@@ -3249,7 +3285,13 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 		Dom_Text = New_Dom_Document.createTextNode( "false" );
 	
 	Dom_Element.appendChild( Dom_Text );
-	
+
+	// Display Type
+	Dom_Element = New_Dom_Document.createElement( "Display_Type" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( Display_Type );
+	Dom_Element.appendChild( Dom_Text );
+
 	// Use RTC_TD_Hack
 	Dom_Element = New_Dom_Document.createElement( "RTC_TD_Hack" );
 	VM_Element.appendChild( Dom_Element );
@@ -3260,7 +3302,16 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 		Dom_Text = New_Dom_Document.createTextNode( "false" );
 	
 	Dom_Element.appendChild( Dom_Text );
-	
+
+	// No default devices
+	Dom_Element = New_Dom_Document.createElement( "No_Defaults" );
+	VM_Element.appendChild( Dom_Element );
+	if( No_Defaults )
+		Dom_Text = New_Dom_Document.createTextNode( "true" );
+	else
+		Dom_Text = New_Dom_Document.createTextNode( "false" );
+	Dom_Element.appendChild( Dom_Text );
+
 	// Start Date
 	Dom_Element = New_Dom_Document.createElement( "Use_Start_Date" );
 	VM_Element.appendChild( Dom_Element );
@@ -4733,7 +4784,15 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 
 			// UEFI Vars File
 			UEFI_Vars_File = Child_Element.firstChildElement( "UEFI_Vars_File" ).text();
-			
+
+			// Use Guest Agent
+			Guest_Agent = (Child_Element.firstChildElement("Use_Guest_Agent").text() == "true" );
+
+			// Guest Agent Socket Path
+			GA_Socket_Path = Child_Element.firstChildElement( "GA_Socket_Path" ).text();
+			if( GA_Socket_Path.isEmpty() )
+				GA_Socket_Path = "/tmp/qga.sock";
+
 			// Enable KVM
 			Enable_KVM = ! (Child_Element.firstChildElement("Enable_KVM").text() == "false" );
 			
@@ -4787,10 +4846,16 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 			
 			// Curses
 			Curses = (Child_Element.firstChildElement("Curses").text() == "true");
-			
+
+			// Display Type
+			Display_Type = Child_Element.firstChildElement( "Display_Type" ).text();
+
 			// RTC_TD_Hack
 			RTC_TD_Hack = (Child_Element.firstChildElement("RTC_TD_Hack").text() == "true");
-			
+
+			// No default devices
+			No_Defaults = (Child_Element.firstChildElement("No_Defaults").text() == "true");
+
 			// Start Date
 			Start_Date = (Child_Element.firstChildElement("Use_Start_Date").text() == "true");
 			
@@ -5431,6 +5496,11 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 		Monitor_Hostname = Settings.value("Emulator_Monitor_Hostname", "localhost").toString();
 		Monitor_Port = (unsigned int)Settings.value("Emulator_MonGitor_Port", 6000).toInt() + Embedded_Display_Port;
 	}
+	else if( Settings.value("Emulator_Monitor_Type", "stdio").toString() == "unix" )
+	{
+		QString mon_path = Settings.value("Emulator_Monitor_UNIX_Path", "/tmp/0.qmon").toString();
+		Args << "-monitor" << QString("unix:%1,server=on,wait=off").arg(mon_path);
+	}
 	else
 	{
 		Args << "-monitor" << "stdio";
@@ -5704,12 +5774,28 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 		Args << "-tpmdev" << "emulator,id=tpm0,chardev=chrtpm";
 		Args << "-device" << "tpm-tis,tpmdev=tpm0";
 	}
+
+	// QEMU Guest Agent
+	if( Guest_Agent )
+	{
+		QString ga_path = GA_Socket_Path;
+		if( Build_QEMU_Args_for_Script_Mode )
+			ga_path = "\"" + ga_path + "\"";
+
+		Args << "-chardev" << QString("socket,path=%1,server=on,wait=off,id=qga0").arg(ga_path);
+		Args << "-device" << "virtio-serial";
+		Args << "-device" << "virtserialport,chardev=qga0,name=org.qemu.guest_agent.0";
+	}
 	
 	if( Current_Emulator_Devices.PSO_Show_Cursor && Show_Cursor )
 		Args << "-show-cursor";
 	
 	if( Current_Emulator_Devices.PSO_Curses && Curses )
 		Args << "-curses";
+
+	// Display backend (modern -display argument)
+	if( ! Display_Type.isEmpty() )
+		Args << "-display" << Display_Type;
 	
 	if( Current_Emulator_Devices.PSO_No_Shutdown && No_Shutdown )
 		Args << "-no-shutdown";
@@ -6857,6 +6943,10 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	    rtc_list.last() += ",driftfix=slew";
 
     Args << rtc_list;
+
+	// No default devices
+	if( No_Defaults )
+		Args << "-nodefaults";
 
 	// QEMU 0.9.1 Options
 	// on-board Flash memory image
@@ -9244,6 +9334,26 @@ void Virtual_Machine::Set_UEFI_Vars_File( const QString &file )
 	UEFI_Vars_File = file;
 }
 
+bool Virtual_Machine::Use_Guest_Agent() const
+{
+	return Guest_Agent;
+}
+
+void Virtual_Machine::Use_Guest_Agent( bool use )
+{
+	Guest_Agent = use;
+}
+
+const QString &Virtual_Machine::Get_GA_Socket_Path() const
+{
+	return GA_Socket_Path;
+}
+
+void Virtual_Machine::Set_GA_Socket_Path( const QString &path )
+{
+	GA_Socket_Path = path;
+}
+
 bool Virtual_Machine::Use_KVM() const
 {
 	return Enable_KVM;
@@ -9384,6 +9494,16 @@ void Virtual_Machine::Use_Curses( bool use )
 	Curses = use;
 }
 
+const QString &Virtual_Machine::Get_Display_Type() const
+{
+	return Display_Type;
+}
+
+void Virtual_Machine::Set_Display_Type( const QString &type )
+{
+	Display_Type = type;
+}
+
 bool Virtual_Machine::Use_RTC_TD_Hack() const
 {
 	return RTC_TD_Hack;
@@ -9392,6 +9512,16 @@ bool Virtual_Machine::Use_RTC_TD_Hack() const
 void Virtual_Machine::Use_RTC_TD_Hack( bool use )
 {
 	RTC_TD_Hack = use;
+}
+
+bool Virtual_Machine::Use_No_Defaults() const
+{
+	return No_Defaults;
+}
+
+void Virtual_Machine::Use_No_Defaults( bool use )
+{
+	No_Defaults = use;
 }
 
 bool Virtual_Machine::Use_Start_Date() const

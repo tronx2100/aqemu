@@ -193,6 +193,10 @@ Main_Window::Main_Window( QWidget *parent )
 
     init_dbus();
 
+    // Direct state-change signal from service (bypasses DBus)
+    QObject::connect( &AQEMU_Service::get(), SIGNAL(vm_state_changed_signal(Virtual_Machine*, VM::VM_State)),
+                      this, SLOT(VM_State_Changed_Direct(Virtual_Machine*, VM::VM_State)) );
+
 	// Loading AQEMU Settings
 	if( ! Load_Settings() )
 	{
@@ -288,6 +292,20 @@ void Main_Window::VM_State_Changed(const QString &vm, int state)
             VM_List.at(i)->Set_State( static_cast<VM::VM_State>(state) ); //FIXME
             AQError("void Main_Window::VM_State_Changed(const QString &vm, int state)",VM_List.at(i)->Get_State_Text());
             break;
+        }
+    }
+}
+
+void Main_Window::VM_State_Changed_Direct(Virtual_Machine *vm, VM::VM_State s)
+{
+    if( !vm ) return;
+
+    for ( int i = 0; i < VM_List.count(); i++ )
+    {
+        if ( VM_List.at(i)->Get_UID() == vm->Get_UID() )
+        {
+            VM_List.at(i)->Set_State( s );
+            return;
         }
     }
 }
@@ -522,6 +540,9 @@ void Main_Window::Connect_Signals()
 	connect( ui.CH_Curses, SIGNAL(clicked()),
 			 this, SLOT(VM_Changed()) );
 
+	connect( ui.CB_Display_Type, SIGNAL(currentIndexChanged(int)),
+			 this, SLOT(VM_Changed()) );
+
 	connect( ui.CH_Show_Cursor, SIGNAL(clicked()),
 			 this, SLOT(VM_Changed()) );
 
@@ -535,6 +556,9 @@ void Main_Window::Connect_Signals()
 			 this, SLOT(VM_Changed()) );
 
 	connect( ui_ao.CH_RTC_TD_Hack, SIGNAL(clicked()),
+			 this, SLOT(VM_Changed()) );
+
+	connect( ui_ao.CH_No_Defaults, SIGNAL(clicked()),
 			 this, SLOT(VM_Changed()) );
 
 	connect( ui_ao.CH_Start_Date, SIGNAL(clicked()),
@@ -566,6 +590,15 @@ void Main_Window::Connect_Signals()
 			 this, SLOT(VM_Changed()) );
 
 	connect( ui_ao.CH_Advanced_TPM, SIGNAL(clicked()),
+			 this, SLOT(VM_Changed()) );
+
+	connect( ui_ao.CH_Advanced_GA, SIGNAL(toggled(bool)),
+			 ui_ao.Edit_Advanced_GA_Path, SLOT(setEnabled(bool)) );
+
+	connect( ui_ao.CH_Advanced_GA, SIGNAL(clicked()),
+			 this, SLOT(VM_Changed()) );
+
+	connect( ui_ao.Edit_Advanced_GA_Path, SIGNAL(textChanged(const QString &)),
 			 this, SLOT(VM_Changed()) );
 
 	connect( ui_ao.CH_Use_Custom_Audio_Backend, SIGNAL(toggled(bool)),
@@ -989,6 +1022,9 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 	tmp_vm->Use_No_Shutdown( ui_ao.CH_No_Shutdown->isChecked() );
 	tmp_vm->Set_Use_TPM( ui_ao.CH_Advanced_TPM->isChecked() );
 
+	tmp_vm->Use_Guest_Agent( ui_ao.CH_Advanced_GA->isChecked() );
+	tmp_vm->Set_GA_Socket_Path( ui_ao.Edit_Advanced_GA_Path->text() );
+
 	tmp_vm->Set_FD0( Dev_Manager->Floppy1 );
 	tmp_vm->Set_FD1( Dev_Manager->Floppy2 );
 	tmp_vm->Set_CD_ROM( Dev_Manager->CD_ROM );
@@ -1186,8 +1222,21 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 	// Curses
 	tmp_vm->Use_Curses( ui.CH_Curses->isChecked() );
 
+	// Display Type
+	{
+		static const char* dt_map[] = { "", "gtk", "sdl", "curses", "none" };
+		int idx = ui.CB_Display_Type->currentIndex();
+		QString dt;
+		if( idx >= 0 && idx < 5 )
+			dt = dt_map[ idx ];
+		tmp_vm->Set_Display_Type( dt );
+	}
+
 	// RTC_TD_Hack
 	tmp_vm->Use_RTC_TD_Hack( ui_ao.CH_RTC_TD_Hack->isChecked() );
+
+	// No default devices
+	tmp_vm->Use_No_Defaults( ui_ao.CH_No_Defaults->isChecked() );
 
 	// Start Date
 	tmp_vm->Use_Start_Date( ui_ao.CH_Start_Date->isChecked() );
@@ -1642,10 +1691,14 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 
 	// Additional Options
 	ui_ao.CH_RTC_TD_Hack->setChecked( tmp_vm->Use_RTC_TD_Hack() );
+	ui_ao.CH_No_Defaults->setChecked( tmp_vm->Use_No_Defaults() );
 	ui_ao.CH_No_Shutdown->setChecked( tmp_vm->Use_No_Shutdown() );
 	ui_ao.CH_No_Reboot->setChecked( tmp_vm->Use_No_Reboot() );
 	ui_ao.CH_Start_CPU->setChecked( tmp_vm->Use_Start_CPU() );
 	ui_ao.CH_Advanced_TPM->setChecked( tmp_vm->Get_Use_TPM() );
+	ui_ao.CH_Advanced_GA->setChecked( tmp_vm->Use_Guest_Agent() );
+	ui_ao.Edit_Advanced_GA_Path->setText( tmp_vm->Get_GA_Socket_Path() );
+	ui_ao.Edit_Advanced_GA_Path->setEnabled( tmp_vm->Use_Guest_Agent() );
 	ui_ao.CH_Use_Custom_Audio_Backend->setChecked( tmp_vm->Get_Use_Custom_Audio_Backend() );
 	ui_ao.CB_Audio_Backend->setCurrentText( tmp_vm->Get_Audio_Backend() );
 	ui_ao.CB_Audio_Backend->setEnabled( tmp_vm->Get_Use_Custom_Audio_Backend() );
@@ -1679,6 +1732,17 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 
 	// Curses
 	ui.CH_Curses->setChecked( tmp_vm->Use_Curses() );
+
+	// Display Type
+	{
+		QString dt = tmp_vm->Get_Display_Type().toLower();
+		int idx = 0;
+		if( dt == "gtk" ) idx = 1;
+		else if( dt == "sdl" ) idx = 2;
+		else if( dt == "curses" ) idx = 3;
+		else if( dt == "none" ) idx = 4;
+		ui.CB_Display_Type->setCurrentIndex( idx );
+	}
 
 	// Show_Cursor
 	ui.CH_Show_Cursor->setChecked( tmp_vm->Use_Show_Cursor() );
@@ -2229,6 +2293,8 @@ void Main_Window::Show_State_Current( Virtual_Machine *vm)
 		return;
 	}
 
+
+
 	if( vm->Get_State() == VM::VMS_Saved && Settings.value("Use_Screenshot_for_OS_Logo", "yes").toString() == "yes" )
 	{
 		ui.Machines_List->currentItem()->setIcon( QIcon(vm->Get_Screenshot_Path()) );
@@ -2590,7 +2656,12 @@ void Main_Window::on_Machines_List_customContextMenuRequested( const QPoint &pos
 	QListWidgetItem *it = ui.Machines_List->itemAt( pos );
 
 	if( it != NULL )
+	{
+		Virtual_Machine *vm = Get_VM_By_UID( it->data(256).toString() );
+		if( vm )
+			Show_State_Current( vm );
 		Icon_Menu->exec( ui.Machines_List->mapToGlobal(pos) );
+	}
 	else
 		VM_List_Menu->exec( ui.Machines_List->mapToGlobal(pos) );
 }

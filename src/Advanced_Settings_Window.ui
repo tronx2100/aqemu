@@ -1127,113 +1127,160 @@ with embedded display</string>
                <bool>true</bool>
               </property>
              </widget>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_28">
-              <item>
-               <widget class="QRadioButton" name="RB_Monitor_TCP">
-                <property name="text">
-                 <string>TCP soc&amp;ket</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_10">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeType">
-                 <enum>QSizePolicy::Fixed</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>18</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item>
-               <widget class="QLabel" name="Label_Monitor_Hostname">
-                <property name="enabled">
-                 <bool>false</bool>
-                </property>
-                <property name="text">
-                 <string>Hostname</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QComboBox" name="CB_Monitor_Hostname">
-                <property name="enabled">
-                 <bool>false</bool>
-                </property>
-                <item>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_28">
+               <item>
+                <widget class="QRadioButton" name="RB_Monitor_TCP">
                  <property name="text">
-                  <string>localhost</string>
+                  <string>TCP soc&amp;ket</string>
                  </property>
-                </item>
-                <item>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_10">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Fixed</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>18</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QLabel" name="Label_Monitor_Hostname">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="text">
-                  <string>127.0.0.1</string>
+                  <string>Hostname</string>
                  </property>
-                </item>
-               </widget>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_12">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeType">
-                 <enum>QSizePolicy::Fixed</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>13</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item>
-               <widget class="QLabel" name="Label_Monitor_Port">
-                <property name="enabled">
-                 <bool>false</bool>
-                </property>
-                <property name="text">
-                 <string>First port</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QSpinBox" name="SB_Monitor_Port">
-                <property name="enabled">
-                 <bool>false</bool>
-                </property>
-                <property name="minimum">
-                 <number>6000</number>
-                </property>
-                <property name="maximum">
-                 <number>65000</number>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_13">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-             </layout>
-            </item>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="CB_Monitor_Hostname">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>localhost</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>127.0.0.1</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_12">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Fixed</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>13</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QLabel" name="Label_Monitor_Port">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>First port</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QSpinBox" name="SB_Monitor_Port">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="minimum">
+                  <number>6000</number>
+                 </property>
+                 <property name="maximum">
+                  <number>65000</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_13">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_Monitor_UNIX">
+               <item>
+                <widget class="QRadioButton" name="RB_Monitor_UNIX">
+                 <property name="text">
+                  <string>&amp;Unix socket</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="Label_Monitor_UNIX_Path">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>Socket path:</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>Edit_Monitor_UNIX_Path</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="Edit_Monitor_UNIX_Path">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>/tmp/0.qmon</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_Monitor_UNIX">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
            </layout>
           </item>
          </layout>
@@ -2506,57 +2553,41 @@ There may be problems with devices connected via a hub.</string>
      <y>295</y>
     </hint>
    </hints>
-  </connection>
-  <connection>
-   <sender>RB_Monitor_TCP</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>Label_Monitor_Port</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>78</x>
-     <y>295</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>305</x>
-     <y>294</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>RB_Monitor_TCP</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>SB_Monitor_Port</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>83</x>
-     <y>297</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>384</x>
-     <y>294</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>RB_Monitor_TCP</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>CB_Monitor_Hostname</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>89</x>
-     <y>294</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>216</x>
-     <y>296</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>RB_Format_Jpeg</sender>
+   </connection>
+   <connection>
+    <sender>RB_Monitor_UNIX</sender>
+    <signal>toggled(bool)</signal>
+    <receiver>Label_Monitor_UNIX_Path</receiver>
+    <slot>setEnabled(bool)</slot>
+    <hints>
+     <hint type="sourcelabel">
+      <x>55</x>
+      <y>320</y>
+     </hint>
+     <hint type="destinationlabel">
+      <x>150</x>
+      <y>322</y>
+     </hint>
+    </hints>
+   </connection>
+   <connection>
+    <sender>RB_Monitor_UNIX</sender>
+    <signal>toggled(bool)</signal>
+    <receiver>Edit_Monitor_UNIX_Path</receiver>
+    <slot>setEnabled(bool)</slot>
+    <hints>
+     <hint type="sourcelabel">
+      <x>55</x>
+      <y>322</y>
+     </hint>
+     <hint type="destinationlabel">
+      <x>260</x>
+      <y>322</y>
+     </hint>
+    </hints>
+   </connection>
+   <connection>
+    <sender>RB_Format_Jpeg</sender>
    <signal>toggled(bool)</signal>
    <receiver>SB_Jpeg_Quality</receiver>
    <slot>setEnabled(bool)</slot>
