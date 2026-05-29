@@ -1803,6 +1803,7 @@ Available_Devices System_Info::Get_Emulator_Info( const QString &path, bool *ok,
 				{
 					tmp_dev.CPU_List << default_device.CPU_List[ ix ];
 					cpu_found = true;
+					break;
 				}
 			}
 			
@@ -1865,11 +1866,16 @@ Available_Devices System_Info::Get_Emulator_Info( const QString &path, bool *ok,
 				{
 					tmp_dev.Machine_List << default_device.Machine_List[ ix ];
 					machine_found = true;
+					break;
 				}
 			}
 			
 			// No this device name in default list
-			if( machine_found == false ) tmp_dev.Machine_List << dev_map;
+			if( machine_found == false )
+			{
+				dev_map.Caption = dev_map.QEMU_Name + " \xe2\x80\x93 " + dev_map.Caption;
+				tmp_dev.Machine_List << dev_map;
+			}
 		}
 		else continue;
 	}
@@ -1923,6 +1929,7 @@ Available_Devices System_Info::Get_Emulator_Info( const QString &path, bool *ok,
 						{
 							tmp_dev.Video_Card_List << default_device.Video_Card_List[ ix ];
 							vga_found = true;
+							break;
 						}
 					}
 					
