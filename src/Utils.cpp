@@ -26,6 +26,7 @@
 #include <QFileInfo>
 #include <QFileInfoList>
 #include <QDateTime>
+#include <QStandardPaths>
 #include <QMessageBox>
 #include <QApplication>
 #include <QSettings>
@@ -545,7 +546,8 @@ VM::Emulator_Version String_To_Emulator_Version( const QString &str )
 	else if( str == "QEMU 0.14.X" ) return VM::QEMU_2_0;
 	else if( str == "QEMU 0.15.X" ) return VM::QEMU_2_0;
 	else if( str == "QEMU 1.0" ) return VM::QEMU_2_0;
-	else if( str == "QEMU 2.0" ) return VM::QEMU_2_0;
+	else if( str == "QEMU 2.0" ) return VM::QEMU_Modern;
+	else if( str == "QEMU Modern" ) return VM::QEMU_Modern;
 	else if( str == "KVM 7X" ) return VM::QEMU_2_0;
 	else if( str == "KVM 8X" ) return VM::QEMU_2_0;
 	else if( str == "KVM 0.11.X" ) return VM::QEMU_2_0;
@@ -567,8 +569,9 @@ QString Emulator_Version_To_String( VM::Emulator_Version ver )
 {
 	switch( ver )
 	{
+		case VM::QEMU_Modern:
 		case VM::QEMU_2_0:
-			return "QEMU 2.0";
+			return "QEMU Modern";
 			
 		case VM::Obsolete:
 			return "Obsolete";
@@ -578,6 +581,25 @@ QString Emulator_Version_To_String( VM::Emulator_Version ver )
 					 QString("Emulator version \"%1\" not valid!").arg((int)ver) );
 			return "";
 	}
+}
+
+QString Get_Emulator_Version_Label( const QString &path )
+{
+	QString help = System_Info::Get_Emulator_Help_Output( path );
+	if( help.isEmpty() )
+		return "";
+
+	QStringList lines = help.split( '\n', Qt::SkipEmptyParts );
+	QRegExp rx( ".*version\\s+([0-9]+\\.[0-9]+(?:\\.[0-9]+)?).*" );
+	for( const QString &line : lines )
+	{
+		if( ! line.contains( "version", Qt::CaseInsensitive ) )
+			continue;
+		if( rx.exactMatch( line ) && rx.capturedTexts().count() > 1 )
+			return QString( "QEMU %1" ).arg( rx.capturedTexts()[1] );
+	}
+
+	return lines.isEmpty() ? QString() : lines.first().trimmed();
 }
 
 static QList<Emulator> Emulators_List;
@@ -1005,7 +1027,9 @@ QString Get_Preferred_Audio_Backend()
 #ifdef Q_OS_WIN32
     return "pa";
 #else
-    QString runtimeDir = qEnvironmentVariable( "PIPEWIRE_RUNTIME_DIR" );
+    QString runtimeDir = QStandardPaths::writableLocation( QStandardPaths::RuntimeLocation );
+    if( runtimeDir.isEmpty() )
+        runtimeDir = qEnvironmentVariable( "PIPEWIRE_RUNTIME_DIR" );
     if( runtimeDir.isEmpty() )
         runtimeDir = qEnvironmentVariable( "XDG_RUNTIME_DIR" );
 

@@ -269,12 +269,17 @@ void First_Start_Wizard::on_Button_Find_Emulators_clicked()
 				
 				// Check Version
 				VM::Emulator_Version qemu_version = VM::Obsolete;
+				QString qemu_version_label;
 				
 				QMap<QString, QString>::const_iterator iter = qemu_list.constBegin();
 				while( iter != qemu_list.constEnd() )
 				{
 					if( QFile::exists(iter.value()) )
+					{
 						qemu_version = System_Info::Get_Emulator_Version( iter.value() );
+						if( qemu_version_label.isEmpty() )
+							qemu_version_label = Get_Emulator_Version_Label( iter.value() );
+					}
 					
 					if( qemu_version != VM::Obsolete ) break;
 					
@@ -284,10 +289,12 @@ void First_Start_Wizard::on_Button_Find_Emulators_clicked()
 				if( qemu_version == VM::Obsolete )
 				{
 					AQError( "void First_Start_Wizard::on_Button_Find_clicked()",
-							 "Cannot Get QEMU Version! Using Default: 2.0" );
+							 "Cannot Get QEMU Version! Using Default: Modern" );
 					
-					qemu_version = VM::QEMU_2_0;
+					qemu_version = VM::QEMU_Modern;
 				}
+				if( qemu_version_label.isEmpty() )
+					qemu_version_label = Emulator_Version_To_String( qemu_version );
 				
 				// Get emulator info
 				int allEmulBinCount = qemu_list.count();
@@ -323,14 +330,14 @@ void First_Start_Wizard::on_Button_Find_Emulators_clicked()
 				Emulator emul;
 				
 				// Emulator name
-				QString emulName = Emulator_Version_To_String( qemu_version );
+				QString emulName = qemu_version_label;
 				int emulDublicateNameCount = 1;
 				for( int ix = 0; ix < qemuEmulatorsList.count(); ++ix )
 				{
 					if( emulName == qemuEmulatorsList[ix].Get_Name() )
 					{
 						++emulDublicateNameCount;
-						emulName = QString("%1 #%2").arg( Emulator_Version_To_String(qemu_version) )
+						emulName = QString("%1 #%2").arg( qemu_version_label )
 													.arg( emulDublicateNameCount );
 						ix = 0;
 					}
@@ -350,7 +357,7 @@ void First_Start_Wizard::on_Button_Find_Emulators_clicked()
 				// Add Text
 				ui.Edit_Enulators_List->appendPlainText( tr("QEMU Found in \"%1\", version: %2").
 														 arg(paths[qx]).
-														 arg(Emulator_Version_To_String(qemu_version)) );
+														 arg(qemu_version_label) );
 			}
 			
 			// Set default emulators

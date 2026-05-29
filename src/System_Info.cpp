@@ -562,6 +562,10 @@ bool System_Info::Update_VM_Computers_List()
 	Audio_Card_x86.Audio_sb16 = true;
 	Audio_Card_x86.Audio_Adlib = true;
 	Audio_Card_x86.Audio_es1370 = true;
+	Audio_Card_x86.Audio_AC97 = true;
+	Audio_Card_x86.Audio_GUS = true;
+	Audio_Card_x86.Audio_HDA = true;
+	Audio_Card_x86.Audio_cs4231a = true;
 	
 	Audio_Card_PPC.Audio_sb16 = true;
 	Audio_Card_PPC.Audio_Adlib = true;
@@ -1110,9 +1114,9 @@ VM::Emulator_Version System_Info::Get_Emulator_Version( const QString &path )
 		    return VM::Obsolete;
 	    }
 	
-	    if( major_ver > 1 || (major_ver == 1 && minor_ver > 0) )
+        if( major_ver > 1 || (major_ver == 1 && minor_ver > 0) )
         {
-             return VM::QEMU_2_0;
+             return VM::QEMU_Modern;
         }
 	    else
 	    {
@@ -1704,6 +1708,7 @@ Available_Devices System_Info::Get_Emulator_Info( const QString &path, bool *ok,
 	
 	switch( version )
 	{
+		case VM::QEMU_Modern:
 		case VM::QEMU_2_0:
 			default_device = Emulator_QEMU_2_0[ internalName ];
 			break;
@@ -2083,12 +2088,15 @@ QString System_Info::Get_Emulator_Output( const QString &path, const QStringList
 	
 	qemu_pr->start( path, args );
 	
-	if( ! qemu_pr->waitForFinished(2000) )
+	if( ! qemu_pr->waitForFinished(10000) )
 	{
 		AQError( "QStringList System_Info::Get_Emulator_Output( const QString &path, const QStringList &args )",
-				 QString("Time left. File: \"%1\" Args: \"%1\"").arg(path).arg(args.join(" ")) );
+				 QString("Timeout waiting for emulator output. File: \"%1\" Args: \"%2\"")
+					.arg(path)
+					.arg(args.join(" ")) );
 		
 		qemu_pr->kill();
+		qemu_pr->waitForFinished();
 		return QString();
 	}
 	

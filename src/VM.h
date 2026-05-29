@@ -52,7 +52,6 @@ class Virtual_Machine: public QObject
         void Stop();  // qemu command quit
         void Shutdown();  // qemu command system_powerdown
         void Reset();
-        void Clear_QEMU_Error_Log();
         void Save_VM_State(); // Save default snapshot
         void Save_VM_State( const QString &tag, bool quit );
         void Load_VM_State( const QString &tag );
@@ -470,6 +469,7 @@ class Virtual_Machine: public QObject
 		void QEMU_Started();
 		void QEMU_Finished( int exitCode, QProcess::ExitStatus exitStatus );
 		void QEMU_Error( QProcess::ProcessError error );
+		void Clear_QEMU_Error_Log();
 		
 		void Resume_Finished( const QString &neturned_text );
 		void Suspend_Finished( const QString &neturned_text );

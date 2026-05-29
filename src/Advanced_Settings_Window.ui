@@ -2191,8 +2191,9 @@ with embedded display</string>
                 <widget class="QRadioButton" name="RB_USB_Style_device">
                  <property name="text">
                   <string>-device (New style)
-Recommend for QEMU/KVM version &amp;0.15 or higher.
-Supports USB 2.0 and USB 3.0 controllers emulation.</string>
+Current QEMU USB device syntax.
+Uses -device usb-host, usb-kbd, usb-mouse, usb-tablet and usb-wacom-tablet.
+Recommended for QEMU/KVM version &amp;0.15 or higher.</string>
                  </property>
                  <property name="checked">
                   <bool>true</bool>
@@ -2203,7 +2204,7 @@ Supports USB 2.0 and USB 3.0 controllers emulation.</string>
                 <widget class="QRadioButton" name="RB_USB_Style_usbdevice">
                  <property name="text">
                   <string>-usbdevice (Old style)
-For old QEMU or if you have a problem with -device mode.
+Legacy fallback for old QEMU or broken device mode.
 Supports only USB &amp;1.1 controller emulation.</string>
                  </property>
                 </widget>
@@ -2221,7 +2222,7 @@ Supports only USB &amp;1.1 controller emulation.</string>
          <item>
           <widget class="QGroupBox" name="groupBox_USB2">
            <property name="title">
-            <string>USB Device ID</string>
+            <string>USB Host ID (Modern QEMU)</string>
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout_25">
             <item>
@@ -2233,9 +2234,10 @@ Supports only USB &amp;1.1 controller emulation.</string>
                <item>
                 <widget class="QRadioButton" name="RB_USB_ID_BusPath">
                  <property name="text">
-                  <string>Bus + Device Path - Default choice.
+                  <string>Bus + Device Path - Recommended for modern QEMU.
+Default choice for usb-host passthrough.
 When you connect &amp;the USB device to another port -
-Bus.Path value is changed. Update it in USB settings.</string>
+the Bus.Path value changes. Update it in USB settings.</string>
                  </property>
                  <property name="checked">
                   <bool>true</bool>
@@ -2245,16 +2247,17 @@ Bus.Path value is changed. Update it in USB settings.</string>
                <item>
                 <widget class="QRadioButton" name="RB_USB_ID_VendorProduct">
                  <property name="text">
-                  <string>Vendor_ID + Product_ID - Recomend If you do &amp;not connect multiple 
-identical USB devices to the host system.</string>
+                  <string>Vendor_ID + Product_ID - Recommended for modern QEMU
+if you do &amp;not connect multiple identical USB devices.</string>
                  </property>
                 </widget>
                </item>
                <item>
                 <widget class="QRadioButton" name="RB_USB_ID_BusAddr">
                  <property name="text">
-                  <string>Bus + Address - When &amp;you connect the USB device to another port -
-Bus.Path value is changed. Update it in USB settings.
+                  <string>Bus + Address - Legacy fallback, not recommended.
+When you connect the USB device to another port -
+the Bus.Address value changes. Update it in USB settings.
 There may be problems with devices connected via a hub.</string>
                  </property>
                 </widget>

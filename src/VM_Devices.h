@@ -39,7 +39,8 @@ class VM
 		
 		// Emulators Version
 		enum Emulator_Version { Obsolete,
-								QEMU_2_0, QEMU_2_1, QEMU_2_2, QEMU_2_3, QEMU_2_4, QEMU_2_5, QEMU_2_6 };
+								QEMU_2_0, QEMU_2_1, QEMU_2_2, QEMU_2_3, QEMU_2_4, QEMU_2_5, QEMU_2_6,
+								QEMU_Modern = 100 };
 		
 		// Virtual Machine State
 		enum VM_State { VMS_Running, VMS_Power_Off, VMS_Pause, VMS_Saved, VMS_In_Error };

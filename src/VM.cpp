@@ -61,6 +61,31 @@
 
 using namespace TinyXML2QDomWrapper;
 
+namespace
+{
+	QString Network_Backend_Id( const VM_Net_Card &card, int index )
+	{
+		const int vlan = card.Get_VLAN();
+		return QString( "aqemu-net-%1-%2" ).arg( vlan ).arg( index );
+	}
+
+	QString Network_Device_Model( const QString &model )
+	{
+		if( model.isEmpty() )
+			return "virtio-net-pci";
+
+		if( model == "virtio" )
+			return "virtio-net-pci";
+
+		return model;
+	}
+
+	bool Network_Device_Uses_Vectors( const QString &model )
+	{
+		return model.startsWith( "virtio-net-" );
+	}
+}
+
 // VM Class -----------------------------------------------------------------
 
 Virtual_Machine::Virtual_Machine()
@@ -5419,38 +5444,39 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	QStringList audio_list;
 	QStringList audio_device_args;
 	bool audio_enabled = false;
+	bool audio_pcspk = false;
 	QString audio_backend = Use_Custom_Audio_Backend
 		? Audio_Backend.trimmed()
 		: ( Settings.contains( "QEMU_AUDIO/QEMU_AUDIO_DRV" )
 			? Settings.value( "QEMU_AUDIO/QEMU_AUDIO_DRV" ).toString().trimmed()
 			: Get_Preferred_Audio_Backend() );
 	
-	if( Audio_Card.Audio_sb16 &&  Current_Emulator_Devices.Audio_Card_List.Audio_sb16 )
+	if( Audio_Card.Audio_sb16 )
 	{
 		audio_list << "sb16";
 		audio_device_args << "sb16";
 	}
-	if( Audio_Card.Audio_es1370 && Current_Emulator_Devices.Audio_Card_List.Audio_es1370 )
+	if( Audio_Card.Audio_es1370 )
 	{
 		audio_list << "es1370";
 		audio_device_args << "es1370";
 	}
-	if( Audio_Card.Audio_Adlib && Current_Emulator_Devices.Audio_Card_List.Audio_Adlib )
+	if( Audio_Card.Audio_Adlib )
 	{
 		audio_list << "adlib";
 		audio_device_args << "adlib";
 	}
-	if( Audio_Card.Audio_PC_Speaker && Current_Emulator_Devices.Audio_Card_List.Audio_PC_Speaker )
+	if( Audio_Card.Audio_PC_Speaker )
 	{
 		audio_list << "pcspk";
-		audio_device_args << "pcspk";
+		audio_pcspk = true;
 	}
-	if( Audio_Card.Audio_GUS && Current_Emulator_Devices.Audio_Card_List.Audio_GUS )
+	if( Audio_Card.Audio_GUS )
 	{
 		audio_list << "gus";
 		audio_device_args << "gus";
 	}
-	if( Audio_Card.Audio_AC97 && Current_Emulator_Devices.Audio_Card_List.Audio_AC97 )
+	if( Audio_Card.Audio_AC97 )
 	{
 		audio_list << "ac97";
 		audio_device_args << "ac97";
@@ -5462,7 +5488,7 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 		audio_list << "hda";
 		audio_device_args << "intel-hda" << "hda-duplex";
 	}
-	if( Audio_Card.Audio_cs4231a && Current_Emulator_Devices.Audio_Card_List.Audio_cs4231a )
+	if( Audio_Card.Audio_cs4231a )
 	{
 		audio_list << "cs4231a";
 		audio_device_args << "cs4231a";
@@ -5492,13 +5518,11 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 				Args << "-device" << dev;
 			else if( dev == "hda-duplex" )
 				Args << "-device" << "hda-duplex,audiodev=audio0";
-			else if( dev == "pcspk" )
-				Args << "-device" << dev;
 			else
 				Args << "-device" << dev + ",audiodev=audio0";
 		}
 	}
-	
+
 	// Machine Type
 	if( ! Machine_Type.isEmpty() )
 		Args << "-M" << Machine_Type;
@@ -5518,6 +5542,8 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 
     QStringList props;
     props << "accel="+VM::Accel_To_String( Machine_Accelerator );
+	if( audio_pcspk )
+		props << "pcspk-audiodev=audio0";
 
 	if( Current_Emulator_Devices.PSO_KVM_Shadow_Memory && KVM_Shadow_Memory )
 		props << "kvm_shadow_mem=" + QString::number( KVM_Shadow_Memory_Size * 1024 );
@@ -5995,9 +6021,6 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 				}
 				
 				// Create String
-				if( Network_Cards_Nativ[nc].Use_VLAN() && u_vlan )
-					nic_str += ",vlan=" + QString::number( Network_Cards_Nativ[nc].Get_VLAN() );
-				
 				if( Network_Cards_Nativ[nc].Use_MAC_Address() && u_macaddr )
 					nic_str += ",macaddr=" + Network_Cards_Nativ[ nc ].Get_MAC_Address();
 				
@@ -6174,121 +6197,109 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 		{
 			for( int nc = 0; nc < Network_Cards.count(); nc++ )
 			{
-				Args << "-net";
-				QString nic_str = "nic,vlan=" + QString::number( Network_Cards[nc].Get_VLAN() );
-				
-				if( ! Network_Cards[nc].Get_MAC_Address().isEmpty() ) // Use MAC?
-					nic_str += ",macaddr=" + Network_Cards[nc].Get_MAC_Address();
-				
-				if( ! Network_Cards[nc].Get_Card_Model().isEmpty() )
-					nic_str += ",model=" + Network_Cards[nc].Get_Card_Model();
-				
-				Args << nic_str;
-				
-				// Net Modes
-				QString tap_tmp;
+				const QString netdev_id = Network_Backend_Id( Network_Cards[nc], nc );
+				const QString device_model = Network_Device_Model( Network_Cards[nc].Get_Card_Model() );
+				QString backend_str;
+				QString device_str;
 				
 				switch( Network_Cards[nc].Get_Net_Mode() )
 				{
 					case VM::Net_Mode_None:
-						break;
+						continue;
 					
 					case VM::Net_Mode_Usermode:
-						if( Network_Cards[nc].Get_Hostname().isEmpty() )
-							Args << "-net" << QString( "user,vlan=" + QString::number(Network_Cards[nc].Get_VLAN()) );
-						else
-							Args << "-net" << QString( "user,vlan=" + QString::number(Network_Cards[nc].Get_VLAN()) +
-									",hostname=" + Network_Cards[nc].Get_Hostname() );
+						backend_str = "user,id=" + netdev_id;
+						if( ! Network_Cards[nc].Get_Hostname().isEmpty() )
+							backend_str += ",hostname=" + Network_Cards[nc].Get_Hostname();
 						break;
 					
 					case VM::Net_Mode_Tuntap:
-						Args << "-net" ;
-						
-						tap_tmp = QString( "tap,vlan=" + QString::number(Network_Cards[nc].Get_VLAN()) );
+						backend_str = "tap,id=" + netdev_id;
 						
 						if( ! Network_Cards[nc].Get_Interface_Name().isEmpty() )
-							tap_tmp += QString( ",ifname=" + Network_Cards[nc].Get_Interface_Name() );
+							backend_str += ",ifname=" + Network_Cards[nc].Get_Interface_Name();
 						
 						if( ! Network_Cards[nc].Get_Use_TUN_TAP_Script() )
 						{
-							tap_tmp += QString( ",script=no" );
+							backend_str += ",script=no";
 						}
-						else
+						else if( ! Network_Cards[nc].Get_TUN_TAP_Script().isEmpty() )
 						{
-							if( ! Network_Cards[nc].Get_TUN_TAP_Script().isEmpty() )
-							{
-								if( Build_QEMU_Args_for_Script_Mode )
-									tap_tmp += QString( ",script=\"%1\"" ).arg( Network_Cards[nc].Get_TUN_TAP_Script() );
-								else
-									tap_tmp += ",script=" + Network_Cards[nc].Get_TUN_TAP_Script();
-							}
+							if( Build_QEMU_Args_for_Script_Mode )
+								backend_str += QString( ",script=\"%1\"" ).arg( Network_Cards[nc].Get_TUN_TAP_Script() );
+							else
+								backend_str += ",script=" + Network_Cards[nc].Get_TUN_TAP_Script();
 						}
-						
-						Args << tap_tmp;
 						break;
-						
+					
 					case VM::Net_Mode_Tuntapfd:
-						Args << "-net" << QString( "tap,vlan=" + QString::number(Network_Cards[nc].Get_VLAN()) +
-												   ((Network_Cards[nc].Get_File_Descriptor() > 0) ? ",fd=" + QString::number(Network_Cards[nc].Get_File_Descriptor()) : "") +
-												   ((Network_Cards[nc].Get_Interface_Name().isEmpty() == false) ? ",ifname=" + Network_Cards[nc].Get_Interface_Name() : "") );
-						break;
+						backend_str = "tap,id=" + netdev_id;
 						
+						if( Network_Cards[nc].Get_File_Descriptor() > 0 )
+							backend_str += ",fd=" + QString::number( Network_Cards[nc].Get_File_Descriptor() );
+						
+						if( ! Network_Cards[nc].Get_Interface_Name().isEmpty() )
+							backend_str += ",ifname=" + Network_Cards[nc].Get_Interface_Name();
+						
+						if( ! Network_Cards[nc].Get_Use_TUN_TAP_Script() )
+						{
+							backend_str += ",script=no";
+						}
+						else if( ! Network_Cards[nc].Get_TUN_TAP_Script().isEmpty() )
+						{
+							if( Build_QEMU_Args_for_Script_Mode )
+								backend_str += QString( ",script=\"%1\"" ).arg( Network_Cards[nc].Get_TUN_TAP_Script() );
+							else
+								backend_str += ",script=" + Network_Cards[nc].Get_TUN_TAP_Script();
+						}
+						break;
+					
 					case VM::Net_Mode_Tcplisten:
-						if( Network_Cards[nc].Get_IP_Address().isEmpty() )
-						{
-							Args << "-net" << QString( "socket,vlan=" + QString::number(Network_Cards[nc].Get_VLAN()) +
-									",listen=:" + QString::number(Network_Cards[nc].Get_Port()) );
-						}
-						else
-						{
-							Args << "-net" << QString( "socket,vlan=" + QString::number(Network_Cards[nc].Get_VLAN()) +
-									",listen=" + Network_Cards[nc].Get_IP_Address() + ":" +
-									QString::number(Network_Cards[nc].Get_Port()) );
-						}
+						backend_str = "socket,id=" + netdev_id;
+						backend_str += Network_Cards[nc].Get_IP_Address().isEmpty() ?
+									   ",listen=:" + QString::number( Network_Cards[nc].Get_Port() ) :
+									   ",listen=" + Network_Cards[nc].Get_IP_Address() + ":" +
+									   QString::number( Network_Cards[nc].Get_Port() );
 						break;
-						
+					
 					case VM::Net_Mode_Tcpfd:
-						Args << "-net" << QString( "socket,vlan=" + QString::number(Network_Cards[nc].Get_VLAN()) +
-								",fd=" + QString::number(Network_Cards[nc].Get_File_Descriptor()) );
+						backend_str = "socket,id=" + netdev_id + ",fd=" + QString::number( Network_Cards[nc].Get_File_Descriptor() );
 						break;
-						
+					
 					case VM::Net_Mode_Tcpconnect:
-						if( Network_Cards[nc].Get_IP_Address().isEmpty() )
-						{
-							Args << "-net" << QString( "socket,vlan=" + QString::number(Network_Cards[nc].Get_VLAN()) +
-									",connect=:" + QString::number(Network_Cards[nc].Get_Port()) );
-						}
-						else
-						{
-							Args << "-net" << QString( "socket,vlan=" + QString::number(Network_Cards[nc].Get_VLAN()) +
-									",connect=" + Network_Cards[nc].Get_IP_Address() +
-									":" + QString::number(Network_Cards[nc].Get_Port()) );
-						}
+						backend_str = "socket,id=" + netdev_id;
+						backend_str += Network_Cards[nc].Get_IP_Address().isEmpty() ?
+									   ",connect=:" + QString::number( Network_Cards[nc].Get_Port() ) :
+									   ",connect=" + Network_Cards[nc].Get_IP_Address() + ":" +
+									   QString::number( Network_Cards[nc].Get_Port() );
 						break;
-						
+					
 					case VM::Net_Mode_Multicast:
-						if( Network_Cards[nc].Get_IP_Address().isEmpty() )
-						{
-							Args << "-net" << QString( "socket,vlan=" + QString::number(Network_Cards[nc].Get_VLAN()) +
-									",mcast=:" + QString::number(Network_Cards[nc].Get_Port()) );
-						}
-						else
-						{
-							Args << "-net" << QString( "socket,vlan=" + QString::number(Network_Cards[nc].Get_VLAN()) +
-									",mcast=" + Network_Cards[nc].Get_IP_Address() +
-									":" + QString::number(Network_Cards[nc].Get_Port()) );
-						}
+						backend_str = "socket,id=" + netdev_id;
+						backend_str += Network_Cards[nc].Get_IP_Address().isEmpty() ?
+									   ",mcast=:" + QString::number( Network_Cards[nc].Get_Port() ) :
+									   ",mcast=" + Network_Cards[nc].Get_IP_Address() + ":" +
+									   QString::number( Network_Cards[nc].Get_Port() );
 						break;
-						
+					
 					case VM::Net_Mode_Multicastfd:
-						Args << "-net" << QString( "socket,vlan=" + QString::number(Network_Cards[nc].Get_VLAN()) +
-								",fd=" + QString::number(Network_Cards[nc].Get_File_Descriptor()) );
+						backend_str = "socket,id=" + netdev_id + ",fd=" + QString::number( Network_Cards[nc].Get_File_Descriptor() );
 						break;
 						
 					default:
-						Args << "-net" << "none";
-						break;
+						continue;
 				}
+				
+				if( backend_str.isEmpty() )
+					continue;
+				
+				device_str = device_model + ",netdev=" + netdev_id;
+				
+				if( ! Network_Cards[nc].Get_MAC_Address().isEmpty() )
+					device_str += ",mac=" + Network_Cards[nc].Get_MAC_Address();
+				
+				Args << "-netdev" << backend_str;
+				Args << "-device" << device_str;
 			}
 		}
 		
@@ -6646,11 +6657,19 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 					usb_k = usb_m = usb_t = usb_wt = usb_b = false;
 					USB_Ports[ux].Get_USB_QEMU_Devices( usb_k, usb_m, usb_t, usb_wt, usb_b );
 					
-					if( usb_k ) Args << "-usbdevice" << "keyboard";
-					else if( usb_m ) Args << "-usbdevice" << "mouse";
-					else if( usb_t ) Args << "-usbdevice" << "tablet";
-					else if( usb_wt ) Args << "-usbdevice" << "wacom-tablet";
-					else if( usb_b ) Args << "-usbdevice" << "braille";
+					if( usb_k )
+						Args << "-device" << "usb-kbd";
+					else if( usb_m )
+						Args << "-device" << "usb-mouse";
+					else if( usb_t )
+						Args << "-device" << "usb-tablet";
+					else if( usb_wt )
+						Args << "-device" << "usb-wacom-tablet";
+					else if( usb_b )
+					{
+						Args << "-chardev" << "braille,id=usb_braille";
+						Args << "-device" << "usb-braille,chardev=usb_braille";
+					}
 					else
 					{
 						AQError( "QStringList Virtual_Machine::Build_QEMU_Args()",

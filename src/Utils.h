@@ -73,6 +73,7 @@ void Check_AQEMU_Permissions();
 
 VM::Emulator_Version String_To_Emulator_Version( const QString &str );
 QString Emulator_Version_To_String( VM::Emulator_Version ver );
+QString Get_Emulator_Version_Label( const QString &path );
 
 bool Update_Emulators_List();
 const QList<Emulator> &Get_Emulators_List();

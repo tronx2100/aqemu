@@ -87,6 +87,33 @@ void Emulator_Options_Window::on_Button_Find_clicked()
 		++iter; // next value
 	}
 	
+	// If the dialog still has no usable version, derive it from the first binary.
+	if( Current_Emulator.Get_Version() == VM::Obsolete )
+	{
+		for( QMap<QString, QString>::const_iterator vit = list.constBegin(); vit != list.constEnd(); ++vit )
+		{
+			if( vit.value().isEmpty() || ! QFile::exists( vit.value() ) )
+				continue;
+			
+			VM::Emulator_Version detected_version = System_Info::Get_Emulator_Version( vit.value() );
+			if( detected_version != VM::Obsolete )
+			{
+				Current_Emulator.Set_Version( detected_version );
+				switch( detected_version )
+				{
+					case VM::QEMU_2_0:
+						ui.CB_Version->setCurrentIndex( 1 );
+						break;
+						
+					default:
+						ui.CB_Version->setCurrentIndex( 0 );
+						break;
+				}
+				break;
+			}
+		}
+	}
+	
 	// Update emulator info
 	Update_Info = true;
 	Update_Emulator();
@@ -179,6 +206,7 @@ void Emulator_Options_Window::Set_Emulator( const Emulator &emul )
 	// Force Version
 	switch( Current_Emulator.Get_Version() )
 	{
+		case VM::QEMU_Modern:
 		case VM::QEMU_2_0:
 			ui.CB_Version->setCurrentIndex( 1 );
 			break;
@@ -190,9 +218,23 @@ void Emulator_Options_Window::Set_Emulator( const Emulator &emul )
 			break;
 	}
 	
-	// Emulator Binary Files
+	QString version_label = Emulator_Version_To_String( Current_Emulator.Get_Version() );
 	QMap<QString, QString> bin_files = Current_Emulator.Get_Binary_Files();
+	for( QMap<QString, QString>::const_iterator it = bin_files.constBegin(); it != bin_files.constEnd(); ++it )
+	{
+		if( ! it.value().isEmpty() && QFile::exists( it.value() ) )
+		{
+			QString detected_label = Get_Emulator_Version_Label( it.value() );
+			if( ! detected_label.isEmpty() )
+			{
+				version_label = detected_label;
+				break;
+			}
+		}
+	}
+	ui.Label_QEMU_Version->setText( tr("Emulator Version: %1").arg(version_label) );
 	
+	// Emulator Binary Files
 	// Clear	
 	ui.Table_Systems->clearContents();
 	while( ui.Table_Systems->rowCount() > 0 ) ui.Table_Systems->removeRow( 0 );

@@ -1535,6 +1535,7 @@ const QMap<QString, Available_Devices> &Emulator::Get_Devices() const
 		switch( Version )
 		{
 			
+			case VM::QEMU_Modern:
 			case VM::QEMU_2_0:
 				return System_Info::Emulator_QEMU_2_0;
 				
@@ -3595,7 +3596,7 @@ QString VM_Net_Card::Generate_MAC() const
 			nmac = nmac.mid( 25, 10 );
 			nmac.prepend( "00" ); // Two Zero First, For Valid MAC
 		}
-		else if( model == "" ) // Default 00 + Random
+		else if( model == "virtio" || model == "virtio-net-pci" || model == "virtio-net-device" || model == "" ) // Default 00 + Random
 		{
 			nmac = QUuid::createUuid().toString(); // Random HEX for MAC
 			nmac = nmac.mid( 25, 10 );

@@ -1755,7 +1755,8 @@ void Network_Widget::Set_Net_Card_To_Ui( const VM_Net_Card_Native &card )
 		
 		for( int ix = 0; ix < Card_Models_QEMU_Name.count(); ix++ )
 		{
-			if( card.Get_Card_Model() == Card_Models_QEMU_Name[ix] )
+			if( card.Get_Card_Model() == Card_Models_QEMU_Name[ix] ||
+				(card.Get_Card_Model() == "virtio" && Card_Models_QEMU_Name[ix] == "virtio-net-pci") )
 			{
 				ui.CB_model->setCurrentIndex( ix );
 			}

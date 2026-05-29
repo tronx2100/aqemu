@@ -29,6 +29,15 @@ Add_USB_Port_Window::Add_USB_Port_Window( QWidget *parent )
 	: QDialog( parent )
 {
 	ui.setupUi( this );
+	setMinimumSize( 1000, 900 );
+	resize( 1000, 900 );
+	ui.Widget_Host_Devices->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );
+	ui.Table_Host_USB->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );
+	ui.Table_Host_USB->horizontalHeader()->setSectionResizeMode( QHeaderView::Interactive );
+	ui.Table_Host_USB->horizontalHeader()->setStretchLastSection( true );
+	ui.Table_Host_USB->horizontalHeader()->setSectionResizeMode( 0, QHeaderView::ResizeToContents );
+	ui.Table_Host_USB->horizontalHeader()->setSectionResizeMode( 1, QHeaderView::ResizeToContents );
+	ui.verticalLayout_7->setStretch( 0, 1 );
 	
 	QHeaderView *hv = new QHeaderView( Qt::Vertical, ui.Table_Host_USB );
 	hv->setSectionResizeMode( QHeaderView::Fixed );
@@ -156,7 +165,6 @@ void Add_USB_Port_Window::on_Button_Update_Host_USB_clicked()
 		ui.Table_Host_USB->setItem( ui.Table_Host_USB->rowCount()-1, 4, newItem );
 	}
 	
-	ui.Table_Host_USB->resizeColumnsToContents();
 }
 
 void Add_USB_Port_Window::on_RB_QEMU_USB_clicked( bool checked )
