@@ -148,6 +148,7 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 	this->Computer_Type = vm.Get_Computer_Type();
 	this->Machine_Type = vm.Get_Machine_Type();
 	this->CPU_Type = vm.Get_CPU_Type();
+	this->CPU_Flags = vm.Get_CPU_Flags();
 	this->SMP = vm.Get_SMP();
 	this->Keyboard_Layout = vm.Get_Keyboard_Layout();
 	this->Boot_Order_List = vm.Get_Boot_Order_List();
@@ -367,6 +368,7 @@ void Virtual_Machine::Shared_Constructor()
 	Computer_Type = "";
 	Machine_Type = "";
 	CPU_Type = "";
+	CPU_Flags = "";
 	SMP.SMP_Count = 1;
 	Keyboard_Layout = "Default";
 	
@@ -517,6 +519,7 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
         this->Machine_Accelerator == vm.Get_Machine_Accelerator() &&
 		this->Machine_Type == vm.Get_Machine_Type() &&
 		this->CPU_Type == vm.Get_CPU_Type() &&
+		this->CPU_Flags == vm.Get_CPU_Flags() &&
 		this->SMP == vm.Get_SMP() &&
 		this->Keyboard_Layout == vm.Get_Keyboard_Layout() &&
 		this->Show_Boot_Menu == vm.Get_Show_Boot_Menu() &&
@@ -754,6 +757,7 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
     this->Machine_Accelerator = vm.Get_Machine_Accelerator();
 	this->Machine_Type = vm.Get_Machine_Type();
 	this->CPU_Type = vm.Get_CPU_Type();
+	this->CPU_Flags = vm.Get_CPU_Flags();
 	this->SMP = vm.Get_SMP();
 	this->Keyboard_Layout = vm.Get_Keyboard_Layout();
 	this->Boot_Order_List = vm.Get_Boot_Order_List();
@@ -1041,6 +1045,12 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 	Dom_Element = New_Dom_Document.createElement( "CPU_Type" );
 	VM_Element.appendChild( Dom_Element );
 	Dom_Text = New_Dom_Document.createTextNode( CPU_Type );
+	Dom_Element.appendChild( Dom_Text );
+	
+	// CPU Flags
+	Dom_Element = New_Dom_Document.createElement( "CPU_Flags" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( CPU_Flags );
 	Dom_Element.appendChild( Dom_Text );
 	
 	// SMP_CPU_Count
@@ -3786,6 +3796,7 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 			
 			// CPU Type
 			CPU_Type = Child_Element.firstChildElement("CPU_Type").text();
+			CPU_Flags = Child_Element.firstChildElement("CPU_Flags").text();
 			
 			// SMP
 			SMP.SMP_Count = Child_Element.firstChildElement("SMP_CPU_Count").text().toInt();
@@ -5498,7 +5509,10 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	if( Current_Emulator_Devices.CPU_List.count() > 1 &&
 		CPU_Type.isEmpty() == false )
 	{
-		Args << "-cpu" << CPU_Type;
+		QString cpu_arg = CPU_Type;
+		if( ! CPU_Flags.isEmpty() )
+			cpu_arg += "," + CPU_Flags;
+		Args << "-cpu" << cpu_arg;
 	}
 	
 	// Audio
@@ -6021,6 +6035,9 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	}
 	
 	// Network Cards
+	bool global_smb_appended = false;
+	bool global_tftp_appended = false;
+	
     if( (Use_Native_Network() == false && Network_Cards.count() < 1) ||
         (Use_Native_Network() == true  && Network_Cards_Nativ.count() < 1) ||
 		Use_Network == false )
@@ -6298,6 +6315,22 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 						backend_str = "user,id=" + netdev_id;
 						if( ! Network_Cards[nc].Get_Hostname().isEmpty() )
 							backend_str += ",hostname=" + Network_Cards[nc].Get_Hostname();
+						if( ! SMB_Directory.isEmpty() && ! global_smb_appended )
+						{
+							if( Build_QEMU_Args_for_Script_Mode )
+								backend_str += ",smb=\"" + SMB_Directory + "\"";
+							else
+								backend_str += ",smb=" + SMB_Directory;
+							global_smb_appended = true;
+						}
+						if( ! TFTP_Prefix.isEmpty() && ! global_tftp_appended )
+						{
+							if( Build_QEMU_Args_for_Script_Mode )
+								backend_str += ",tftp=\"" + TFTP_Prefix + "\"";
+							else
+								backend_str += ",tftp=" + TFTP_Prefix;
+							global_tftp_appended = true;
+						}
 						break;
 					
 					case VM::Net_Mode_Tuntap:
@@ -6423,8 +6456,8 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 		}
 	}
 	
-	// TFTP Prefix
-	if( ! TFTP_Prefix.isEmpty() )
+	// TFTP Prefix (only as separate -net if not merged into a -netdev already)
+	if( ! TFTP_Prefix.isEmpty() && ! global_tftp_appended )
 	{
 		if( Build_QEMU_Args_for_Script_Mode )
 			Args << "-net" << "user,tftp=" + QString("\"") + TFTP_Prefix + "\"";
@@ -6432,8 +6465,8 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 			Args << "-net" << "user,tftp=" + TFTP_Prefix;
 	}
 	
-	// SMB Dir
-	if( ! SMB_Directory.isEmpty() )
+	// SMB Dir (only as separate -net if not merged into a -netdev already)
+	if( ! SMB_Directory.isEmpty() && ! global_smb_appended )
 	{
 		if( Build_QEMU_Args_for_Script_Mode )
 			Args << "-net" << "user,smb=" + QString("\"") + SMB_Directory + "\"";
@@ -8264,6 +8297,16 @@ const QString &Virtual_Machine::Get_CPU_Type() const
 void Virtual_Machine::Set_CPU_Type( const QString &type )
 {
 	CPU_Type = type;
+}
+
+const QString &Virtual_Machine::Get_CPU_Flags() const
+{
+	return CPU_Flags;
+}
+
+void Virtual_Machine::Set_CPU_Flags( const QString &flags )
+{
+	CPU_Flags = flags;
 }
 
 VM::SMP_Options Virtual_Machine::Get_SMP() const

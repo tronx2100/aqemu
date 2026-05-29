@@ -155,6 +155,8 @@ class Virtual_Machine: public QObject
 		
 		const QString &Get_CPU_Type() const;
 		void Set_CPU_Type( const QString &type );
+		const QString &Get_CPU_Flags() const;
+		void Set_CPU_Flags( const QString &flags );
 		
 		VM::SMP_Options Get_SMP() const;
 		void Set_SMP( const VM::SMP_Options &smp );
@@ -533,6 +535,7 @@ class Virtual_Machine: public QObject
 		QString Machine_Name; // this machine name
 		QString Machine_Type; // All QEMU Mach Types
 		QString CPU_Type; // x86, ppc, sparc...
+		QString CPU_Flags; // CPU feature flags (e.g. kvm=off,+topoext,...)
 		VM::SMP_Options SMP; // All SMP Settings
 		QString Keyboard_Layout; // language en, ru, jp...
 		QList<VM::Boot_Order> Boot_Order_List; // New boot order

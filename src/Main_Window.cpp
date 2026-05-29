@@ -501,6 +501,11 @@ void Main_Window::Connect_Signals()
 	connect( ui.Edit_SMB_Folder, SIGNAL(textChanged(const QString &)),
 			 this, SLOT(VM_Changed()) );
 
+	connect( ui.PB_SMB_Root, &QPushButton::clicked, this, [this]()
+	{
+		ui.Edit_SMB_Folder->setText( "/" );
+	} );
+
 	// Advanced Tab
 	connect( ui.CH_No_Frame, SIGNAL(clicked()),
 			 this, SLOT(VM_Changed()) );
@@ -931,8 +936,12 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
     {
         return false;
     }
-	tmp_vm->Set_SMP_CPU_Count( ui.CB_CPU_Count->currentText().toInt() );
-    tmp_vm->Set_SMP( SMP_Settings->Get_Values() );
+    {
+        VM::SMP_Options smp = SMP_Settings->Get_Values();
+        smp.SMP_Count = ui.CB_CPU_Count->currentText().toInt(); // combobox is authoritative
+        tmp_vm->Set_SMP( smp );
+    }
+    tmp_vm->Set_CPU_Flags( SMP_Settings->Get_CPU_Flags() );
 
 	// Keyboard Layout
 	if( ui.CB_Keyboard_Layout->currentIndex() == 0 ) // Default
@@ -1498,6 +1507,7 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 	ui.CB_CPU_Count->setEditText( QString::number(tmp_vm->Get_SMP_CPU_Count()) );
     SMP_Settings->Set_Values( tmp_vm->Get_SMP(), curComp.PSO_SMP_Count, curComp.PSO_SMP_Cores,
 							 curComp.PSO_SMP_Threads, curComp.PSO_SMP_Sockets, curComp.PSO_SMP_MaxCPUs );
+    SMP_Settings->Set_CPU_Flags( tmp_vm->Get_CPU_Flags() );
 
 	// Keyboard Layout
 	int lang_index = ui.CB_Keyboard_Layout->findText( tmp_vm->Get_Keyboard_Layout() );
@@ -1870,6 +1880,11 @@ void Main_Window::Update_Disabled_Controls()
 		ui.TB_Show_SMP_Settings_Window->setEnabled( true );
 	}
 
+	// Restore the combobox text from the VM before reconnect
+	Virtual_Machine *cur = Get_Current_VM();
+	if( cur )
+		ui.CB_CPU_Count->setEditText( QString::number(cur->Get_SMP_CPU_Count()) );
+
 	connect( ui.CB_CPU_Count, SIGNAL(editTextChanged(const QString &)),
 			 this, SLOT(Validate_CPU_Count(const QString&)) );
 	/*
@@ -2047,12 +2062,14 @@ void Main_Window::Update_Disabled_Controls()
 		ui.Label_SMB_Folder->setEnabled( true );
 		ui.TB_Browse_SMB->setEnabled( true );
 		ui.Edit_SMB_Folder->setEnabled( true );
+		ui.PB_SMB_Root->setEnabled( true );
 	}
 	else
 	{
 		ui.Label_SMB_Folder->setEnabled( false );
 		ui.TB_Browse_SMB->setEnabled( false );
 		ui.Edit_SMB_Folder->setEnabled( false );
+		ui.PB_SMB_Root->setEnabled( false );
 	}
 
 	//if( curComp.PSO_Std_VGA )
@@ -4441,6 +4458,8 @@ void Main_Window::on_TB_Show_SMP_Settings_Window_clicked()
 
     if( SMP_Settings->exec() == QDialog::Accepted )
 	{
+		bool changed = false;
+
         if( SMP_Settings->Get_Values().SMP_Count != ui.CB_CPU_Count->currentText().toInt() )
 		{
 			// Set new CPU count value
@@ -4451,13 +4470,16 @@ void Main_Window::on_TB_Show_SMP_Settings_Window_clicked()
 
 			connect( ui.CB_CPU_Count, SIGNAL(editTextChanged(const QString &)),
 					 this, SLOT(Validate_CPU_Count(const QString&)) );
+			changed = true;
 		}
-		else
+
+		if( SMP_Settings->Get_Values() != Get_Current_VM()->Get_SMP() ||
+			SMP_Settings->Get_CPU_Flags() != Get_Current_VM()->Get_CPU_Flags() )
 		{
-			// Settings changed?
-            if( SMP_Settings->Get_Values() != Get_Current_VM()->Get_SMP() )
-				VM_Changed();
+			changed = true;
 		}
+
+		if( changed ) VM_Changed();
 	}
 }
 

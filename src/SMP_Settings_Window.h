@@ -36,6 +36,8 @@ class SMP_Settings_Window: public QDialog
 		VM::SMP_Options Get_Values() const;
 		void Set_Values( const VM::SMP_Options &smp, unsigned short PSO_SMP_Count, bool PSO_SMP_Cores,
 						 bool PSO_SMP_Threads, bool PSO_SMP_Sockets, bool PSO_SMP_MaxCPUs );
+		QString Get_CPU_Flags() const;
+		void Set_CPU_Flags( const QString &flags );
 		
 		void Set_SMP_Count( int count );
 	
@@ -43,8 +45,13 @@ class SMP_Settings_Window: public QDialog
 		void done(int);
 	
 	private:
+		void Sync_Checkboxes_To_Text();
+		void Sync_Text_To_Checkboxes();
+		
 		Ui::SMP_Settings_Window ui;
 		VM::SMP_Options Backup_SMP;
+		QString Backup_CPU_Flags;
+		bool Syncing_Flags = false;
 };
 
 #endif

@@ -10,7 +10,7 @@
         <Computer_Type>qemu-system-x86_64</Computer_Type>
         <Machine_Type></Machine_Type>
         <CPU_Type></CPU_Type>
-        <SMP_CPU_Count>2</SMP_CPU_Count>
+        <SMP_CPU_Count>8</SMP_CPU_Count>
         <Keyboard_Layout>Default</Keyboard_Layout>
         <Boot_Device>CDROM</Boot_Device>
         <Video_Card></Video_Card>
