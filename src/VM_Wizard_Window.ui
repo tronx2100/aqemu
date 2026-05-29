@@ -943,7 +943,7 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>100</width>
+             <width>120</width>
              <height>0</height>
             </size>
            </property>
@@ -1041,6 +1041,16 @@
         </widget>
        </item>
        <item row="3" column="0">
+        <widget class="QCheckBox" name="CH_Use_Memory_Backend">
+         <property name="text">
+          <string>Use memory-backend-ram</string>
+         </property>
+         <property name="toolTip">
+          <string>Use QEMU memory backend syntax for RAM instead of plain -m.</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
         <spacer name="s15">
          <property name="orientation">
           <enum>Qt::Vertical</enum>

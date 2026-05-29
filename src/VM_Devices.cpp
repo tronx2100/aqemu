@@ -462,6 +462,72 @@ bool Emulator::Load( const QString &path )
 						 "No values on \"Video_Card_List\" element! Add default Video Card element." );
 				tmpDev.Video_Card_List << Device_Map( QObject::tr("Default"), "" );
 			}
+
+			// Normalize legacy captions and add newer graphics device choices so
+			// older saved emulator profiles still expose the current selection set.
+			for( int vx = 0; vx < tmpDev.Video_Card_List.count(); ++vx )
+			{
+				const QString &name = tmpDev.Video_Card_List[vx].QEMU_Name;
+				if( name.isEmpty() )
+					tmpDev.Video_Card_List[vx].Caption = QObject::tr("Default");
+				else if( name == "std" )
+					tmpDev.Video_Card_List[vx].Caption = QObject::tr("Standard VGA");
+				else if( name == "cirrus" )
+					tmpDev.Video_Card_List[vx].Caption = QObject::tr("Cirrus CLGD 5446");
+				else if( name == "vmware" )
+					tmpDev.Video_Card_List[vx].Caption = QObject::tr("VMWare Video Card");
+				else if( name == "qxl" )
+					tmpDev.Video_Card_List[vx].Caption = QObject::tr("QXL");
+				else if( name == "virtio" )
+					tmpDev.Video_Card_List[vx].Caption = QObject::tr("Virtio VGA (-vga virtio)");
+				else if( name == "virtio-vga" )
+					tmpDev.Video_Card_List[vx].Caption = QObject::tr("Virtio VGA (-device virtio-vga)");
+				else if( name == "virtio-gpu" )
+					tmpDev.Video_Card_List[vx].Caption = QObject::tr("Virtio GPU (-device virtio-gpu)");
+				else if( name == "xenfb" )
+					tmpDev.Video_Card_List[vx].Caption = QObject::tr("Xen framebuffer");
+				else if( name == "tcx" )
+					tmpDev.Video_Card_List[vx].Caption = QObject::tr("Sun TCX");
+				else if( name == "cg3" )
+					tmpDev.Video_Card_List[vx].Caption = QObject::tr("Sun cg3");
+				else if( name == "none" )
+					tmpDev.Video_Card_List[vx].Caption = QObject::tr("None");
+			}
+
+			auto append_video_card = [&]( const QString &caption, const QString &qemu_name )
+			{
+				for( int vx = 0; vx < tmpDev.Video_Card_List.count(); ++vx )
+				{
+					if( tmpDev.Video_Card_List[vx].QEMU_Name == qemu_name )
+						return;
+				}
+				tmpDev.Video_Card_List << Device_Map( caption, qemu_name );
+			};
+
+			append_video_card( QObject::tr("Virtio VGA (-device virtio-vga)"), "virtio-vga" );
+			append_video_card( QObject::tr("Virtio GPU (-device virtio-gpu)"), "virtio-gpu" );
+			append_video_card( QObject::tr("No Graphics"), "-nographic" );
+
+			// Preserve compatibility with older saved emulator definitions by adding
+			// any newer video card entries that are now supported by the running QEMU.
+			if( System_Info::Emulator_QEMU_2_0.contains( iter.key() ) )
+			{
+				const Available_Devices &defaultDevices = System_Info::Emulator_QEMU_2_0[ iter.key() ];
+				for( int dx = 0; dx < defaultDevices.Video_Card_List.count(); ++dx )
+				{
+					bool found = false;
+					for( int vx = 0; vx < tmpDev.Video_Card_List.count(); ++vx )
+					{
+						if( tmpDev.Video_Card_List[vx].QEMU_Name == defaultDevices.Video_Card_List[dx].QEMU_Name )
+						{
+							found = true;
+							break;
+						}
+					}
+					if( ! found )
+						tmpDev.Video_Card_List << defaultDevices.Video_Card_List[ dx ];
+				}
+			}
 			
 			// Platform Specific Options
 			bool ok = false;

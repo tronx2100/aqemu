@@ -551,11 +551,12 @@ bool System_Info::Update_VM_Computers_List()
 	Network_Card_Sparc << Device_Map( QObject::tr("Lance"), "lance" );
 	
 	// Video
-	Video_Card_Standart << Device_Map( QObject::tr("No Video Card"), "-nographic" );
+	Video_Card_Standart << Device_Map( QObject::tr("No Graphics"), "-nographic" );
 	
 	Video_Card_x86 << Device_Map( QObject::tr("Cirrus CLGD 5446"), "" );
-	Video_Card_x86 << Device_Map( QObject::tr("No Video Card"), "-nographic" );
-	Video_Card_x86 << Device_Map( QObject::tr("Standard VGA"), "-std-vga" );
+	Video_Card_x86 << Device_Map( QObject::tr("Default"), "" );
+	Video_Card_x86 << Device_Map( QObject::tr("No Graphics"), "-nographic" );
+	Video_Card_x86 << Device_Map( QObject::tr("Standard VGA (legacy)"), "-std-vga" );
 	
 	// Sound Cards
 	Audio_Card_x86.Audio_PC_Speaker = true;
@@ -571,12 +572,20 @@ bool System_Info::Update_VM_Computers_List()
 	Audio_Card_PPC.Audio_Adlib = true;
 	Audio_Card_PPC.Audio_es1370 = true;
 	
-	// QEMU 0.10.0
+	// QEMU video cards supported by modern -vga handling.
+	// Keep "Default" as an empty QEMU name so saved VMs can omit any explicit VGA flag.
 	QList<Device_Map> QEMU_Video_Cards_v0_10_0;
-	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("StdVGA (VESA 2.0)"), "std" );
+	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Default"), "" );
 	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Cirrus CLGD 5446"), "cirrus" );
+	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Standard VGA"), "std" );
 	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("VMWare Video Card"), "vmware" );
-	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("None Video Card"), "none" );
+	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("QXL"), "qxl" );
+	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Virtio VGA (-vga virtio)"), "virtio" );
+	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Virtio VGA (-device virtio-vga)"), "virtio-vga" );
+	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Xen framebuffer"), "xenfb" );
+	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Sun TCX"), "tcx" );
+	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Sun cg3"), "cg3" );
+	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("None"), "none" );
 	
 	QList<Device_Map> CPU_x86_v0_10_0 = CPU_x86;
 	CPU_x86_v0_10_0 << Device_Map( QObject::tr("Core Duo"), "coreduo" );
@@ -1929,6 +1938,24 @@ Available_Devices System_Info::Get_Emulator_Info( const QString &path, bool *ok,
 					 "Cannot parse VGA string regExp. Data is: \"" + rx.capturedTexts()[0] + "\"" );
 		}
 	}
+
+	// QEMU's help output only reports the legacy -vga values. Add the modern
+	// no-op and virtio device variants explicitly so the UI can offer them too.
+	auto append_video_card = [&]( const QString &caption, const QString &qemu_name )
+	{
+		for( int vx = 0; vx < tmp_dev.Video_Card_List.count(); ++vx )
+		{
+			if( tmp_dev.Video_Card_List[vx].QEMU_Name == qemu_name )
+				return;
+		}
+		tmp_dev.Video_Card_List << Device_Map( caption, qemu_name );
+	};
+
+	if( tmp_dev.Video_Card_List.isEmpty() || tmp_dev.Video_Card_List.first().QEMU_Name != "" )
+		tmp_dev.Video_Card_List.prepend( Device_Map( QObject::tr("Default"), "" ) );
+	append_video_card( QObject::tr("Virtio VGA (device)"), "virtio-vga" );
+	append_video_card( QObject::tr("Virtio GPU (device)"), "virtio-gpu" );
+	append_video_card( QObject::tr("No Graphics"), "-nographic" );
 	
 	// Get Audio Cards Models
 	args_list.clear();

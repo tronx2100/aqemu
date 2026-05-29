@@ -524,7 +524,7 @@
                     <number>0</number>
                    </property>
                    <property name="maxCount">
-                    <number>8</number>
+                    <number>64</number>
                    </property>
                    <property name="sizeAdjustPolicy">
                     <enum>QComboBox::AdjustToMinimumContentsLength</enum>
@@ -584,7 +584,10 @@
                     <number>-1</number>
                    </property>
                    <property name="maxCount">
-                    <number>8</number>
+                    <number>64</number>
+                   </property>
+                   <property name="maxVisibleItems">
+                    <number>20</number>
                    </property>
                    <property name="sizeAdjustPolicy">
                     <enum>QComboBox::AdjustToMinimumContentsLength</enum>
@@ -909,7 +912,7 @@
                  </property>
                  <property name="minimumSize">
                   <size>
-                   <width>100</width>
+                   <width>120</width>
                    <height>0</height>
                   </size>
                  </property>
@@ -991,6 +994,16 @@
                  </property>
                 </widget>
                </item>
+               <item row="3" column="0">
+                <widget class="QCheckBox" name="CH_Use_Memory_Backend">
+                 <property name="text">
+                  <string>Use memory-backend-ram</string>
+                 </property>
+                 <property name="toolTip">
+                  <string>Use QEMU memory backend syntax for RAM instead of plain -m.</string>
+                 </property>
+                </widget>
+               </item>
                <item row="1" column="2" rowspan="2">
                 <spacer name="verticalSpacer_15">
                  <property name="orientation">
@@ -1007,7 +1020,7 @@
                <item row="0" column="0" rowspan="2">
                 <layout class="QVBoxLayout" name="verticalLayout_11">
                  <item>
-                  <widget class="QSlider" name="Memory_Size">
+                 <widget class="QSlider" name="Memory_Size">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                      <horstretch>0</horstretch>
@@ -1037,9 +1050,9 @@
                    </property>
                    <property name="tickInterval">
                     <number>128</number>
-                   </property>
-                  </widget>
-                 </item>
+                  </property>
+                 </widget>
+                </item>
                  <item>
                   <layout class="QHBoxLayout" name="horizontalLayout_6">
                    <item>

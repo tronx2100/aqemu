@@ -188,6 +188,8 @@ class Virtual_Machine: public QObject
 		
 		bool Get_Remove_RAM_Size_Limitation() const;
 		void Set_Remove_RAM_Size_Limitation( bool on );
+		bool Get_Use_Memory_Backend() const;
+		void Set_Use_Memory_Backend( bool on );
 		
 		bool Use_Fullscreen_Mode() const;
 		void Use_Fullscreen_Mode( bool use );
@@ -526,11 +528,12 @@ class Virtual_Machine: public QObject
 		QString Keyboard_Layout; // language en, ru, jp...
 		QList<VM::Boot_Order> Boot_Order_List; // New boot order
 		bool Show_Boot_Menu; // Enable interactive boot menu
-			QString Video_Card; // std vga, cirus logic
+			QString Video_Card; // empty = default, otherwise vga device name or legacy flag
 			VM::Sound_Cards Audio_Card; // sb16, es1370
 			bool Use_Custom_Audio_Backend;
 			QString Audio_Backend;
 			bool Remove_RAM_Size_Limitation; // true - limitation off
+			bool Use_Memory_Backend; // use memory-backend-ram for main RAM
 			int Memory_Size; // RAM Size
 		
 		// General Tab Options

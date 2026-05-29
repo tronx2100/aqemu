@@ -158,6 +158,7 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 	
 	this->Memory_Size = vm.Get_Memory_Size();
 	this->Remove_RAM_Size_Limitation = vm.Get_Remove_RAM_Size_Limitation();
+	this->Use_Memory_Backend = vm.Get_Use_Memory_Backend();
 	
 	this->Fullscreen = vm.Use_Fullscreen_Mode();
 	this->Win2K_Hack = vm.Use_Win2K_Hack();
@@ -406,6 +407,7 @@ void Virtual_Machine::Shared_Constructor()
 	if( Audio_Backend.isEmpty() )
 		Audio_Backend = Get_Preferred_Audio_Backend();
 	Remove_RAM_Size_Limitation = false;
+	Use_Memory_Backend = false;
 	Memory_Size = 128;
 	
 	Fullscreen = false;
@@ -516,6 +518,7 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
 		this->Audio_Backend == vm.Get_Audio_Backend() &&
 		this->Memory_Size == vm.Get_Memory_Size() &&
 		this->Remove_RAM_Size_Limitation == vm.Get_Remove_RAM_Size_Limitation() &&
+		this->Use_Memory_Backend == vm.Get_Use_Memory_Backend() &&
 		this->Fullscreen == vm.Use_Fullscreen_Mode() &&
 		this->Win2K_Hack == vm.Use_Win2K_Hack() &&
 		this->Local_Time == vm.Use_Local_Time() &&
@@ -750,6 +753,7 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->Audio_Backend = vm.Get_Audio_Backend();
 	this->Memory_Size = vm.Get_Memory_Size();
 	this->Remove_RAM_Size_Limitation = vm.Get_Remove_RAM_Size_Limitation();
+	this->Use_Memory_Backend = vm.Get_Use_Memory_Backend();
 	this->Fullscreen = vm.Use_Fullscreen_Mode();
 	this->Win2K_Hack = vm.Use_Win2K_Hack();
 	this->Local_Time = vm.Use_Local_Time();
@@ -1252,6 +1256,15 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 	Dom_Element = New_Dom_Document.createElement( "Memory_Size" );
 	VM_Element.appendChild( Dom_Element );
 	Dom_Text = New_Dom_Document.createTextNode( QString::number(Memory_Size) );
+	Dom_Element.appendChild( Dom_Text );
+
+	// Memory Backend
+	Dom_Element = New_Dom_Document.createElement( "Use_Memory_Backend" );
+	VM_Element.appendChild( Dom_Element );
+	if( Use_Memory_Backend )
+		Dom_Text = New_Dom_Document.createTextNode( "true" );
+	else
+		Dom_Text = New_Dom_Document.createTextNode( "false" );
 	Dom_Element.appendChild( Dom_Text );
 	
 	// Fullscreen
@@ -3906,6 +3919,7 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 			
 			// Memory Size ( RAM )
 			Memory_Size = Child_Element.firstChildElement("Memory_Size").text().toInt();
+			Use_Memory_Backend = (Child_Element.firstChildElement("Use_Memory_Backend").text() == "true");
 			
 			// Fullscreen
 			Fullscreen = (Child_Element.firstChildElement("Fullscreen").text() == "true");
@@ -5532,16 +5546,41 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 		Args << "-k" << Get_Keyboard_Layout();
 	
 	// Video
-	if( Current_Emulator_Devices.PSO_Std_VGA ) // QEMU before 0.10 style
-		Args << Video_Card;
-	else if( ! Video_Card.isEmpty() ) // QEMU 0.10 style
+	// Keep legacy values compatible, but prefer the modern -vga syntax.
+	if( Video_Card == "-nographic" || ( Current_Emulator_Devices.PSO_Std_VGA && Video_Card == "none" ) )
+	{
+		Args << "-nographic";
+	}
+	else if( Video_Card == "-std-vga" || ( Current_Emulator_Devices.PSO_Std_VGA && Video_Card == "std" ) )
+	{
+		Args << "-std-vga";
+	}
+	else if( Video_Card == "virtio-vga" )
+	{
+		Args << "-device" << "virtio-vga";
+	}
+	else if( Video_Card == "virtio-gpu" )
+	{
+		Args << "-device" << "virtio-gpu";
+	}
+	else if( ! Video_Card.isEmpty() )
+	{
 		Args << "-vga" << Video_Card;
+	}
+
+	// Memory backend
+	if( Use_Memory_Backend )
+	{
+		Args << "-object" << QString("memory-backend-ram,id=ram0,size=%1M").arg( Memory_Size );
+	}
 
     // Accelerator
     Args << "-machine";
 
     QStringList props;
     props << "accel="+VM::Accel_To_String( Machine_Accelerator );
+	if( Use_Memory_Backend )
+		props << "memory-backend=ram0";
 	if( audio_pcspk )
 		props << "pcspk-audiodev=audio0";
 
@@ -8103,6 +8142,16 @@ bool Virtual_Machine::Get_Remove_RAM_Size_Limitation() const
 void Virtual_Machine::Set_Remove_RAM_Size_Limitation( bool on )
 {
 	Remove_RAM_Size_Limitation = on;
+}
+
+bool Virtual_Machine::Get_Use_Memory_Backend() const
+{
+	return Use_Memory_Backend;
+}
+
+void Virtual_Machine::Set_Use_Memory_Backend( bool on )
+{
+	Use_Memory_Backend = on;
 }
 
 int Virtual_Machine::Get_Memory_Size() const

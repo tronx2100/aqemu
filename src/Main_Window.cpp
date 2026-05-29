@@ -22,8 +22,10 @@
 ****************************************************************************/
 
 #include <QFileDialog>
+#include <QFile>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QTextStream>
 #include <QTextFrame>
 #include <QTextTableCell>
 #include <QUrl>
@@ -391,6 +393,9 @@ void Main_Window::Connect_Signals()
 	connect( ui.CH_Remove_RAM_Size_Limitation, SIGNAL(clicked()),
 			 this, SLOT(VM_Changed()) );
 
+	connect( ui.CH_Use_Memory_Backend, SIGNAL(clicked()),
+			 this, SLOT(VM_Changed()) );
+
 	connect( ui.CH_sb16, SIGNAL(clicked()),
 			 this, SLOT(VM_Changed()) );
 
@@ -698,16 +703,82 @@ const QMap<QString, Available_Devices> Main_Window::Get_Devices_Info( bool *ok )
 	QMap<QString, QString> tmpBinFiles = curEmul.Get_Binary_Files();
 	for( QMap<QString, QString>::const_iterator it = tmpBinFiles.constBegin(); it != tmpBinFiles.constEnd(); ++it )
 	{
-		if( ! it.value().isEmpty() )
+		if( it.value().isEmpty() )
+			continue;
+
+		bool scanOk = false;
+		Available_Devices tmpDev = System_Info::Get_Emulator_Info( it.value(), &scanOk, curEmul.Get_Version(), it.key() );
+		if( scanOk )
 		{
-			bool ok = false;
-			Available_Devices tmpDev = System_Info::Get_Emulator_Info( it.value(), &ok, curEmul.Get_Version(), it.key() );
-			if( ok ) retList[ it.key() ] = tmpDev;
+			retList[ it.key() ] = tmpDev;
+			continue;
 		}
+
+		// Fall back to the stored device list if live scanning failed.
+		if( retList.isEmpty() )
+			retList = curEmul.Get_Devices();
 	}
 
 	if( retList.isEmpty() )
 		retList = curEmul.Get_Devices();
+
+	auto normalize_video_cards = []( Available_Devices &devices, const Available_Devices &defaults )
+	{
+		auto ensure_video_card = [&]( const QString &caption, const QString &qemu_name )
+		{
+			for( int ix = 0; ix < devices.Video_Card_List.count(); ++ix )
+			{
+				if( devices.Video_Card_List[ix].QEMU_Name == qemu_name )
+					return;
+			}
+			devices.Video_Card_List << Device_Map( caption, qemu_name );
+		};
+
+		if( devices.Video_Card_List.isEmpty() )
+		{
+			devices.Video_Card_List = defaults.Video_Card_List;
+			return;
+		}
+
+		for( int ix = 0; ix < devices.Video_Card_List.count(); ++ix )
+		{
+			const QString &name = devices.Video_Card_List[ix].QEMU_Name;
+			if( name.isEmpty() )
+				devices.Video_Card_List[ix].Caption = tr("Default");
+			else if( name == "std" )
+				devices.Video_Card_List[ix].Caption = tr("Standard VGA");
+			else if( name == "cirrus" )
+				devices.Video_Card_List[ix].Caption = tr("Cirrus CLGD 5446");
+			else if( name == "vmware" )
+				devices.Video_Card_List[ix].Caption = tr("VMWare Video Card");
+			else if( name == "qxl" )
+				devices.Video_Card_List[ix].Caption = tr("QXL");
+			else if( name == "virtio" )
+				devices.Video_Card_List[ix].Caption = tr("Virtio VGA (-vga virtio)");
+			else if( name == "virtio-vga" )
+				devices.Video_Card_List[ix].Caption = tr("Virtio VGA (-device virtio-vga)");
+			else if( name == "virtio-gpu" )
+				devices.Video_Card_List[ix].Caption = tr("Virtio GPU (-device virtio-gpu)");
+			else if( name == "xenfb" )
+				devices.Video_Card_List[ix].Caption = tr("Xen framebuffer");
+			else if( name == "tcx" )
+				devices.Video_Card_List[ix].Caption = tr("Sun TCX");
+			else if( name == "cg3" )
+				devices.Video_Card_List[ix].Caption = tr("Sun cg3");
+			else if( name == "none" )
+				devices.Video_Card_List[ix].Caption = tr("None");
+		}
+
+		ensure_video_card( tr("Virtio VGA (-device virtio-vga)"), "virtio-vga" );
+		ensure_video_card( tr("Virtio GPU (-device virtio-gpu)"), "virtio-gpu" );
+		ensure_video_card( tr("No Graphics"), "-nographic" );
+	};
+
+	for( QMap<QString, Available_Devices>::iterator it = retList.begin(); it != retList.end(); ++it )
+	{
+		if( System_Info::Emulator_QEMU_2_0.contains( it.key() ) )
+			normalize_video_cards( it.value(), System_Info::Emulator_QEMU_2_0.value( it.key() ) );
+	}
 
 	if( retList.isEmpty() )
 	{
@@ -881,6 +952,7 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 
 	// Check free ram
 	tmp_vm->Set_Remove_RAM_Size_Limitation( ui.CH_Remove_RAM_Size_Limitation->isChecked() );
+	tmp_vm->Set_Use_Memory_Backend( ui.CH_Use_Memory_Backend->isChecked() );
 
 	// Options
 	tmp_vm->Use_Fullscreen_Mode( ui.CH_Fullscreen->isChecked() );
@@ -1468,6 +1540,7 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 
 	ui.CH_Remove_RAM_Size_Limitation->setChecked( tmp_vm->Get_Remove_RAM_Size_Limitation() );
 	on_CH_Remove_RAM_Size_Limitation_stateChanged( ui.CH_Remove_RAM_Size_Limitation->checkState() );
+	ui.CH_Use_Memory_Backend->setChecked( tmp_vm->Get_Use_Memory_Backend() );
 
 	// General Tab. Options
 	ui.CH_Fullscreen->setChecked( tmp_vm->Use_Fullscreen_Mode() );

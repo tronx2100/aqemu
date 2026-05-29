@@ -316,6 +316,7 @@ void VM_Wizard_Window::applyTemplate()
 		
 		// Memory
 		ui.Memory_Size->setValue( New_VM->Get_Memory_Size() );
+		ui.CH_Use_Memory_Backend->setChecked( New_VM->Get_Use_Memory_Backend() );
 		
 		// HDA
 		double hda_size = New_VM->Get_HDA().Get_Virtual_Size_in_GB();
@@ -481,6 +482,7 @@ bool VM_Wizard_Window::Create_New_VM(bool simulate)
 
 	// RAM
 	New_VM->Set_Memory_Size( ui.Memory_Size->value() );
+	New_VM->Set_Use_Memory_Backend( ui.CH_Use_Memory_Backend->isChecked() );
 
 	// Wizard Mode
 	if( ui.RB_Typical->isChecked() )
