@@ -5686,6 +5686,7 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	// TPM device
 	if( Use_TPM )
 	{
+		Args << "-chardev" << "socket,id=chrtpm,path=/run/swtpm.sock";
 		Args << "-tpmdev" << "emulator,id=tpm0,chardev=chrtpm";
 		Args << "-device" << "tpm-tis,tpmdev=tpm0";
 	}
