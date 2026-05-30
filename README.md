@@ -1,7 +1,37 @@
-###Latest news:
-05/2026
-added UEFI and TPM Support for more modern OS, Passtrough direct selector for any pci.e device and native blockdevice selector added
-fixed a lot , really alot .
+### What's new in 0.9.8 (May 2026)
+
+**UEFI & Modern OS Support**
+- UEFI (OVMF) firmware with Secure Boot toggle
+- Windows 10/11 VM templates (Secure Boot, TPM 2.0, 4+ GB RAM presets)
+
+**TPM (Trusted Platform Module)**
+- Full TPM 2.0 device setup via swtpm backend
+- Automatic `-chardev` + `-tpmdev` QEMU argument generation
+
+**VFIO PCIe Passthrough**
+- Dedicated VFIO passthrough editor: browse host PCI devices, IOMMU groups, driver status
+- Auto-generates `vfio-pci` device args + `ioh3420` root ports
+- Per-device flags: multifunction, x-vga, ROM file, disable VGA/idle
+
+**Storage**
+- **Resize HDD Image** dialog – grow qcow2/VDI images by 1–1024 GB
+- Native block device selector (`/dev/` paths)
+- Storage bug fixes and format UI improvements
+
+**CPU & Performance**
+- CPU flags editor with presets
+- SMP topology auto-fill with QEMU 9.x validation
+- Hyperthreading toggle
+- Hyper-V enlightenments for Windows guests
+
+**Usability**
+- SMB quick share setup
+- Deduplicated Machine Type dropdown
+- Modern QEMU audio device detection
+- Clean, **warning-free build** (Meson & CMake, 0 warnings)
+
+**Packaging**
+- Debian packaging script with proper `--prefix=/usr`, `DESTDIR`, dependency handling
 
 Example how to build using meson/ninja:
 ```
@@ -14,14 +44,7 @@ ninja
 
 ![ScreenShot](https://i.imgur.com/PkvFUEk.png)
 
-Current stable release: https://github.com/tobimensch/aqemu/releases/tag/v0.9.2
-See the CHANGELOG for details.
-
-Upgrading from 0.8.2 is highly recommended.
-
----
-
-Port of AQEMU 0.8.2 from Qt4 to Qt5.
+Based on AQEMU — a Qt5 frontend for QEMU with optional embedded VNC display and DBus service.
 
 ---
 
