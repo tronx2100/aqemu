@@ -30,6 +30,7 @@
 #include <QTextTableCell>
 #include <QUrl>
 #include <QHeaderView>
+#include <QSettings>
 #include <QValidator>
 #include <QPainter>
 #include <QStandardItem>
@@ -3951,12 +3952,26 @@ void Main_Window::on_actionCreate_Shell_Script_triggered()
 		return;
 	}
 
-	QString script_code = "#!/bin/sh\n# This script was created by AQEMU\n" + Get_Current_Binary_Name();
+	QSettings settings;
+	QString before_cmd = settings.value("Run_Before_QEMU", "").toString();
+	QString after_cmd  = settings.value("Run_After_QEMU", "").toString();
+	bool incl_before   = settings.value("Include_Before_In_Script", false).toBool();
+	bool incl_after    = settings.value("Include_After_In_Script", false).toBool();
+
+	QString script_code = "#!/bin/sh\n# This script was created by AQEMU\n";
+
+	if( incl_before && ! before_cmd.isEmpty() )
+		script_code += "\n# Execute before QEMU start\n" + before_cmd + "\n";
+
+	script_code += Get_Current_Binary_Name();
 	QStringList all_args = cur_vm->Build_QEMU_Args_For_Script();
 
 	for( int ix = 0; ix < all_args.count(); ix++ ) script_code += " " + all_args[ ix ];
 
 	script_code = script_code.remove( "-monitor stdio" );
+
+	if( incl_after && ! after_cmd.isEmpty() )
+		script_code += "\n\n# Execute after QEMU exit\n" + after_cmd;
 
 	// Save Script
 	QString selectedFilter = "";

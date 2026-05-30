@@ -1407,84 +1407,98 @@ with embedded display</string>
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout_9">
             <item>
-             <layout class="QGridLayout" name="gridLayout_3" columnstretch="3,4,0">
-              <property name="leftMargin">
-               <number>10</number>
-              </property>
-              <item row="0" column="0">
-               <widget class="QLabel" name="Label_Before_Start">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>E&amp;xecute at start:</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                </property>
-                <property name="buddy">
-                 <cstring>Edit_Before_Start_Command</cstring>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QLineEdit" name="Edit_Before_Start_Command">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="2">
-               <widget class="QToolButton" name="TB_Browse_Before">
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="icon">
-                 <iconset resource="../resources/icons.qrc">
-                  <normaloff>:/open-file.png</normaloff>:/open-file.png</iconset>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="Label_After_Stop">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>Execute at exit:</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                </property>
-                <property name="buddy">
-                 <cstring>Edit_After_Stop_Command</cstring>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLineEdit" name="Edit_After_Stop_Command"/>
-              </item>
-              <item row="1" column="2">
-               <widget class="QToolButton" name="TB_Browse_After">
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="icon">
-                 <iconset resource="../resources/icons.qrc">
-                  <normaloff>:/open-file.png</normaloff>:/open-file.png</iconset>
-                </property>
-               </widget>
-              </item>
-             </layout>
+              <layout class="QGridLayout" name="gridLayout_3" columnstretch="3,4,0,0">
+               <property name="leftMargin">
+                <number>10</number>
+               </property>
+               <item row="0" column="0">
+                <widget class="QLabel" name="Label_Before_Start">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>E&amp;xecute at start:</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                 <property name="buddy">
+                  <cstring>Edit_Before_Start_Command</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QLineEdit" name="Edit_Before_Start_Command">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="QToolButton" name="TB_Browse_Before">
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../resources/icons.qrc">
+                   <normaloff>:/open-file.png</normaloff>:/open-file.png</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="3">
+                <widget class="QCheckBox" name="CH_Include_Before_In_Script">
+                 <property name="text">
+                  <string>Include in generated script</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="Label_After_Stop">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Execute at exit:</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                 <property name="buddy">
+                  <cstring>Edit_After_Stop_Command</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QLineEdit" name="Edit_After_Stop_Command"/>
+               </item>
+               <item row="1" column="2">
+                <widget class="QToolButton" name="TB_Browse_After">
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../resources/icons.qrc">
+                   <normaloff>:/open-file.png</normaloff>:/open-file.png</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="3">
+                <widget class="QCheckBox" name="CH_Include_After_In_Script">
+                 <property name="text">
+                  <string>Include in generated script</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
             </item>
            </layout>
           </widget>

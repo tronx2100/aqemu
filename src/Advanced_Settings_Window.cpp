@@ -56,9 +56,11 @@ Advanced_Settings_Window::Advanced_Settings_Window( QWidget *parent )
 	
 	// Execute Before Start QEMU
 	ui.Edit_Before_Start_Command->setText( Settings.value("Run_Before_QEMU", "").toString() );
+	ui.CH_Include_Before_In_Script->setChecked( Settings.value("Include_Before_In_Script", false).toBool() );
 	
 	// Execute After Stop QEMU
 	ui.Edit_After_Stop_Command->setText( Settings.value("Run_After_QEMU", "").toString() );
+	ui.CH_Include_After_In_Script->setChecked( Settings.value("Include_After_In_Script", false).toBool() );
 	
 	// Use Shared Folder For All Screenshots
 	ui.CH_Screenshot_Folder->setChecked( Settings.value("Use_Screenshots_Folder", "no").toString() == "yes" );
@@ -443,9 +445,11 @@ void Advanced_Settings_Window::done(int r)
     {
 	    // Execute Before Start QEMU
 	    Settings.setValue( "Run_Before_QEMU", ui.Edit_Before_Start_Command->text() );
+	    Settings.setValue( "Include_Before_In_Script", ui.CH_Include_Before_In_Script->isChecked() );
 	
 	    // Execute After Stop QEMU
 	    Settings.setValue( "Run_After_QEMU", ui.Edit_After_Stop_Command->text() );
+	    Settings.setValue( "Include_After_In_Script", ui.CH_Include_After_In_Script->isChecked() );
 	
 	    // Use Shared Folder For All Screenshots
 	    if( ui.CH_Screenshot_Folder->isChecked() )
