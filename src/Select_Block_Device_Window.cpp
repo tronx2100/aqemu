@@ -17,42 +17,79 @@ struct BlkInfo {
 static QMap<QString, BlkInfo> Run_Blkid()
 {
 	QMap<QString, BlkInfo> result;
+
+	// Try blkid first (most detailed – includes PARTLABEL)
 	QProcess proc;
 	proc.start( "blkid", QStringList() );
-	if( ! proc.waitForFinished(5000) )
-		return result;
-
-	QByteArray data = proc.readAllStandardOutput();
-	QTextStream in( &data, QIODevice::ReadOnly );
-
-	static QRegularExpression kv_re( "(\\w+)=\"([^\"]*)\"" );
-
-	while( ! in.atEnd() )
+	if( proc.waitForFinished(5000) && proc.exitCode() == 0 )
 	{
-		QString line = in.readLine().trimmed();
-		if( line.isEmpty() )
-			continue;
+		QByteArray data = proc.readAllStandardOutput();
+		QTextStream in( &data, QIODevice::ReadOnly );
+		static QRegularExpression kv_re( "(\\w+)=\"([^\"]*)\"" );
 
-		// /dev/sda1: LABEL="..." UUID="..." TYPE="..." PARTLABEL="..."
-		int colon = line.indexOf( ": " );
-		if( colon < 0 ) continue;
-
-		QString dev = line.left( colon );
-		QString rest = line.mid( colon + 2 );
-
-		BlkInfo info;
-		QRegularExpressionMatchIterator it = kv_re.globalMatch( rest );
-		while( it.hasNext() )
+		while( ! in.atEnd() )
 		{
-			QRegularExpressionMatch m = it.next();
-			QString key = m.captured(1);
-			QString val = m.captured(2);
-			if( key == "LABEL" )       info.label = val;
-			if( key == "TYPE" )        info.fstype = val;
-			if( key == "PARTLABEL" )   info.partlabel = val;
+			QString line = in.readLine().trimmed();
+			if( line.isEmpty() )
+				continue;
+
+			int colon = line.indexOf( ": " );
+			if( colon < 0 ) continue;
+
+			QString dev = line.left( colon );
+			QString rest = line.mid( colon + 2 );
+
+			BlkInfo info;
+			QRegularExpressionMatchIterator it = kv_re.globalMatch( rest );
+			while( it.hasNext() )
+			{
+				QRegularExpressionMatch m = it.next();
+				QString key = m.captured(1);
+				QString val = m.captured(2);
+				if( key == "LABEL" )       info.label = val;
+				if( key == "TYPE" )        info.fstype = val;
+				if( key == "PARTLABEL" )   info.partlabel = val;
+			}
+			result[ dev ] = info;
 		}
-		result[ dev ] = info;
+		return result;
 	}
+
+	// Fallback: lsblk (always in /usr/bin, works without root)
+	proc.start( "lsblk", QStringList() << "-n" << "-l" << "-o" << "NAME,LABEL,FSTYPE" );
+	if( proc.waitForFinished(5000) && proc.exitCode() == 0 )
+	{
+		QByteArray data = proc.readAllStandardOutput();
+		QTextStream in( &data, QIODevice::ReadOnly );
+		while( ! in.atEnd() )
+		{
+			QString line = in.readLine().trimmed();
+			if( line.isEmpty() ) continue;
+			QStringList fields = line.split( QRegularExpression("\\s+") );
+			if( fields.size() < 1 ) continue;
+			BlkInfo info;
+			if( fields.size() >= 2 ) info.label = fields[1];
+			if( fields.size() >= 3 ) info.fstype = fields[2];
+			result[ "/dev/" + fields[0] ] = info;
+		}
+	}
+
+	// Last resort: read /dev/disk/by-label/ for labels
+	QDir by_label( "/dev/disk/by-label" );
+	if( by_label.exists() )
+	{
+		for( const QString &entry : by_label.entryList(QDir::NoDotAndDotDot, QDir::Name) )
+		{
+			QString target = QFileInfo( by_label.absoluteFilePath(entry) ).symLinkTarget();
+			if( target.isEmpty() ) continue;
+			QString dev = QFileInfo( target ).canonicalFilePath();
+			if( dev.isEmpty() ) continue;
+			BlkInfo &info = result[ dev ];
+			if( info.label.isEmpty() )
+				info.label = entry;
+		}
+	}
+
 	return result;
 }
 
@@ -134,10 +171,10 @@ void Select_Block_Device_Window::Refresh_Device_List()
 		if( show_partitions != is_partition )
 			continue;
 
-		// Find /dev/disk/by-id/ path
+		// Find /dev/disk/by-id/ path (fallback to /dev/<name>)
 		QString byid_path = dev_to_byid.value( name );
 		if( byid_path.isEmpty() )
-			continue;
+			byid_path = "/dev/" + name;
 
 		// Read model from parent device
 		QString model;
