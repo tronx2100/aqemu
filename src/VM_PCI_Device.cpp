@@ -1,4 +1,6 @@
 #include <QSet>
+#include <QStringList>
+#include <algorithm>
 #include "VM_PCI_Device.h"
 
 VM_PCI_Device::VM_PCI_Device()

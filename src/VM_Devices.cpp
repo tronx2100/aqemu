@@ -1694,6 +1694,39 @@ VM_Native_Storage_Device::VM_Native_Storage_Device( const VM_Native_Storage_Devi
 	Format = sd.Get_Format();
 }
 
+VM_Native_Storage_Device &VM_Native_Storage_Device::operator=( const VM_Native_Storage_Device &sd )
+{
+	UFile_Path = sd.Use_File_Path();
+	File_Path = sd.Get_File_Path();
+	UInterface = sd.Use_Interface();
+	Interface = sd.Get_Interface();
+	UBus_Unit = sd.Use_Bus_Unit();
+	Bus = sd.Get_Bus();
+	Unit = sd.Get_Unit();
+	UIndex = sd.Use_Index();
+	Index = sd.Get_Index();
+	UMedia = sd.Use_Media();
+	Media = sd.Get_Media();
+	Uhdachs = sd.Use_hdachs();
+	Cyls = sd.Get_Cyls();
+	Heads = sd.Get_Heads();
+	Secs = sd.Get_Secs();
+	Trans = sd.Get_Trans();
+	USnapshot = sd.Use_Snapshot();
+	Snapshot = sd.Get_Snapshot();
+	UCache = sd.Use_Cache();
+	Cache = sd.Get_Cache();
+	UAIO = sd.Use_AIO();
+	AIO = sd.Get_AIO();
+	UBoot = sd.Use_Boot();
+	Boot = sd.Get_Boot();
+	UDiscard = sd.Use_Discard();
+	Discard = sd.Get_Discard();
+	UFormat = sd.Use_Format();
+	Format = sd.Get_Format();
+	return *this;
+}
+
 bool VM_Native_Storage_Device::Get_Native_Mode() const
 {
 	if( UAIO ) return true;
@@ -2062,6 +2095,14 @@ VM_Storage_Device::VM_Storage_Device( const VM_Storage_Device &device )
     Native_Device = device.Get_Native_Device();
 }
 
+VM_Storage_Device &VM_Storage_Device::operator=( const VM_Storage_Device &device )
+{
+	Enabled = device.Get_Enabled();
+	File_Name = device.Get_File_Name();
+    Native_Device = device.Get_Native_Device();
+	return *this;
+}
+
 VM_Storage_Device::VM_Storage_Device( bool enabled, const QString &file_name )
 {
 	Enabled = enabled;
@@ -2070,7 +2111,7 @@ VM_Storage_Device::VM_Storage_Device( bool enabled, const QString &file_name )
     Native_Device.Set_File_Path( file_name );
 }
 
-VM_Storage_Device::VM_Storage_Device( bool enabled, const QString &file_name, bool Native_mode, const VM_Native_Storage_Device &device )
+VM_Storage_Device::VM_Storage_Device( bool enabled, const QString &file_name, bool /*Native_mode*/, const VM_Native_Storage_Device &device )
 {
 	Enabled = enabled;
 	File_Name = file_name;

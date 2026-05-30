@@ -95,7 +95,7 @@ const VM_SPICE &SPICE_Settings_Widget::Get_Settings( bool &settingsValidated )
     //TODO: DEPRECATED OPTION / IF THERE'S NO ALTERNATIVE => REMOVE THE CODE
 	//spiceSettings.Set_GXL_Devices_Count( ui.SB_QXL_Num->value() );
 	
-	bool ok = false;
+	//bool ok = false;
     unsigned int val = 0;
 
     //TODO: DEPRECATED OPTION / IF THERE'S NO ALTERNATIVE => REMOVE THE CODE
@@ -242,7 +242,7 @@ void SPICE_Settings_Widget::Set_Settings( const VM_SPICE &settings )
 	ui.Edit_Password->setText( settings.Get_Password() );
 }
 
-void SPICE_Settings_Widget::Set_PSO_GXL( bool use )
+void SPICE_Settings_Widget::Set_PSO_GXL( bool /*use*/ )
 {
 //	ui.Label_QXL->setEnabled( use );
 //	ui.Label_Number_of_QXL_Devices->setEnabled( use );

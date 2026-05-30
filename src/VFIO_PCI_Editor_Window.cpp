@@ -17,7 +17,9 @@
 
 // forward declarations of helpers defined later
 static QString pciBaseName( const QString &shortAddr );
+#if 0
 static int pciFunction( const QString &shortAddr );
+#endif
 static bool pciClassTop( const QString &classID, quint8 classByte );
 #include <QApplication>
 
@@ -572,6 +574,7 @@ void VFIO_PCI_Editor_Window::on_Show_All_Changed( int state )
 
 void VFIO_PCI_Editor_Window::on_Table_Item_Changed( QTableWidgetItem *item )
 {
+    Q_UNUSED(item);
     if ( Updating_Table )
         return;
     // only col 3 (Address) matters - but we handle checkboxes via cellWidget
@@ -605,12 +608,14 @@ static bool pciClassTop( const QString &classID, quint8 classByte )
     return ok && ( ( val >> 16 ) & 0xFF ) == classByte;
 }
 
+#if 0
 static int pciFunction( const QString &shortAddr )
 {
     int dot = shortAddr.lastIndexOf( '.' );
     if ( dot < 0 ) return 0;
     return shortAddr.mid( dot + 1 ).toInt();
 }
+#endif
 
 void VFIO_PCI_Editor_Window::Assign_Topology()
 {

@@ -113,8 +113,9 @@ void First_Start_Wizard::on_Button_Next_clicked()
 	Next_Move = true;
 	ui.All_Pages->setCurrentIndex( ui.All_Pages->currentIndex() +1 );
 
-    if ( ui.All_Pages->currentIndex() == 3 ) //FIXME: skipping this page but it could maybe be removed
+    if ( ui.All_Pages->currentIndex() == 3 ) { //FIXME: skipping this page but it could maybe be removed
     	ui.All_Pages->setCurrentIndex( ui.All_Pages->currentIndex() + 1 );
+    }
 	
 	if( ui.All_Pages->currentWidget() == ui.Find_Emulators_Page )
 	{

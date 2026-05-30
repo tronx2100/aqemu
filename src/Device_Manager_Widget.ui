@@ -377,27 +377,47 @@
           </property>
          </widget>
         </item>
-        <item>
-         <widget class="QToolButton" name="TB_Quick_Format">
-          <property name="toolTip">
-           <string>Quick Format</string>
-          </property>
-          <property name="text">
-           <string>Quick Format</string>
-          </property>
-          <property name="icon">
-           <iconset resource="../resources/icons.qrc">
-            <normaloff>:/eraser.png</normaloff>:/eraser.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>32</width>
-            <height>32</height>
-           </size>
-          </property>
-         </widget>
-        </item>
-       </layout>
+         <item>
+          <widget class="QToolButton" name="TB_Quick_Format">
+           <property name="toolTip">
+            <string>Quick Format</string>
+           </property>
+           <property name="text">
+            <string>Quick Format</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../resources/icons.qrc">
+             <normaloff>:/eraser.png</normaloff>:/eraser.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>32</width>
+             <height>32</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="TB_Resize_HDD">
+           <property name="toolTip">
+            <string>Resize HDD Image</string>
+           </property>
+           <property name="text">
+            <string>Resize</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../resources/icons.qrc">
+             <normaloff>:/exec.png</normaloff>:/exec.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>32</width>
+             <height>32</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
       </item>
      </layout>
     </widget>
@@ -568,16 +588,25 @@
     <string>Icon Mode</string>
    </property>
   </action>
-  <action name="actionQuick_Format">
-   <property name="icon">
-    <iconset resource="../resources/icons.qrc">
-     <normaloff>:/eraser.png</normaloff>:/eraser.png</iconset>
-   </property>
-   <property name="text">
-    <string>Quick Format</string>
-   </property>
-  </action>
-  <action name="actionAdd_Device">
+   <action name="actionQuick_Format">
+    <property name="icon">
+     <iconset resource="../resources/icons.qrc">
+      <normaloff>:/eraser.png</normaloff>:/eraser.png</iconset>
+    </property>
+    <property name="text">
+     <string>Quick Format</string>
+    </property>
+   </action>
+   <action name="actionResize_HDD">
+    <property name="icon">
+     <iconset resource="../resources/icons.qrc">
+      <normaloff>:/exec.png</normaloff>:/exec.png</iconset>
+    </property>
+    <property name="text">
+     <string>Resize HDD</string>
+    </property>
+   </action>
+   <action name="actionAdd_Device">
    <property name="icon">
     <iconset resource="../resources/icons.qrc">
      <normaloff>:/blockdevice.png</normaloff>:/blockdevice.png</iconset>
@@ -600,8 +629,9 @@
   <tabstop>TB_Edit_Device</tabstop>
   <tabstop>TB_Delete_Device</tabstop>
   <tabstop>TB_Format_HDD</tabstop>
-  <tabstop>TB_Quick_Format</tabstop>
-  <tabstop>TB_Icon_Mode</tabstop>
+   <tabstop>TB_Quick_Format</tabstop>
+   <tabstop>TB_Resize_HDD</tabstop>
+   <tabstop>TB_Icon_Mode</tabstop>
   <tabstop>TB_List_Mode</tabstop>
   <tabstop>Devices_List</tabstop>
  </tabstops>
@@ -753,21 +783,37 @@
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>TB_Add_Floppy</sender>
-   <signal>clicked()</signal>
-   <receiver>actionAdd_Floppy</receiver>
-   <slot>trigger()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>34</x>
-     <y>55</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+   <connection>
+    <sender>TB_Add_Floppy</sender>
+    <signal>clicked()</signal>
+    <receiver>actionAdd_Floppy</receiver>
+    <slot>trigger()</slot>
+    <hints>
+     <hint type="sourcelabel">
+      <x>34</x>
+      <y>55</y>
+     </hint>
+     <hint type="destinationlabel">
+      <x>-1</x>
+      <y>-1</y>
+     </hint>
+    </hints>
+   </connection>
+   <connection>
+    <sender>TB_Resize_HDD</sender>
+    <signal>clicked()</signal>
+    <receiver>actionResize_HDD</receiver>
+    <slot>trigger()</slot>
+    <hints>
+     <hint type="sourcelabel">
+      <x>480</x>
+      <y>55</y>
+     </hint>
+     <hint type="destinationlabel">
+      <x>-1</x>
+      <y>-1</y>
+     </hint>
+    </hints>
+   </connection>
+  </connections>
 </ui>

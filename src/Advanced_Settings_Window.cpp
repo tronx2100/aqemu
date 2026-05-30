@@ -397,7 +397,7 @@ void Advanced_Settings_Window::on_TB_VM_Folder_clicked()
 	}
 }
 
-void Advanced_Settings_Window::CB_Language_currentIndexChanged( int index )
+void Advanced_Settings_Window::CB_Language_currentIndexChanged( int /*index*/ )
 {
 	if( Settings.value("Show_Language_Warning", "yes").toString() == "yes" )
 	{
@@ -410,7 +410,7 @@ void Advanced_Settings_Window::CB_Language_currentIndexChanged( int index )
 	}
 }
 
-void Advanced_Settings_Window::CB_Icons_Theme_currentIndexChanged( int index )
+void Advanced_Settings_Window::CB_Icons_Theme_currentIndexChanged( int /*index*/ )
 {
 	if( Settings.value("Show_Icons_Theme_Warning", "yes").toString() == "yes" )
 	{
@@ -921,7 +921,7 @@ void Advanced_Settings_Window::on_TB_Find_All_Emulators_clicked()
 	delete first_start_win;
 }
 
-void Advanced_Settings_Window::on_Emulators_Table_cellDoubleClicked( int row, int column )
+void Advanced_Settings_Window::on_Emulators_Table_cellDoubleClicked( int /*row*/, int /*column*/ )
 {
 	on_TB_Edit_Emulator_clicked();
 }

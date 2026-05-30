@@ -430,6 +430,7 @@ class Emulator
 	public:
 		Emulator();
 		Emulator( const Emulator &emul );
+		Emulator &operator=( const Emulator &emul ) = default;
 		
 		bool operator==( const Emulator &emul ) const;
 		bool operator!=( const Emulator &emul ) const;
@@ -486,6 +487,7 @@ class VM_Native_Storage_Device
 	public:
 		VM_Native_Storage_Device();
 		VM_Native_Storage_Device( const VM_Native_Storage_Device &sd );
+		VM_Native_Storage_Device &operator=( const VM_Native_Storage_Device &sd );
 		
 		bool Get_Native_Mode() const;
 		
@@ -619,6 +621,7 @@ class VM_Storage_Device
 	public:
 		VM_Storage_Device();
 		VM_Storage_Device( const VM_Storage_Device &device );
+		VM_Storage_Device &operator=( const VM_Storage_Device &device );
 		VM_Storage_Device( bool enabled, const QString &file_name );
 		VM_Storage_Device( bool enabled, const QString &file_name, bool Native_mode, const VM_Native_Storage_Device &device ); // FIXME test const VM_Native_Storage_Device &device IN OLD version without const
 		
@@ -649,6 +652,7 @@ class VM_Shared_Folder
 	public:
 		VM_Shared_Folder();
 		VM_Shared_Folder( const VM_Shared_Folder &device );
+		VM_Shared_Folder &operator=( const VM_Shared_Folder &device ) = default;
 		VM_Shared_Folder( bool enabled, const QString &folder );
 		
 		bool operator==( const VM_Shared_Folder &device ) const;
@@ -671,6 +675,7 @@ class VM_HDD: public VM_Storage_Device
 	public:
 		VM_HDD();
 		VM_HDD( const VM_HDD &hd );
+		VM_HDD &operator=( const VM_HDD &hd ) = default;
 		VM_HDD( bool enabled, const QString &im_pach );
 		
 		bool operator==( const VM_HDD &v ) const;
@@ -708,7 +713,7 @@ class VM_Snapshot
 	public:
 		VM_Snapshot();
 		VM_Snapshot( const VM_Snapshot &s );
-		
+		VM_Snapshot &operator=( const VM_Snapshot &s ) = default;
 		bool operator==( const VM_Snapshot &s ) const;
 		bool operator!=( const VM_Snapshot &s ) const;
 		
@@ -750,7 +755,7 @@ class VM_Net_Card
 	public:
 		VM_Net_Card();
 		VM_Net_Card( const VM_Net_Card &nc );
-		
+		VM_Net_Card &operator=( const VM_Net_Card &nc ) = default;
 		bool operator==( const VM_Net_Card &nc ) const;
 		bool operator!=( const VM_Net_Card &nc ) const;
 		
@@ -814,7 +819,7 @@ class VM_Net_Card_Native
 	public:
 		VM_Net_Card_Native();
 		VM_Net_Card_Native( const VM_Net_Card_Native &nc );
-		
+		VM_Net_Card_Native &operator=( const VM_Net_Card_Native &nc ) = default;
 		bool operator==( const VM_Net_Card_Native &nc ) const;
 		bool operator!=( const VM_Net_Card_Native &nc ) const;
 		
@@ -1064,7 +1069,7 @@ class VM_Redirection
 	public:
 		VM_Redirection();
 		VM_Redirection( const VM_Redirection &r );
-		
+		VM_Redirection &operator=( const VM_Redirection &r ) = default;
 		bool operator==( const VM_Redirection &r ) const;
 		bool operator!=( const VM_Redirection &r ) const;
 		
@@ -1093,7 +1098,7 @@ class VM_Port
 	public:
 		VM_Port();
 		VM_Port( const VM_Port &p );
-		
+		VM_Port &operator=( const VM_Port &p ) = default;
 		bool operator==( const VM_Port &p ) const;
 		bool operator!=( const VM_Port &p ) const;
 		
@@ -1114,7 +1119,7 @@ class VM_USB
 	public:
 		VM_USB();
 		VM_USB( const VM_USB &u );
-		
+		VM_USB &operator=( const VM_USB &u ) = default;
 		bool operator==( const VM_USB &u ) const;
 		bool operator!=( const VM_USB &u ) const;
 		
@@ -1174,7 +1179,7 @@ class VM_Init_Graphic_Mode
 	public:
 		VM_Init_Graphic_Mode();
 		VM_Init_Graphic_Mode( const VM_Init_Graphic_Mode &mode );
-		
+		VM_Init_Graphic_Mode &operator=( const VM_Init_Graphic_Mode &mode ) = default;
 		bool operator==( const VM_Init_Graphic_Mode &mode ) const;
 		bool operator!=( const VM_Init_Graphic_Mode &mode ) const;
 		
@@ -1203,7 +1208,7 @@ class VM_SPICE
 	public:
 		VM_SPICE();
 		VM_SPICE( const VM_SPICE &vm_spice );
-		
+		VM_SPICE &operator=( const VM_SPICE &vm_spice ) = default;
 		bool operator==( const VM_SPICE &vm_spice ) const;
 		bool operator!=( const VM_SPICE &vm_spice ) const;
 		

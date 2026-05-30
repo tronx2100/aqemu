@@ -189,7 +189,7 @@ void Old_Network_Widget::Disconnect_Slots()
 				this, SIGNAL(Changed()) );
 }
 
-void Old_Network_Widget::on_Network_Cards_List_currentItemChanged( QListWidgetItem *current, QListWidgetItem *previous )
+void Old_Network_Widget::on_Network_Cards_List_currentItemChanged( QListWidgetItem *current, QListWidgetItem * /*previous*/ )
 {
 	if( Network_Cards.count() < 1 || Check_Network_Card == false ) return;
 	
@@ -297,9 +297,10 @@ void Old_Network_Widget::on_CB_Connection_Mode_currentIndexChanged( int index )
 	
 	switch( index )
 	{
-		case 0: // user mode
-            if (set_net_mode)
+			case 0: // user mode
+            if (set_net_mode) {
     			Network_Cards[ ui.Network_Cards_List->currentRow() ].Set_Net_Mode( VM::Net_Mode_Usermode );
+            }
 			
 			ui.Label_IP->setEnabled( false );
 			ui.Edit_IP_Address->setEnabled( false );
@@ -321,9 +322,10 @@ void Old_Network_Widget::on_CB_Connection_Mode_currentIndexChanged( int index )
 			ui.SB_File_Descriptor->setEnabled( false );
 			break;
 			
-		case 1: // open TUN/TAP
-            if (set_net_mode)
+			case 1: // open TUN/TAP
+            if (set_net_mode) {
     			Network_Cards[ ui.Network_Cards_List->currentRow() ].Set_Net_Mode( VM::Net_Mode_Tuntap );
+            }
 			
 			ui.Label_IP->setEnabled( false );
 			ui.Edit_IP_Address->setEnabled( false );
@@ -345,9 +347,10 @@ void Old_Network_Widget::on_CB_Connection_Mode_currentIndexChanged( int index )
 			ui.SB_File_Descriptor->setEnabled( false );
 			break;
 			
-		case 2: // already open TUN/TAP
-            if (set_net_mode)
+			case 2: // already open TUN/TAP
+            if (set_net_mode) {
     			Network_Cards[ ui.Network_Cards_List->currentRow() ].Set_Net_Mode( VM::Net_Mode_Tuntapfd );
+            }
 			
 			ui.Label_IP->setEnabled( false );
 			ui.Edit_IP_Address->setEnabled( false );
@@ -369,9 +372,10 @@ void Old_Network_Widget::on_CB_Connection_Mode_currentIndexChanged( int index )
 			ui.SB_File_Descriptor->setEnabled( true );
 			break;
 			
-		case 3: // open listening TCP socket
-            if (set_net_mode)
+			case 3: // open listening TCP socket
+            if (set_net_mode) {
     			Network_Cards[ ui.Network_Cards_List->currentRow() ].Set_Net_Mode( VM::Net_Mode_Tcplisten );
+            }
 			
 			ui.Label_IP->setEnabled( true );
 			ui.Edit_IP_Address->setEnabled( true );
@@ -393,9 +397,10 @@ void Old_Network_Widget::on_CB_Connection_Mode_currentIndexChanged( int index )
 			ui.SB_File_Descriptor->setEnabled( false );
 			break;
 			
-		case 4: // already open TCP socket
-            if (set_net_mode)
+			case 4: // already open TCP socket
+            if (set_net_mode) {
     			Network_Cards[ ui.Network_Cards_List->currentRow() ].Set_Net_Mode( VM::Net_Mode_Tcpfd );
+            }
 			
 			ui.Label_IP->setEnabled( false );
 			ui.Edit_IP_Address->setEnabled( false );
@@ -417,9 +422,10 @@ void Old_Network_Widget::on_CB_Connection_Mode_currentIndexChanged( int index )
 			ui.SB_File_Descriptor->setEnabled( true );
 			break;
 			
-		case 5: // connect to listening TCP socket
-            if(set_net_mode)
+			case 5: // connect to listening TCP socket
+            if(set_net_mode) {
     			Network_Cards[ ui.Network_Cards_List->currentRow() ].Set_Net_Mode( VM::Net_Mode_Tcpconnect );
+            }
 			
 			ui.Label_IP->setEnabled( true );
 			ui.Edit_IP_Address->setEnabled( true );
@@ -441,9 +447,10 @@ void Old_Network_Widget::on_CB_Connection_Mode_currentIndexChanged( int index )
 			ui.SB_File_Descriptor->setEnabled( false );
 			break;
 			
-		case 6: // create shared VLAN via UDP multicast socket
-            if(set_net_mode)
+			case 6: // create shared VLAN via UDP multicast socket
+            if(set_net_mode) {
     			Network_Cards[ ui.Network_Cards_List->currentRow() ].Set_Net_Mode( VM::Net_Mode_Multicast );
+            }
 			
 			ui.Label_IP->setEnabled( true );
 			ui.Edit_IP_Address->setEnabled( true );
@@ -465,9 +472,10 @@ void Old_Network_Widget::on_CB_Connection_Mode_currentIndexChanged( int index )
 			ui.SB_File_Descriptor->setEnabled( false );
 			break;
 			
-		case 7: // use already open UDP multicast socket
-            if(set_net_mode)
+			case 7: // use already open UDP multicast socket
+            if(set_net_mode) {
     			Network_Cards[ ui.Network_Cards_List->currentRow() ].Set_Net_Mode( VM::Net_Mode_Multicastfd );
+            }
 			
 			ui.Label_IP->setEnabled( false );
 			ui.Edit_IP_Address->setEnabled( false );
@@ -490,8 +498,9 @@ void Old_Network_Widget::on_CB_Connection_Mode_currentIndexChanged( int index )
 			break;
 			
 		default: // no connection
-            if (set_net_mode)
+            if (set_net_mode) {
     			Network_Cards[ ui.Network_Cards_List->currentRow() ].Set_Net_Mode( VM::Net_Mode_None );
+            }
 			
 			ui.Label_IP->setEnabled( false );
 			ui.Edit_IP_Address->setEnabled( false );

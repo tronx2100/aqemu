@@ -29,6 +29,7 @@
 #include "Add_New_Device_Window.h"
 #include "Utils.h"
 #include "Create_HDD_Image_Window.h"
+#include "Resize_HDD_Image_Window.h"
 #include "System_Info.h"
 
 Device_Manager_Widget::Device_Manager_Widget( QWidget *parent )
@@ -201,6 +202,9 @@ void Device_Manager_Widget::Update_Enabled_Actions()
 			
 			ui.TB_Quick_Format->setEnabled( false );
 			ui.actionQuick_Format->setEnabled( false );
+
+			ui.TB_Resize_HDD->setEnabled( false );
+			ui.actionResize_HDD->setEnabled( false );
 			
 			if( ui.Devices_List->currentItem()->data(512).toString() == "fd1" )
 			{
@@ -280,6 +284,9 @@ void Device_Manager_Widget::Update_Enabled_Actions()
 			
 			ui.TB_Quick_Format->setEnabled( false );
 			ui.actionQuick_Format->setEnabled( false );
+
+			ui.TB_Resize_HDD->setEnabled( false );
+			ui.actionResize_HDD->setEnabled( false );
 			
 			if( It_Host_Device(CD_ROM.Get_File_Name()) )
 			{
@@ -339,6 +346,9 @@ void Device_Manager_Widget::Update_Enabled_Actions()
 			
 			ui.TB_Quick_Format->setEnabled( !is_block );
 			ui.actionQuick_Format->setEnabled( !is_block );
+
+			ui.TB_Resize_HDD->setEnabled( !is_block );
+			ui.actionResize_HDD->setEnabled( !is_block );
 			
 			if( ui.Devices_List->currentItem()->data(512).toString() == "hda" )
 			{
@@ -400,6 +410,9 @@ void Device_Manager_Widget::Update_Enabled_Actions()
 					
 					ui.TB_Quick_Format->setEnabled( false );
 					ui.actionQuick_Format->setEnabled( false );
+
+					ui.TB_Resize_HDD->setEnabled( false );
+					ui.actionResize_HDD->setEnabled( false );
 				}
 			}
 			
@@ -416,6 +429,9 @@ void Device_Manager_Widget::Update_Enabled_Actions()
 				
 				ui.TB_Quick_Format->setEnabled( false );
 				ui.actionQuick_Format->setEnabled( false );
+
+				ui.TB_Resize_HDD->setEnabled( false );
+				ui.actionResize_HDD->setEnabled( false );
 			}
 		}
 	}
@@ -432,6 +448,9 @@ void Device_Manager_Widget::Update_Enabled_Actions()
 		
 		ui.TB_Quick_Format->setEnabled( false );
 		ui.actionQuick_Format->setEnabled( false );
+
+		ui.TB_Resize_HDD->setEnabled( false );
+		ui.actionResize_HDD->setEnabled( false );
 	}
 	
 	// Disable widgets
@@ -457,6 +476,9 @@ void Device_Manager_Widget::Update_Enabled_Actions()
 		
 		ui.TB_Quick_Format->setEnabled( false );
 		ui.actionQuick_Format->setEnabled( false );
+
+		ui.TB_Resize_HDD->setEnabled( false );
+		ui.actionResize_HDD->setEnabled( false );
 	}
 }
 
@@ -512,6 +534,7 @@ void Device_Manager_Widget::on_Devices_List_customContextMenuRequested( const QP
 			Context_Menu->addAction( ui.actionDelete );
 			Context_Menu->addAction( ui.actionFormat_HDD );
 			Context_Menu->addAction( ui.actionQuick_Format );
+			Context_Menu->addAction( ui.actionResize_HDD );
 			
 			Context_Menu->exec( ui.Devices_List->mapToGlobal(pos) );
 		}
@@ -559,11 +582,14 @@ void Device_Manager_Widget::on_Devices_List_customContextMenuRequested( const QP
 void Device_Manager_Widget::on_Devices_List_currentItemChanged(
 				QListWidgetItem *current, QListWidgetItem *previous )
 {
+	Q_UNUSED(current)
+	Q_UNUSED(previous)
 	Update_Enabled_Actions();
 }
 
 void Device_Manager_Widget::on_Devices_List_itemDoubleClicked( QListWidgetItem *item )
 {
+	Q_UNUSED(item)
 	on_actionProperties_triggered();
 }
 
@@ -574,7 +600,9 @@ void Device_Manager_Widget::Add_Floppy(VM_Storage_Device& dev, int num)
 	QString dev_name = dev.Get_File_Name();
 
     if ( ! QFileInfo(dev_name).exists() )
+    {
         return;
+    }
 			
 	QListWidgetItem *fdit = new QListWidgetItem( QIcon(":/fdd.png"),
 												 tr("Floppy") + " " + QString::number(num) + " (" + dev_name + ")" );
@@ -655,7 +683,9 @@ void Device_Manager_Widget::Add_HDD(VM_HDD& dev,QString letter)
         QString dev_name = dev.Get_File_Name();
 
         if ( ! QFileInfo(dev_name).exists() )
+        {
             return;
+        }
 	
 	    QListWidgetItem *hdit = new QListWidgetItem( QIcon(":/hdd.png"),
 												     tr("HD") + letter.toUpper() + " (" + dev_name + ")", ui.Devices_List );
@@ -1130,6 +1160,55 @@ void Device_Manager_Widget::on_actionQuick_Format_triggered()
 	emit Device_Changed();
 }
 
+void Device_Manager_Widget::on_actionResize_HDD_triggered()
+{
+	Resize_HDD_Image_Window *win = new Resize_HDD_Image_Window( this );
+
+	QString hdd_path;
+
+	if( ui.Devices_List->currentItem()->data(512).toString() == "hda" )
+	{
+		hdd_path = HDA.Get_File_Name();
+	}
+	else if( ui.Devices_List->currentItem()->data(512).toString() == "hdb" )
+	{
+		hdd_path = HDB.Get_File_Name();
+	}
+	else if( ui.Devices_List->currentItem()->data(512).toString() == "hdc" )
+	{
+		hdd_path = HDC.Get_File_Name();
+	}
+	else if( ui.Devices_List->currentItem()->data(512).toString() == "hdd" )
+	{
+		hdd_path = HDD.Get_File_Name();
+	}
+	else
+	{
+		AQGraphic_Error( "void Device_Manager_Widget::on_actionResize_HDD_triggered()",
+						 tr("Error!"), tr("Incorrect Device!"), false );
+		delete win;
+		return;
+	}
+
+	if( hdd_path.startsWith("/dev/") )
+	{
+		QMessageBox::information( this, tr("Information"),
+			tr("Resize is not supported for block devices.") );
+		delete win;
+		return;
+	}
+
+	win->Set_Image_File_Name( hdd_path );
+
+	if( win->exec() == QDialog::Accepted )
+	{
+		Update_Enabled_Actions();
+		emit Device_Changed();
+	}
+
+	delete win;
+}
+
 void Device_Manager_Widget::on_actionIcon_Mode_triggered()
 {
 	ui.Devices_List->setSpacing( 10 );
@@ -1227,6 +1306,7 @@ void Device_Manager_Widget::Update_Icons()
 
 void Device_Manager_Widget::Update_HDA( bool ok )
 {
+	Q_UNUSED(ok)
 	HDA.Set_Disk_Info( HDA_Info->Get_Disk_Info() );
 	
 	ui.Label_Connected_To->setText( tr("Image Virtual Size: ") + QString::number(HDA.Get_Virtual_Size().Size) +
@@ -1237,6 +1317,7 @@ void Device_Manager_Widget::Update_HDA( bool ok )
 
 void Device_Manager_Widget::Update_HDB( bool ok )
 {
+	Q_UNUSED(ok)
 	HDB.Set_Disk_Info( HDB_Info->Get_Disk_Info() );
 	
 	ui.Label_Connected_To->setText( tr("Image Virtual Size: ") + QString::number(HDB.Get_Virtual_Size().Size) +
@@ -1247,6 +1328,7 @@ void Device_Manager_Widget::Update_HDB( bool ok )
 
 void Device_Manager_Widget::Update_HDC( bool ok )
 {
+	Q_UNUSED(ok)
 	HDC.Set_Disk_Info( HDC_Info->Get_Disk_Info() );
 	
 	ui.Label_Connected_To->setText( tr("Image Virtual Size: ") + QString::number(HDC.Get_Virtual_Size().Size) +
@@ -1257,6 +1339,7 @@ void Device_Manager_Widget::Update_HDC( bool ok )
 
 void Device_Manager_Widget::Update_HDD( bool ok )
 {
+	Q_UNUSED(ok)
 	HDD.Set_Disk_Info( HDD_Info->Get_Disk_Info() );
 	
 	ui.Label_Connected_To->setText( tr("Image Virtual Size: ") + QString::number(HDD.Get_Virtual_Size().Size) +

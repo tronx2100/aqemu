@@ -286,7 +286,7 @@ void Emulator_Options_Window::on_Edit_Path_to_Dir_textChanged()
 	Update_Info = true; // Update emulator info
 }
 
-void Emulator_Options_Window::on_Table_Systems_itemDoubleClicked( QTableWidgetItem *item )
+void Emulator_Options_Window::on_Table_Systems_itemDoubleClicked( QTableWidgetItem * /*item*/ )
 {
 	QString binName = QFileDialog::getOpenFileName( this, tr("Select QEMU Binary File"),
 													Get_Last_Dir_Path(ui.Edit_Path_to_Dir->text()),

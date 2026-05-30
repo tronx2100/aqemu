@@ -167,7 +167,7 @@ void Add_USB_Port_Window::on_Button_Update_Host_USB_clicked()
 	
 }
 
-void Add_USB_Port_Window::on_RB_QEMU_USB_clicked( bool checked )
+void Add_USB_Port_Window::on_RB_QEMU_USB_clicked( bool /*checked*/ )
 {
 	ui.Widget_QEMU_Devices->setEnabled( true );
 	ui.Widget_Host_Devices->setEnabled( false );
@@ -180,7 +180,7 @@ void Add_USB_Port_Window::on_RB_QEMU_USB_clicked( bool checked )
 	ui.RB_Host_USB->setCheckable( false );
 }
 
-void Add_USB_Port_Window::on_RB_Host_USB_clicked( bool checked )
+void Add_USB_Port_Window::on_RB_Host_USB_clicked( bool /*checked*/ )
 {
 	ui.Widget_QEMU_Devices->setEnabled( false );
 	ui.Widget_Host_Devices->setEnabled( true );
@@ -193,7 +193,7 @@ void Add_USB_Port_Window::on_RB_Host_USB_clicked( bool checked )
 	ui.RB_QEMU_USB->setCheckable( false );
 }
 
-void Add_USB_Port_Window::on_Table_Host_USB_currentItemChanged( QTableWidgetItem *current, QTableWidgetItem *previous )
+void Add_USB_Port_Window::on_Table_Host_USB_currentItemChanged( QTableWidgetItem * /*current*/, QTableWidgetItem * /*previous*/ )
 {
 	if( ui.Table_Host_USB->currentRow() >= 0 &&
 		ui.Table_Host_USB->currentRow() < USB_Host_List.count() )
@@ -209,7 +209,7 @@ void Add_USB_Port_Window::on_Table_Host_USB_currentItemChanged( QTableWidgetItem
 	}
 }
 
-void Add_USB_Port_Window::on_RB_Show_All_toggled( bool on )
+void Add_USB_Port_Window::on_RB_Show_All_toggled( bool /*on*/ )
 {
 	on_Button_Update_Host_USB_clicked();
 }

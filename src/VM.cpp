@@ -80,10 +80,12 @@ namespace
 		return model;
 	}
 
+#if 0
 	bool Network_Device_Uses_Vectors( const QString &model )
 	{
 		return model.startsWith( "virtio-net-" );
 	}
+#endif
 }
 
 // VM Class -----------------------------------------------------------------
@@ -101,6 +103,7 @@ Virtual_Machine::Virtual_Machine( const QString &name )
 }
 
 Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
+	: QObject()
 {
 	QEMU_Process = new QProcess();
 	Monitor_Socket = new QTcpSocket( this );
@@ -4982,7 +4985,7 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 			dev.Set_Disable_Idle( tmpElement.text() == "true" );
 
 			QStringList addFlags;
-			int flagCount = PCIDevicesElement.firstChildElement( "Additional_Flags_Count" ).text().toInt();
+			PCIDevicesElement.firstChildElement( "Additional_Flags_Count" ).text().toInt();
 			QList<TXML2QDOM::QDomElement> flagNodes = PCIDevicesElement.childNodes();
 			for( int fx = 0; fx < flagNodes.count(); fx++ )
 			{
@@ -6334,6 +6337,7 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 				u_mode = u_file = u_len = u_addr = u_vectors = u_net = u_host = u_restrict = u_dhcpstart = u_dns =
 				u_tftp = u_bootfile = u_hostfwd = u_guestfwd = u_smb = u_smbserver = u_sndbuf = u_vnet_hdr =
 				u_vhost = u_vhostfd = false;
+				(void)u_vlan;
 				
 				switch( Network_Cards_Nativ[nc].Get_Network_Type() )
 				{
@@ -6511,7 +6515,7 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 					nic_str += ",host=" + Network_Cards_Nativ[ nc ].Get_Host();
 				
 				if( Network_Cards_Nativ[nc].Use_Restrict() && u_restrict && Current_Emulator_Devices.PSO_Net_restrict )
-					nic_str += ",restrict=" + Network_Cards_Nativ[nc].Get_Restrict() ? "y" : "n";
+					nic_str += QString(",restrict=") + (Network_Cards_Nativ[nc].Get_Restrict() ? "y" : "n");
 				
 				if( Network_Cards_Nativ[nc].Use_DHCPstart() && u_dhcpstart && Current_Emulator_Devices.PSO_Net_dhcpstart )
 					nic_str += ",dhcpstart=" + Network_Cards_Nativ[ nc ].Get_DHCPstart();
@@ -6556,10 +6560,10 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 					nic_str += ",sndbuf=" + QString::number( Network_Cards_Nativ[nc].Get_Sndbuf() );
 				
 				if( Network_Cards_Nativ[nc].Use_VNet_hdr() && u_vnet_hdr && Current_Emulator_Devices.PSO_Net_vnet_hdr )
-					nic_str += ",vnet_hdr=" + Network_Cards_Nativ[ nc ].Get_VNet_hdr() ? "on" : "off";
+					nic_str += QString(",vnet_hdr=") + (Network_Cards_Nativ[ nc ].Get_VNet_hdr() ? "on" : "off");
 				
 				if( Network_Cards_Nativ[nc].Get_VHost() && u_vhost && Current_Emulator_Devices.PSO_Net_vhost )
-					nic_str += ",vhost=" + Network_Cards_Nativ[ nc ].Get_VHost() ? "on" : "off";
+					nic_str += QString(",vhost=") + (Network_Cards_Nativ[ nc ].Get_VHost() ? "on" : "off");
 				
 				if( Network_Cards_Nativ[nc].Use_VHostFd() && u_vhostfd && Current_Emulator_Devices.PSO_Net_vhostfd )
 					nic_str += ",vhostfd=" + QString::number( Network_Cards_Nativ[nc].Get_VHostFd() );
@@ -7124,7 +7128,9 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	else if ( Start_Date )
 		rtc_list << "base=" + Start_DateTime.toString( "yyyy-MM-ddTHH:mm:ss" ); // QEMU Format
     else
+	{
         rtc_list << "base=utc";
+	}
 	if( Current_Emulator_Devices.PSO_RTC_TD_Hack && RTC_TD_Hack )
 	    rtc_list.last() += ",driftfix=slew";
 
@@ -7597,7 +7603,7 @@ QStringList Virtual_Machine::Build_Native_Device_Args( VM_Native_Storage_Device 
 	return args;
 }
 
-QStringList Virtual_Machine::Build_Shared_Folder_Args( VM_Shared_Folder folder, int id, bool Build_QEMU_Args_for_Script_Mode )
+QStringList Virtual_Machine::Build_Shared_Folder_Args( VM_Shared_Folder folder, int id, bool /*Build_QEMU_Args_for_Script_Mode*/ )
 {
 	QStringList opt;
 	
@@ -9901,7 +9907,7 @@ void Virtual_Machine::Parse_StdOut()
     }
 
 	QStringList splitOutput = convOutput.split( "[K" );
-	QString cleanOutput = splitOutput.last().remove( QRegExp("\[[KD].") );
+	QString cleanOutput = splitOutput.last().remove( QRegExp("\\[[KD].") );
     TEMPODEBUG( "void Virtual_Machine::Parse_StdOut()",
                 QString("vm_name=\"%1\" clean_stdout=\"%2\"")
                 .arg(Machine_Name)
@@ -9955,7 +9961,7 @@ void Virtual_Machine::Parse_StdErr()
 	{
 		if( ! splitOutput.last().isEmpty() )
 		{
-			QString cleanOutput = splitOutput.last().remove( QRegExp("\[[KD].") );
+	QString cleanOutput = splitOutput.last().remove( QRegExp("\\[[KD].") );
 			emit Clean_Console( cleanOutput.trimmed() );
 			emit Ready_StdErr( cleanOutput.simplified() );
 			Last_Output.append( convOutput.simplified() );

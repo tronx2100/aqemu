@@ -382,7 +382,7 @@ void Properties_Window::on_Button_HDD_Format_clicked()
 	delete Create_HDD_Win;
 }
 
-void Properties_Window::Update_HDD( bool ok )
+void Properties_Window::Update_HDD( bool /*ok*/ )
 {
 	PW_HDD.Set_Disk_Info( HDD_Info->Get_Disk_Info() );
 	

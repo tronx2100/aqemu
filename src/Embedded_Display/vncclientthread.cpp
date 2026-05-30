@@ -262,7 +262,10 @@ rfbCredential *VncClientThread::credentialHandler(int credentialType)
 void VncClientThread::outputHandler(const char *format, va_list args)
 {
     QString message;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     message.vsprintf(format, args);
+#pragma GCC diagnostic pop
 
     message = message.trimmed();
 

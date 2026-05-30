@@ -868,7 +868,7 @@ void Network_Widget::on_TB_Browse_helper_clicked()
 		ui.Edit_helper->setText( QDir::toNativeSeparators(fileName) );
 }
 
-void Network_Widget::on_CB_Network_Type_currentIndexChanged( int index )
+void Network_Widget::on_CB_Network_Type_currentIndexChanged( int /*index*/ )
 {
 	// Hide All
 	ui.CH_vlan->setVisible( false );

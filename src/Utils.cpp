@@ -147,16 +147,18 @@ void AQError( const QString &sender, const QString &mes )
 
 void AQGraphic_Warning( const QString &caption, const QString &mes )
 {
-    if ( Show_User_Graphic_Warning == false )
+    if ( Show_User_Graphic_Warning == false ) {
         return;
+    }
 
 	QMessageBox::warning( NULL, caption, mes, QMessageBox::Ok );
 }
 
 void AQGraphic_Warning( const QString &sender, const QString &caption, const QString &mes, bool fatal )
 {
-    if ( Show_User_Graphic_Warning == false )
+    if ( Show_User_Graphic_Warning == false ) {
         return;
+    }
 
 	if( fatal )
 	{

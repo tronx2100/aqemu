@@ -228,7 +228,7 @@ void Select_Block_Device_Window::ButtonBox_Accepted()
 	accept();
 }
 
-void Select_Block_Device_Window::on_CB_Mode_currentIndexChanged( int index )
+void Select_Block_Device_Window::on_CB_Mode_currentIndexChanged( int /*index*/ )
 {
 	Refresh_Device_List();
 }

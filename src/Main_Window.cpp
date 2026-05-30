@@ -887,7 +887,9 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 {
     std::unique_ptr<Disable_User_Graphic_Warning> dugw;
     if ( show_user_errors == false )
+    {
         dugw.reset(new Disable_User_Graphic_Warning());
+    }
 
 	if( old_vm == NULL )
 	{
@@ -1051,7 +1053,9 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 	if( ui.CH_Redirections->isChecked() && ui.Redirections_List->rowCount() < 1 )
 	{
         if ( show_user_errors )
-    		AQGraphic_Warning( tr("Error!"), tr("Redirection List is Empty! Please Disable Redirections!") );
+        {
+            AQGraphic_Warning( tr("Error!"), tr("Redirection List is Empty! Please Disable Redirections!") );
+        }
 		return false;
 	}
 
@@ -1204,8 +1208,10 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 
 		default:
             if ( show_user_errors )
-    			AQError( "bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, QListWidgetItem *item )",
-					 "Initial Graphical Mode: Default Section!" );
+            {
+                AQError( "bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, QListWidgetItem *item )",
+                         "Initial Graphical Mode: Default Section!" );
+            }
 			tmp_mode.Set_Depth( 24 );
 			break;
 	}
@@ -2211,6 +2217,8 @@ QString Main_Window::Get_Storage_Device_Info_String( const QString &path )
 
 void Main_Window::VM_State_Changed( Virtual_Machine *vm, VM::VM_State s )
 {
+    Q_UNUSED(s);
+
 	if( vm == NULL )
 	{
 		AQError( "void Main_Window::VM_State_Changed( Virtual_Machine *vm, VM::VM_State s )",
@@ -2678,6 +2686,8 @@ void Main_Window::on_Machines_List_customContextMenuRequested( const QPoint &pos
 
 void Main_Window::on_Machines_List_itemDoubleClicked( QListWidgetItem *item )
 {
+    Q_UNUSED(item);
+
 	Virtual_Machine *cur_vm = Get_Current_VM();
 
 	if( cur_vm == NULL )
@@ -3120,6 +3130,8 @@ bool Main_Window::Boot_Is_Correct( Virtual_Machine *tmp_vm )
 
 bool Main_Window::No_Device_Found( const QString &name, const QString &path, VM::Boot_Device type )
 {
+    Q_UNUSED(type);
+
 	int retVal = QMessageBox::critical( this, tr("Error!"),
 										tr("%1 Image \"%2\" doesn't Exist! Continue Without this Image?").arg(name).arg(path),
 										QMessageBox::Yes | QMessageBox::No, QMessageBox::No );
@@ -3487,7 +3499,9 @@ void Main_Window::on_actionShow_Advanced_Settings_Window_triggered()
 void Main_Window::on_actionShow_First_Run_Wizard_triggered()
 {
     if ( ! Save_Or_Discard() )
+    {
         return;
+    }
 
 	First_Start_Wizard first_start_win( this );
 
@@ -4201,11 +4215,15 @@ QStringList Main_Window::Create_Info_HDD_String( const QString &disk_format, con
 
 void Main_Window::on_CB_Computer_Type_currentIndexChanged( int index )
 {
+    Q_UNUSED(index);
+
 	Computer_Type_Changed();
 }
 
 void Main_Window::on_CB_Machine_Accelerator_currentIndexChanged( int index )
 {
+    Q_UNUSED(index);
+
 	Apply_Emulator( 1 );
 }
 
@@ -4379,11 +4397,14 @@ void Main_Window::Apply_Emulator( int mode )
 		case 0:
 			// Machine Accelerators
 			Update_Machine_Accelerators();
+			// fall through
 		case 1:
             Update_Accelerator_Options();
+			// fall through
 		case 2:
 			// Computer Type
 		    Update_Computer_Types();
+			// fall through
 		case 3:
             Computer_Type_Changed();
             break;
@@ -4399,6 +4420,8 @@ void Main_Window::Apply_Emulator( int mode )
 
 void Main_Window::CB_Boot_Priority_currentIndexChanged( int index )
 {
+    Q_UNUSED(index);
+
 	// Clear old string
 	if( ui.CB_Boot_Priority->count() >= 5 ) ui.CB_Boot_Priority->removeItem( 5 );
 
@@ -4724,7 +4747,9 @@ void Main_Window::on_Button_Apply_clicked()
 	}
 
     if( Create_VM_From_Ui(&tmp_vm, cur_vm) == false )
+    {
         return;
+    }
 
 	QString old_path = "";
 
@@ -4807,6 +4832,8 @@ void Main_Window::on_RB_Network_Mode_New_toggled( bool on )
 
 void Main_Window::on_Redirections_List_cellClicked ( int row, int column )
 {
+    Q_UNUSED(column);
+
 	if( ui.Redirections_List->item( row, 0 )->text() == "TCP" ) ui.RB_TCP->setChecked( true );
 	else ui.RB_UDP->setChecked( true );
 

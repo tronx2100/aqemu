@@ -266,7 +266,7 @@ void QDomDocument::appendChild(const QDomElement& e)
         document->InsertEndChild(e.element);
 }
 
-void QDomDocument::appendChild(const QDomProcessingInstruction& p)
+void QDomDocument::appendChild(const QDomProcessingInstruction& /*p*/)
 {
     //TODO: stub
 }
@@ -310,7 +310,7 @@ QDomProcessingInstruction QDomDocument::createProcessingInstruction(const QStrin
     return QDomProcessingInstruction();
 }
 
-bool QDomDocument::setContent(QFile* file, bool b, QString* s, int* i, int* i2)
+bool QDomDocument::setContent(QFile* file, bool /*b*/, QString* s, int* i, int* i2)
 {
     if ( document )
     {

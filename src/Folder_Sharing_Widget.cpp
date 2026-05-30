@@ -205,6 +205,7 @@ void Folder_Sharing_Widget::Update_List_Mode()
 void Folder_Sharing_Widget::on_Folders_List_customContextMenuRequested( const QPoint &pos )
 {
 	QListWidgetItem *it = ui.Folders_List->itemAt( pos );
+	Q_UNUSED(it);
 	
     /* //TODO
 	if( it != NULL )
@@ -249,12 +250,12 @@ void Folder_Sharing_Widget::on_Folders_List_customContextMenuRequested( const QP
 }
 
 void Folder_Sharing_Widget::on_Folders_List_currentItemChanged(
-				QListWidgetItem *current, QListWidgetItem *previous )
+				QListWidgetItem * /*current*/, QListWidgetItem * /*previous*/ )
 {
 	Update_Enabled_Actions();
 }
 
-void Folder_Sharing_Widget::on_Folders_List_itemDoubleClicked( QListWidgetItem *item )
+void Folder_Sharing_Widget::on_Folders_List_itemDoubleClicked( QListWidgetItem * /*item*/ )
 {
 	on_actionProperties_triggered();
 }

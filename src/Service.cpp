@@ -752,6 +752,8 @@ void AQEMU_Service::clear_error_log(const QString& vm, const QString& uid)
 
     bool cleared_live = false;
     bool cleared_archive = false;
+    (void)cleared_live;
+    (void)cleared_archive;
 
     for( Virtual_Machine *machine : machines )
     {

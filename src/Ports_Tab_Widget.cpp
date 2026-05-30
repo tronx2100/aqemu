@@ -175,7 +175,7 @@ void Ports_Tab_Widget::Clear_Old_Ports()
 	USB_Ports.clear();
 }
 
-QString Ports_Tab_Widget::Get_Port_Info( const VM_Port &port )
+QString Ports_Tab_Widget::Get_Port_Info( const VM_Port & /*port*/ )
 {
 	return "(This function not complete)"; // FIXME
 }
@@ -404,7 +404,7 @@ void Ports_Tab_Widget::on_TB_Delete_Port_clicked()
 	}
 }
 
-void Ports_Tab_Widget::on_Ports_Table_itemDoubleClicked( QTableWidgetItem *item )
+void Ports_Tab_Widget::on_Ports_Table_itemDoubleClicked( QTableWidgetItem * /*item*/ )
 {
 	on_TB_Edit_Port_clicked();
 }

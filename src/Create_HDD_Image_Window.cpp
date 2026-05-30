@@ -109,7 +109,7 @@ void Create_HDD_Image_Window::on_Button_Browse_New_Image_clicked()
 		ui.Edit_File_Name->setText( QDir::toNativeSeparators(fileName) );
 }
 
-void Create_HDD_Image_Window::on_CB_Format_currentIndexChanged( const QString &text )
+void Create_HDD_Image_Window::on_CB_Format_currentIndexChanged( const QString & /*text*/ )
 {
 	/*if( text == "qcow2" || text == "qcow" )
 	{

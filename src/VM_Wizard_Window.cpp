@@ -856,7 +856,7 @@ void VM_Wizard_Window::Update_RAM_Size_ComboBox( int freeRAM )
 	ui.CB_RAM_Size->setEditText( oldText );
 }
 
-void VM_Wizard_Window::on_Edit_VM_Name_textEdited( const QString &text )
+void VM_Wizard_Window::on_Edit_VM_Name_textEdited( const QString & /*text*/ )
 {
 	if( ui.Edit_VM_Name->text().isEmpty() ) ui.Button_Next->setEnabled( false );
 	else ui.Button_Next->setEnabled( true );

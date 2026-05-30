@@ -155,7 +155,7 @@ void Select_Icon_Window::on_Button_Browse_clicked()
 	}
 }
 
-void Select_Icon_Window::on_All_Icons_List_itemDoubleClicked( QListWidgetItem *item )
+void Select_Icon_Window::on_All_Icons_List_itemDoubleClicked( QListWidgetItem * /*item*/ )
 {
 	emit accepted();
 }

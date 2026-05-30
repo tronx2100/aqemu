@@ -1086,8 +1086,8 @@ VM::Emulator_Version System_Info::Get_Emulator_Version( const QString &path )
 	}
 	
 	// This QEMU or KVM?
-	bool emulatorKVM = false;
-	if( path.contains("kvm", Qt::CaseInsensitive) ) emulatorKVM = true;
+	//bool emulatorKVM = false;
+	//if( path.contains("kvm", Qt::CaseInsensitive) ) emulatorKVM = true;
 	//if( path.contains("qemu", Qt::CaseInsensitive) ) emulatorKVM = false;
 	
     // QEMU
@@ -1278,14 +1278,14 @@ Available_Devices System_Info::Get_Emulator_Info( const QString &path, bool *ok,
 	// Find Options
 	
 	// -M
-	bool scan_Machines_List = false;
+	//bool scan_Machines_List = false;
 	QRegExp rx = QRegExp( ".*-M\\s+.*" );
-	if( rx.exactMatch(all_help) ) scan_Machines_List = true;
+	//if( rx.exactMatch(all_help) ) scan_Machines_List = true;
 	
 	// -cpu
-	bool scan_CPU_List = false;
+	//bool scan_CPU_List = false;
 	rx = QRegExp( ".*-cpu\\s.*" );
-	if( rx.exactMatch(all_help) ) scan_CPU_List = true;
+	//if( rx.exactMatch(all_help) ) scan_CPU_List = true;
 	
 	// -smp FIXME PSO_SMP_Count use base emulator settings
 	rx = QRegExp( ".*-smp\\s.*" );

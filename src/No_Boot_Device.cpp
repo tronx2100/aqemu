@@ -52,7 +52,7 @@ No_Boot_Device::~No_Boot_Device()
 {
 }
 
-void No_Boot_Device::Set_VM( const Virtual_Machine &vm )
+void No_Boot_Device::Set_VM( const Virtual_Machine & /*vm*/ )
 {
 }
 

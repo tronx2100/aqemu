@@ -74,6 +74,7 @@ class Device_Manager_Widget: public QWidget
 		void on_actionDelete_triggered();
 		void on_actionFormat_HDD_triggered();
 		void on_actionQuick_Format_triggered();
+		void on_actionResize_HDD_triggered();
 		void on_actionIcon_Mode_triggered();
 		void on_actionList_Mode_triggered();
 		

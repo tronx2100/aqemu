@@ -100,6 +100,8 @@ void HDD_Image_Info::Clear_Info()
 
 void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )
 {
+    Q_UNUSED(exitCode);
+    Q_UNUSED(exitStatus);
     TEMPODEBUG( "void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )",
                 QString("image=\"%1\" exitCode=%2 exitStatus=%3")
                 .arg(Info.Image_File_Name)

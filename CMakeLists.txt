@@ -48,6 +48,7 @@ SET( aqemu_headers
 	src/Convert_HDD_Image_Window.h
 	src/Copy_VM_Window.h
 	src/Create_HDD_Image_Window.h
+	src/Resize_HDD_Image_Window.h
 	src/Create_Template_Window.h
 	src/Delete_VM_Files_Window.h
 	src/Device_Manager_Widget.h
@@ -101,6 +102,7 @@ SET( aqemu_sources
 	src/Convert_HDD_Image_Window.cpp
 	src/Copy_VM_Window.cpp
 	src/Create_HDD_Image_Window.cpp
+	src/Resize_HDD_Image_Window.cpp
 	src/Create_Template_Window.cpp
 	src/Delete_VM_Files_Window.cpp
 	src/Device_Manager_Widget.cpp
@@ -145,6 +147,7 @@ SET( aqemu_ui
 	src/Convert_HDD_Image_Window.ui
 	src/Copy_VM_Window.ui
 	src/Create_HDD_Image_Window.ui
+	src/Resize_HDD_Image_Window.ui
 	src/Create_Template_Window.ui
 	src/Delete_VM_Files_Window.ui
 	src/Device_Manager_Widget.ui
