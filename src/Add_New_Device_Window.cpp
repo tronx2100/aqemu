@@ -24,11 +24,101 @@
 
 #include "Utils.h"
 #include "Add_New_Device_Window.h"
+#include "Select_Block_Device_Window.h"
 
 Add_New_Device_Window::Add_New_Device_Window( QWidget *parent )
 	: QDialog( parent )
 {
 	ui.setupUi( this );
+
+	// Auto-enable File + Interface when any native option is toggled on
+	connect( ui.CH_Format, &QCheckBox::toggled, this, &Add_New_Device_Window::Update_Native_State );
+	connect( ui.CH_Interface, &QCheckBox::toggled, this, &Add_New_Device_Window::Update_Native_State );
+	connect( ui.CH_Cache, &QCheckBox::toggled, this, &Add_New_Device_Window::Update_Native_State );
+	connect( ui.CH_AIO, &QCheckBox::toggled, this, &Add_New_Device_Window::Update_Native_State );
+	connect( ui.CH_Snapshot, &QCheckBox::toggled, this, &Add_New_Device_Window::Update_Native_State );
+	connect( ui.CH_Boot, &QCheckBox::toggled, this, &Add_New_Device_Window::Update_Native_State );
+	connect( ui.CH_Discard, &QCheckBox::toggled, this, &Add_New_Device_Window::Update_Native_State );
+	connect( ui.CH_Media, &QCheckBox::toggled, this, &Add_New_Device_Window::Update_Native_State );
+	connect( ui.CH_Index, &QCheckBox::toggled, this, &Add_New_Device_Window::Update_Native_State );
+	connect( ui.CH_Bus_Unit, &QCheckBox::toggled, this, &Add_New_Device_Window::Update_Native_State );
+	connect( ui.CH_File, &QCheckBox::toggled, this, &Add_New_Device_Window::Update_Native_State );
+	connect( ui.GB_hdachs_Settings, &QGroupBox::toggled, this, &Add_New_Device_Window::Update_Native_State );
+
+	// Auto-detect format when file path changes
+	connect( ui.Edit_File_Path, &QLineEdit::textChanged, this, &Add_New_Device_Window::Auto_Detect_Format );
+
+	// Block device button (auto-connected via on_TB_Block_Device_clicked)
+	ui.TB_Block_Device->setEnabled( true );
+}
+
+void Add_New_Device_Window::Update_Native_State()
+{
+	bool any_native = ui.CH_Index->isChecked()
+		|| ui.CH_Bus_Unit->isChecked()
+		|| ui.CH_Media->isChecked()
+		|| ui.CH_Snapshot->isChecked()
+		|| ui.CH_Cache->isChecked()
+		|| ui.CH_AIO->isChecked()
+		|| ui.CH_Boot->isChecked()
+		|| ui.CH_Format->isChecked()
+		|| ui.GB_hdachs_Settings->isChecked();
+
+	if( any_native )
+	{
+		if( ! ui.CH_File->isChecked() )
+			ui.CH_File->setChecked( true );
+
+		if( ! ui.CH_Interface->isChecked() )
+		{
+			ui.CH_Interface->setChecked( true );
+			ui.CB_Interface->setCurrentIndex( 6 ); // virtio (auto-creates virtio-blk-pci)
+		}
+	}
+}
+
+QString Add_New_Device_Window::Detect_Format_From_Path( const QString &path )
+{
+	if( path.startsWith("/dev/") || path.isEmpty() )
+		return "raw";
+
+	QString lower = path.toLower();
+	if( lower.endsWith(".qcow2") ) return "qcow2";
+	if( lower.endsWith(".qcow") )  return "qcow";
+	if( lower.endsWith(".vmdk") )  return "vmdk";
+	if( lower.endsWith(".vdi") )   return "vdi";
+	if( lower.endsWith(".vhd") )   return "vpc";
+	if( lower.endsWith(".vhdx") )  return "vhdx";
+	if( lower.endsWith(".qed") )   return "qed";
+	if( lower.endsWith(".raw") )   return "raw";
+	if( lower.endsWith(".img") )   return "raw";
+
+	return "raw";
+}
+
+void Add_New_Device_Window::Auto_Detect_Format()
+{
+	QString path = ui.Edit_File_Path->text();
+
+	if( path.isEmpty() )
+	{
+		ui.CH_Format->setChecked( false );
+		ui.CH_Format->setVisible( true );
+		ui.CB_Format->setVisible( true );
+		return;
+	}
+
+	QString fmt = Detect_Format_From_Path( path );
+
+	ui.CH_Format->setChecked( true );
+	int idx = ui.CB_Format->findText( fmt );
+	if( idx != -1 )
+		ui.CB_Format->setCurrentIndex( idx );
+
+	// Lock format to raw for block devices
+	bool is_block = path.startsWith("/dev/");
+	ui.CH_Format->setVisible( !is_block );
+	ui.CB_Format->setVisible( !is_block );
 }
 
 VM_Native_Storage_Device Add_New_Device_Window::Get_Device() const
@@ -39,6 +129,10 @@ VM_Native_Storage_Device Add_New_Device_Window::Get_Device() const
 void Add_New_Device_Window::Set_Device( const VM_Native_Storage_Device &dev )
 {
 	Device = dev;
+
+	// Block textChanged during setup to prevent Auto_Detect_Format from cascading
+	// into Update_Native_State and wrongly auto-checking File + Interface
+	ui.Edit_File_Path->blockSignals( true );
 	
 	// Update View...
 	ui.CH_Interface->setChecked( Device.Use_Interface() );
@@ -141,11 +235,38 @@ void Add_New_Device_Window::Set_Device( const VM_Native_Storage_Device &dev )
 	ui.CH_Boot->setChecked( Device.Use_Boot() );
 	ui.CB_Boot->setCurrentIndex( Device.Get_Boot() ? 0 : 1 );
 
-	// Discard
-	ui.CH_Discard->setChecked( Device.Use_Discard() );
+	// Discard (always start unchecked; user can enable manually)
+	ui.CH_Discard->setChecked( false );
 	ui.CB_Discard->setCurrentIndex( Device.Get_Discard() ? 0 : 1 );
 
-	
+	// Format
+	ui.CH_Format->setChecked( Device.Use_Format() );
+	int fmt_idx = ui.CB_Format->findText( Device.Get_Format() );
+	if( fmt_idx != -1 )
+		ui.CB_Format->setCurrentIndex( fmt_idx );
+	else
+		AQError( "void Add_New_Device_Window::Set_Device( const VM_Native_Storage_Device &dev )",
+				 "Format: " + Device.Get_Format() );
+
+	// Re-allow textChanged signals after setup
+	ui.Edit_File_Path->blockSignals( false );
+
+	// Force raw for block devices, hide format UI
+	if( ui.Edit_File_Path->text().startsWith("/dev/") )
+	{
+		ui.CH_Format->setChecked( true );
+		ui.CH_Format->setVisible( false );
+		ui.CB_Format->setVisible( false );
+		int raw_idx = ui.CB_Format->findText( "raw" );
+		if( raw_idx != -1 )
+			ui.CB_Format->setCurrentIndex( raw_idx );
+	}
+	else
+	{
+		ui.CH_Format->setVisible( true );
+		ui.CB_Format->setVisible( true );
+	}
+
 	// cyls, heads, secs, trans
 	ui.GB_hdachs_Settings->setChecked( Device.Use_hdachs() );
 	ui.Edit_Cyls->setText( QString::number(Device.Get_Cyls()) );
@@ -297,7 +418,18 @@ void Add_New_Device_Window::Set_Emulator_Devices( const Available_Devices &devic
 		ui.CH_Boot->setVisible( false );
 		ui.CB_Boot->setVisible( false );
 	}
-	
+
+	if( devices.PSO_Drive_Format )
+	{
+		ui.CH_Format->setVisible( true );
+		ui.CB_Format->setVisible( true );
+	}
+	else
+	{
+		ui.CH_Format->setVisible( false );
+		ui.CB_Format->setVisible( false );
+	}
+
 	// Minimum Size
 	resize( minimumSizeHint().width(), minimumSizeHint().height() );
 }
@@ -357,41 +489,100 @@ void Add_New_Device_Window::on_TB_File_Path_Browse_clicked()
 		ui.Edit_File_Path->setText( QDir::toNativeSeparators(file_name) );
 }
 
+void Add_New_Device_Window::on_TB_Block_Device_clicked()
+{
+	Select_Block_Device_Window win( this );
+	if( win.exec() == QDialog::Accepted )
+	{
+		QString dev_path = win.Get_Device_Path();
+		if( ! dev_path.isEmpty() )
+		{
+			ui.CH_File->setChecked( true );
+			ui.Edit_File_Path->setText( dev_path );
+
+			// Auto-set defaults for block device
+			ui.CH_Format->setChecked( true );
+			int raw_idx = ui.CB_Format->findText( "raw" );
+			if( raw_idx != -1 ) ui.CB_Format->setCurrentIndex( raw_idx );
+
+			ui.CH_Interface->setChecked( true );
+			ui.CB_Interface->setCurrentIndex( 6 ); // virtio
+
+			ui.CH_Media->setChecked( true );
+			ui.CB_Media->setCurrentIndex( 0 ); // Disk
+
+			ui.CH_Cache->setChecked( true );
+			int none_idx = ui.CB_Cache->findText( "none" );
+			if( none_idx != -1 ) ui.CB_Cache->setCurrentIndex( none_idx );
+		}
+	}
+}
+
 void Add_New_Device_Window::done(int r)
 {
     if ( r == QDialog::Accepted )
     {
+	    // Compute native mode before auto-enable
+	    bool any_native = ui.CH_Interface->isChecked()
+		|| ui.CH_Index->isChecked()
+		|| ui.CH_Bus_Unit->isChecked()
+		|| ui.CH_Media->isChecked()
+		|| ui.CH_Snapshot->isChecked()
+		|| ui.CH_Cache->isChecked()
+		|| ui.CH_AIO->isChecked()
+		|| ui.CH_Boot->isChecked()
+		|| ui.CH_Format->isChecked()
+		|| ui.CH_File->isChecked()
+		|| ui.GB_hdachs_Settings->isChecked();
+
+	    // Auto-enable File + Interface when any native option is active
+	    if( any_native && ! ui.CH_File->isChecked() )
+	    {
+		    ui.CH_File->setChecked( true );
+		    if( ui.Edit_File_Path->text().isEmpty() )
+		    {
+			    AQGraphic_Warning( tr("Error!"), tr("You must select a file for native storage device!") );
+			    return;
+		    }
+	    }
+
+	    if( any_native && ! ui.CH_Interface->isChecked() )
+	    {
+		    ui.CH_Interface->setChecked( true );
+		    ui.CB_Interface->setCurrentIndex( 6 ); // virtio (auto-creates virtio-blk-pci)
+	    }
+
 	    // Interface
 	    switch( ui.CB_Interface->currentIndex() )
 	    {
 		    case 0:
 			    Device.Set_Interface( VM::DI_IDE );
 			    break;
-			
+
 		    case 1:
 			    Device.Set_Interface( VM::DI_SCSI );
 			    break;
-			
+
 		    case 2:
 			    Device.Set_Interface( VM::DI_SD );
 			    break;
-			
+
 		    case 3:
 			    Device.Set_Interface( VM::DI_MTD );
 			    break;
-			
+
 		    case 4:
 			    Device.Set_Interface( VM::DI_Floppy );
 			    break;
-			
+
 		    case 5:
 			    Device.Set_Interface( VM::DI_PFlash );
 			    break;
-			
+
 		    case 6:
 			    Device.Set_Interface( VM::DI_Virtio );
 			    break;
-			
+
 		    case 7:
                 Device.Set_Interface( VM::DI_Virtio_SCSI );
 			    break;
@@ -402,29 +593,29 @@ void Add_New_Device_Window::done(int r)
 			    Device.Set_Interface( VM::DI_IDE );
 			    break;
 	    }
-	
+
 	    Device.Use_Interface( ui.CH_Interface->isChecked() );
-	
+
 	    // Media
 	    switch( ui.CB_Media->currentIndex() )
 	    {
 		    case 0:
 			    Device.Set_Media( VM::DM_Disk );
 			    break;
-			
+
 		    case 1:
 			    Device.Set_Media( VM::DM_CD_ROM );
 			    break;
-			
+
 		    default:
 			    AQError( "void Add_New_Device_Window::done(int)",
 					     "Invalid Media Index! Use Disk" );
 			    Device.Set_Media( VM::DM_Disk );
 			    break;
 	    }
-	
+
 	    Device.Use_Media( ui.CH_Media->isChecked() );
-	
+
 	    // File Path
 	    if( ui.CH_File->isChecked() )
 	    {
@@ -434,39 +625,65 @@ void Add_New_Device_Window::done(int r)
 			    return;
 		    }
 	    }
-	
+
 	    Device.Use_File_Path( ui.CH_File->isChecked() );
 	    Device.Set_File_Path( ui.Edit_File_Path->text() );
-	
+
 	    // Index
 	    Device.Use_Index( ui.CH_Index->isChecked() );
 	    Device.Set_Index( ui.SB_Index->value() );
-	
+
 	    // Bus, Unit
 	    Device.Use_Bus_Unit( ui.CH_Bus_Unit->isChecked() );
 	    Device.Set_Bus( ui.SB_Bus->value() );
 	    Device.Set_Unit( ui.SB_Unit->value() );
-	
+
 	    // Snapshot
 	    Device.Use_Snapshot( ui.CH_Snapshot->isChecked() );
 	    Device.Set_Snapshot( (ui.CB_Snapshot->currentIndex() == 0) ? true : false );
-	
+
 	    // Cache
 	    Device.Use_Cache( ui.CH_Cache->isChecked() );
 	    Device.Set_Cache( ui.CB_Cache->currentText() );
-	
+
 	    // AIO
 	    Device.Use_AIO( ui.CH_AIO->isChecked() );
 	    Device.Set_AIO( ui.CB_AIO->currentText() );
-	
+
 	    // Boot
 	    Device.Use_Boot( ui.CH_Boot->isChecked() );
 	    Device.Set_Boot( (ui.CB_Boot->currentIndex() == 0) ? true : false );
-	
+
 
 	// Discard
 	Device.Use_Discard( ui.CH_Discard->isChecked() );
 	Device.Set_Discard( (ui.CB_Discard->currentIndex() == 0) ? true : false );
+
+	// Format
+	if( ui.Edit_File_Path->text().startsWith("/dev/") )
+	{
+		// Force format=raw for block devices
+		Device.Use_Format( true );
+		Device.Set_Format( "raw" );
+	}
+	else
+	{
+		if( ui.CH_Format->isChecked() && ui.CB_Format->currentText() == "raw" )
+		{
+			QString ext_warning = Detect_Format_From_Path( ui.Edit_File_Path->text() );
+			if( ext_warning != "raw" )
+			{
+				AQGraphic_Warning( tr("Warning!"),
+					tr("The selected file appears to be a %1 image.\n"
+					   "Using format=raw may cause errors.\n"
+					   "Select \"%1\" instead, or uncheck Format for auto-detect.")
+						.arg(ext_warning) );
+			}
+		}
+
+		Device.Use_Format( ui.CH_Format->isChecked() );
+		Device.Set_Format( ui.CB_Format->currentText() );
+	}
 
 	    // hdachs
 	    if( ui.GB_hdachs_Settings->isChecked() )

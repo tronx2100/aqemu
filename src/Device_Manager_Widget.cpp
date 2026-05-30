@@ -321,12 +321,24 @@ void Device_Manager_Widget::Update_Enabled_Actions()
 			
 			ui.TB_Delete_Device->setEnabled( true );
 			ui.actionDelete->setEnabled( true );
+
+			// Disable Format for block devices
+			QString hdd_path;
+			if( ui.Devices_List->currentItem()->data(512).toString() == "hda" )
+				hdd_path = HDA.Get_File_Name();
+			else if( ui.Devices_List->currentItem()->data(512).toString() == "hdb" )
+				hdd_path = HDB.Get_File_Name();
+			else if( ui.Devices_List->currentItem()->data(512).toString() == "hdc" )
+				hdd_path = HDC.Get_File_Name();
+			else if( ui.Devices_List->currentItem()->data(512).toString() == "hdd" )
+				hdd_path = HDD.Get_File_Name();
+			bool is_block = hdd_path.startsWith("/dev/");
 			
-			ui.TB_Format_HDD->setEnabled( true );
-			ui.actionFormat_HDD->setEnabled( true );
+			ui.TB_Format_HDD->setEnabled( !is_block );
+			ui.actionFormat_HDD->setEnabled( !is_block );
 			
-			ui.TB_Quick_Format->setEnabled( true );
-			ui.actionQuick_Format->setEnabled( true );
+			ui.TB_Quick_Format->setEnabled( !is_block );
+			ui.actionQuick_Format->setEnabled( !is_block );
 			
 			if( ui.Devices_List->currentItem()->data(512).toString() == "hda" )
 			{

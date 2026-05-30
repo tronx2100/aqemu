@@ -161,6 +161,8 @@ void Properties_Window::Set_HDD( const VM_HDD &hd, const QString &name )
 	ui.GB_HDD->setVisible( true );
 	ui.GB_HDD->setEnabled( true );
 	
+	ui.Button_HDD_Format->setEnabled( ! hd.Get_File_Name().startsWith("/dev/") );
+	
 	on_Button_Update_Info_clicked();
 	
 	resize( width(), minimumSizeHint().height() );
@@ -417,11 +419,6 @@ void Properties_Window::on_TB_FD_Advanced_Settings_clicked()
 		
 		if( PW_Storage.Get_Native_Device().Get_File_Path() != ui.CB_FD_Devices->currentText() )
 			ui.CB_FD_Devices->setEditText( PW_Storage.Get_Native_Device().Get_File_Path() );
-		
-		// Nativ Mode - on, File - not used
-		if( PW_Storage.Get_Native_Device().Get_Native_Mode() &&
-			PW_Storage.Get_Native_Device().Use_File_Path() == false )
-			ui.CB_FD_Devices->setEditText( "" );
 	}
 	
 	delete win;
@@ -476,11 +473,6 @@ void Properties_Window::on_TB_CDROM_Advanced_Settings_clicked()
 		
 		if( PW_Storage.Get_Native_Device().Get_File_Path() != ui.CB_CDROM_Devices->currentText() )
 			ui.CB_CDROM_Devices->setEditText( PW_Storage.Get_Native_Device().Get_File_Path() );
-		
-		// Nativ Mode - on, File - not used
-		if( PW_Storage.Get_Native_Device().Get_Native_Mode() &&
-			PW_Storage.Get_Native_Device().Use_File_Path() == false )
-			ui.CB_CDROM_Devices->setEditText( "" );
 	}
 	
 	delete win;
@@ -536,10 +528,6 @@ void Properties_Window::on_TB_HDD_Advanced_Settings_clicked()
 		if( PW_HDD.Get_Native_Device().Get_File_Path() != ui.Edit_HDD_Image_Path->text() )
 			ui.Edit_HDD_Image_Path->setText( PW_HDD.Get_Native_Device().Get_File_Path() );
 		
-		// Nativ Mode - on, File - not used
-		if( PW_HDD.Get_Native_Device().Get_Native_Mode() &&
-			PW_HDD.Get_Native_Device().Use_File_Path() == false )
-			ui.Edit_HDD_Image_Path->setText( "" );
 	}
 	
 	delete win;
@@ -565,6 +553,8 @@ void Properties_Window::on_Edit_HDD_Image_Path_textChanged()
 	}
 	
 	PW_HDD.Set_Native_Device( tmpDev );
+	
+	ui.Button_HDD_Format->setEnabled( ! ui.Edit_HDD_Image_Path->text().startsWith("/dev/") );
 	
 	// Update info
 	//on_Button_Update_Info_clicked();

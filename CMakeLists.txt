@@ -77,6 +77,7 @@ SET( aqemu_headers
 	src/VFIO_PCI_Editor_Window.h
 	src/VM_Wizard_Window.h
 	src/VNC_Password_Window.h
+	src/Select_Block_Device_Window.h
 )
 
 SET( aqemu_sources
@@ -130,6 +131,7 @@ SET( aqemu_sources
 	src/VFIO_PCI_Editor_Window.cpp
 	src/VM_Wizard_Window.cpp
 	src/VNC_Password_Window.cpp
+	src/Select_Block_Device_Window.cpp
 )
 
 SET( aqemu_ui
@@ -166,6 +168,7 @@ SET( aqemu_ui
 	src/SPICE_Settings_Widget.ui
 	src/VM_Wizard_Window.ui
 	src/VNC_Password_Window.ui
+	src/Select_Block_Device_Window.ui
 )
 
 SET( aqemu_qrc 

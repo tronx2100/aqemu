@@ -39,22 +39,39 @@
       </widget>
      </item>
      <item>
-      <widget class="QToolButton" name="TB_File_Path_Browse">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-       <property name="icon">
-        <iconset resource="../resources/icons.qrc">
-         <normaloff>:/open-file.png</normaloff>:/open-file.png</iconset>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item row="1" column="0" colspan="2">
+       <widget class="QToolButton" name="TB_File_Path_Browse">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../resources/icons.qrc">
+          <normaloff>:/open-file.png</normaloff>:/open-file.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="TB_Block_Device">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../resources/icons.qrc">
+          <normaloff>:/blockdevice.png</normaloff>:/blockdevice.png</iconset>
+        </property>
+        <property name="toolTip">
+         <string>Select block device (/dev/disk/by-id/...)</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="1" column="0" colspan="2">
     <widget class="QCheckBox" name="CH_Interface">
      <property name="text">
       <string>&amp;Interface</string>
@@ -284,7 +301,51 @@
      </property>
     </spacer>
    </item>
-   <item row="10" column="0" colspan="5">
+   <item row="10" column="0" colspan="2">
+    <widget class="QCheckBox" name="CH_Format">
+     <property name="text">
+      <string>For&amp;mat</string>
+     </property>
+    </widget>
+   </item>
+   <item row="10" column="2" colspan="3">
+    <widget class="QComboBox" name="CB_Format">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <item>
+      <property name="text">
+       <string>raw</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>qcow2</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>qed</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>vdi</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>vmdk</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>vhdx</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="11" column="0" colspan="5">
     <widget class="QGroupBox" name="GB_hdachs_Settings">
      <property name="title">
       <string>Settin&amp;gs for -hdachs Option</string>
@@ -423,7 +484,7 @@
      </layout>
     </widget>
    </item>
-   <item row="11" column="0" colspan="5">
+   <item row="12" column="0" colspan="5">
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <property name="sizeConstraint">
       <enum>QLayout::SetMaximumSize</enum>
@@ -486,7 +547,8 @@
  <tabstops>
   <tabstop>CH_File</tabstop>
   <tabstop>Edit_File_Path</tabstop>
-  <tabstop>TB_File_Path_Browse</tabstop>
+   <tabstop>TB_File_Path_Browse</tabstop>
+   <tabstop>TB_Block_Device</tabstop>
   <tabstop>CH_Interface</tabstop>
   <tabstop>CB_Interface</tabstop>
   <tabstop>CH_Index</tabstop>
@@ -502,9 +564,11 @@
   <tabstop>CB_AIO</tabstop>
   <tabstop>CH_Snapshot</tabstop>
   <tabstop>CB_Snapshot</tabstop>
-  <tabstop>CH_Boot</tabstop>
-  <tabstop>CB_Boot</tabstop>
-  <tabstop>GB_hdachs_Settings</tabstop>
+   <tabstop>CH_Boot</tabstop>
+   <tabstop>CB_Boot</tabstop>
+   <tabstop>CH_Format</tabstop>
+   <tabstop>CB_Format</tabstop>
+   <tabstop>GB_hdachs_Settings</tabstop>
   <tabstop>Edit_Cyls</tabstop>
   <tabstop>Edit_Secs</tabstop>
   <tabstop>Edit_Heads</tabstop>
@@ -737,6 +801,22 @@
      <y>368</y>
     </hint>
    </hints>
-  </connection>
- </connections>
-</ui>
+   </connection>
+   <connection>
+    <sender>CH_Format</sender>
+    <signal>toggled(bool)</signal>
+    <receiver>CB_Format</receiver>
+    <slot>setEnabled(bool)</slot>
+    <hints>
+     <hint type="sourcelabel">
+      <x>56</x>
+      <y>380</y>
+     </hint>
+     <hint type="destinationlabel">
+      <x>200</x>
+      <y>380</y>
+     </hint>
+    </hints>
+   </connection>
+  </connections>
+ </ui>

@@ -4544,11 +4544,66 @@ void Main_Window::on_TB_Show_VFIO_PCI_Editor_Window_clicked()
 	{
 		QList<VM_PCI_Device> newDevices = editor->Get_PCI_Devices();
 
+		// If any VFIO devices are enabled, check that machine type supports PCIe
+		bool hasEnabledVfio = false;
+		for( int i = 0; i < newDevices.size(); ++i )
+		{
+			if( newDevices[i].IsEnabled() )
+			{
+				hasEnabledVfio = true;
+				break;
+			}
+		}
+
+		if( hasEnabledVfio )
+		{
+			bool devOk = false;
+			Available_Devices curComp = Get_Current_Machine_Devices( &devOk );
+
+			int curIdx = ui_arch.CB_Machine_Type->currentIndex();
+			if( devOk && curIdx >= 0 && curIdx < curComp.Machine_List.count() )
+			{
+				QString curQemuName = curComp.Machine_List[curIdx].QEMU_Name;
+
+				if( ! curQemuName.contains( "q35", Qt::CaseInsensitive ) )
+				{
+					int q35Idx = -1;
+					for( int i = 0; i < curComp.Machine_List.count(); ++i )
+					{
+						if( curComp.Machine_List[i].QEMU_Name.contains( "q35", Qt::CaseInsensitive ) )
+						{
+							q35Idx = i;
+							break;
+						}
+					}
+
+					if( q35Idx >= 0 )
+					{
+						QMessageBox::StandardButton reply = QMessageBox::question(
+							this,
+							tr("PCIe Required for VFIO"),
+							tr("VFIO PCI passthrough requires a Q35 chipset (PCIe) machine type.\n\n"
+							   "Current: %1\n"
+							   "Switch to: %2\n\n"
+							   "Switch machine type now?")
+							.arg( curComp.Machine_List[curIdx].Caption )
+							.arg( curComp.Machine_List[q35Idx].Caption ),
+							QMessageBox::Yes | QMessageBox::No,
+							QMessageBox::Yes );
+
+						if( reply == QMessageBox::Yes )
+						{
+							ui_arch.CB_Machine_Type->setCurrentIndex( q35Idx );
+						}
+					}
+				}
+			}
+		}
+
 		QList<VM_PCI_Device> oldDevices = Has_Pending_PCI_Changes
 			? Pending_PCI_Devices
 			: cur_vm->Get_PCI_Devices();
 
-		// Only trigger VM_Changed if something actually changed
 		if( newDevices != oldDevices )
 		{
 			Pending_PCI_Devices = newDevices;

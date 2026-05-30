@@ -207,9 +207,14 @@ Advanced_Settings_Window::Advanced_Settings_Window( QWidget *parent )
 	// Tab USB
 	ui.RB_USB_Style_device->setChecked( Settings.value("USB_Style", "device").toString() == "device" );
 	
-	QString usbID = Settings.value( "USB_ID_Style", "BusPath" ).toString();
+	// Mark VendorProduct as preferred default (bold)
+	QFont vpFont = ui.RB_USB_ID_VendorProduct->font();
+	vpFont.setBold( true );
+	ui.RB_USB_ID_VendorProduct->setFont( vpFont );
 	
-	if( usbID == "BusAdd" )
+	QString usbID = Settings.value( "USB_ID_Style", "VendorProduct" ).toString();
+	
+	if( usbID == "BusAddr" )
 		ui.RB_USB_ID_BusAddr->setChecked( true );
 	else if( usbID == "VendorProduct" )
 		ui.RB_USB_ID_VendorProduct->setChecked( true );

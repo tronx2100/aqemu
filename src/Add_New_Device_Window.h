@@ -43,9 +43,15 @@ class Add_New_Device_Window: public QDialog
 		void Set_Enabled( bool enabled );
 	
 	private slots:
+		void Update_Native_State();
+		void Auto_Detect_Format();
 		void on_CB_Interface_currentIndexChanged( const QString &text );
 		void on_TB_File_Path_Browse_clicked();
+		void on_TB_Block_Device_clicked();
 		void done(int);
+
+	private:
+		QString Detect_Format_From_Path( const QString &path );
 	
 	private:
 		VM_Native_Storage_Device Device;

@@ -5265,6 +5265,11 @@ VM_Native_Storage_Device Virtual_Machine::Load_VM_Native_Storage_Device( const Q
 	// Discard
 	tmp_device.Set_Discard( Second_Element.firstChildElement("Discard").text() == "true" );
 
+	// Use Format
+	tmp_device.Use_Format( Second_Element.firstChildElement("Use_Format").text() == "true" );
+
+	// Format
+	tmp_device.Set_Format( Second_Element.firstChildElement("Format").text() );
 
 	return tmp_device;
 }
@@ -5584,6 +5589,23 @@ void Virtual_Machine::Save_VM_Native_Storage_Device( QDomDocument &New_Dom_Docum
 	else
 	        Dom_Text = New_Dom_Document.createTextNode( "false" );
 
+	Sec_Element.appendChild( Dom_Text );
+
+	// Use Format
+	Sec_Element = New_Dom_Document.createElement( "Use_Format" );
+	Dom_Element.appendChild( Sec_Element );
+
+	if( device.Use_Format() )
+		Dom_Text = New_Dom_Document.createTextNode( "true" );
+	else
+		Dom_Text = New_Dom_Document.createTextNode( "false" );
+
+	Sec_Element.appendChild( Dom_Text );
+
+	// Format
+	Sec_Element = New_Dom_Document.createElement( "Format" );
+	Dom_Element.appendChild( Sec_Element );
+	Dom_Text = New_Dom_Document.createTextNode( device.Get_Format() );
 	Sec_Element.appendChild( Dom_Text );
 }
 
@@ -7552,6 +7574,10 @@ QStringList Virtual_Machine::Build_Native_Device_Args( VM_Native_Storage_Device 
 	        if( device.Get_Discard() ) opt << "discard=unmap";
 	        else opt << "discard=ignore";
 	}
+
+	// Format
+	if( device.Use_Format() )
+		opt << "format=" + device.Get_Format();
 
 	// Create complete drive string
 	QString driveStr = "";

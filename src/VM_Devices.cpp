@@ -1656,6 +1656,10 @@ VM_Native_Storage_Device::VM_Native_Storage_Device()
 	AIO = "threads";
 	UBoot = false;
 	Boot = false;
+	UFormat = false;
+	Format = "raw";
+	UDiscard = false;
+	Discard = false;
 }
 
 VM_Native_Storage_Device::VM_Native_Storage_Device( const VM_Native_Storage_Device &sd )
@@ -1686,6 +1690,8 @@ VM_Native_Storage_Device::VM_Native_Storage_Device( const VM_Native_Storage_Devi
 	Boot = sd.Get_Boot();
 	UDiscard = sd.Use_Discard();
 	Discard = sd.Get_Discard();
+	UFormat = sd.Use_Format();
+	Format = sd.Get_Format();
 }
 
 bool VM_Native_Storage_Device::Get_Native_Mode() const
@@ -1700,6 +1706,8 @@ bool VM_Native_Storage_Device::Get_Native_Mode() const
 	if( UInterface ) return true;
 	if( UMedia ) return true;
 	if( USnapshot ) return true;
+	if( UFormat ) return true;
+	if( UDiscard ) return true;
 	
 	// Nativ device options not used
 	return false;
@@ -1738,7 +1746,9 @@ bool VM_Native_Storage_Device::operator==( const VM_Native_Storage_Device &sd ) 
 		UBoot == sd.Use_Boot() &&
 		Boot == sd.Get_Boot() &&
 		UDiscard == sd.Use_Discard() &&
-		Discard == sd.Get_Discard() )
+		Discard == sd.Get_Discard() &&
+		UFormat == sd.Use_Format() &&
+		Format == sd.Get_Format() )
 	{
 		return true;
 	}
@@ -2012,6 +2022,26 @@ bool VM_Native_Storage_Device::Get_Discard() const
 void VM_Native_Storage_Device::Set_Discard( bool discard )
 {
 	Discard = discard;
+}
+
+bool VM_Native_Storage_Device::Use_Format() const
+{
+	return UFormat;
+}
+
+void VM_Native_Storage_Device::Use_Format( bool use )
+{
+	UFormat = use;
+}
+
+const QString &VM_Native_Storage_Device::Get_Format() const
+{
+	return Format;
+}
+
+void VM_Native_Storage_Device::Set_Format( const QString &format )
+{
+	Format = format;
 }
 
 //===========================================================================
@@ -2308,27 +2338,27 @@ VM::Device_Size VM_HDD::String_to_Device_Size( const QString &size ) const
 		return zero_size;
 	}
 	
-	QRegExp RegInfo = QRegExp( "([\\d]+|[\\d]+[.,][\\d]+).*([KMG]+)" );
-	
+	QRegExp RegInfo = QRegExp( "([\\d]+|[\\d]+[.,][\\d]+).*([KMG]*)" );
+
 	if( ! RegInfo.exactMatch(size) )
 	{
 		AQError( "VM::Device_Size VM_HDD::String_to_Device_Size( const QString &size ) const",
 				 "Cannot Match RegExp!" );
 		return zero_size;
 	}
-	
+
 	QStringList info_lines = RegInfo.capturedTexts();
-	
+
 	bool ok = false;
 	hd_size.Size = info_lines[1].toDouble( &ok );
-	
+
 	if( ! ok )
 	{
 		AQError( "VM::Device_Size VM_HDD::String_to_Device_Size( const QString &size ) const",
 				 "Cannot Convert String to Double!" );
 		return zero_size;
 	}
-	
+
 	if( info_lines[2] == "K" )
 		hd_size.Suffix = VM::Size_Suf_Kb;
 	else if( info_lines[2] == "M" )
@@ -2336,11 +2366,7 @@ VM::Device_Size VM_HDD::String_to_Device_Size( const QString &size ) const
 	else if( info_lines[2] == "G" )
 		hd_size.Suffix = VM::Size_Suf_Gb;
 	else
-	{
-		AQError( "VM::Device_Size VM_HDD::String_to_Device_Size( const QString &size ) const",
-				 "HDD Size Suffix Not K,M,G!" );
-		return zero_size;
-	}
+		hd_size.Suffix = VM::Size_Suf_Gb; // default for bare numbers (e.g. "0" from block devices)
 	
 	return hd_size;
 }

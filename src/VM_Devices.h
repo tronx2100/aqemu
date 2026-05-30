@@ -570,6 +570,12 @@ class VM_Native_Storage_Device
 		
 		bool Get_Discard() const;
 		void Set_Discard( bool discard );
+		
+		bool Use_Format() const;
+		void Use_Format( bool use );
+		
+		const QString &Get_Format() const;
+		void Set_Format( const QString &format );
 	private:
 		bool UFile_Path;
 		QString File_Path;
@@ -602,6 +608,9 @@ class VM_Native_Storage_Device
 		bool Boot;
 		bool UDiscard;
 		bool Discard;
+		
+		bool UFormat;
+		QString Format;
 };
 
 // Virtual Machine Storage Device (FDD, CD, HDD)

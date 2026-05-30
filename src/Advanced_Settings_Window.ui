@@ -2285,27 +2285,28 @@ Supports only USB &amp;1.1 controller emulation.</string>
                <property name="leftMargin">
                 <number>10</number>
                </property>
-               <item>
-                <widget class="QRadioButton" name="RB_USB_ID_BusPath">
-                 <property name="text">
-                  <string>Bus + Device Path - Recommended for modern QEMU.
+                <item>
+                 <widget class="QRadioButton" name="RB_USB_ID_BusPath">
+                  <property name="text">
+                   <string>Bus + Device Path - Recommended for modern QEMU.
 Default choice for usb-host passthrough.
 When you connect &amp;the USB device to another port -
 the Bus.Path value changes. Update it in USB settings.</string>
-                 </property>
-                 <property name="checked">
-                  <bool>true</bool>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QRadioButton" name="RB_USB_ID_VendorProduct">
-                 <property name="text">
-                  <string>Vendor_ID + Product_ID - Recommended for modern QEMU
-if you do &amp;not connect multiple identical USB devices.</string>
-                 </property>
-                </widget>
-               </item>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QRadioButton" name="RB_USB_ID_VendorProduct">
+                  <property name="text">
+                   <string>Vendor_ID + Product_ID - Recommended for modern QEMU.
+Stable across port changes. Default choice.
+If you do &amp;not connect multiple identical USB devices.</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
                <item>
                 <widget class="QRadioButton" name="RB_USB_ID_BusAddr">
                  <property name="text">

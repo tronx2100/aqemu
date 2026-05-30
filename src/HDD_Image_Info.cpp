@@ -107,7 +107,13 @@ void HDD_Image_Info::Parse_Info( int exitCode, QProcess::ExitStatus exitStatus )
                 .arg(exitStatus) );
 
 
-	QByteArray info_ba = QEMU_IMG_Proc->readAll();
+	QProcess *proc = qobject_cast<QProcess*>( sender() );
+	if( !proc )
+	{
+		Clear_Info();
+		return;
+	}
+	QByteArray info_ba = proc->readAll();
 	QString info_str = QString::fromUtf8( info_ba );
 	if( info_str.isEmpty() )
 	{
