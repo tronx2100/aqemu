@@ -1,6 +1,6 @@
 ###Latest news:
 05/2026
-added UEFI and TPM Support for more modern OS
+added UEFI and TPM Support for more modern OS, Passtrough direct selector for any pci.e device and native blockdevice selector added
 fixed a lot , really alot .
 
 Example how to build using meson/ninja:
