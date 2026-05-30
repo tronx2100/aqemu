@@ -42,7 +42,10 @@ ninja
 ```
 
 
-![ScreenShot](https://i.imgur.com/PkvFUEk.png)
+![Main Window](screenshots/main-adv.png)
+![VFIO PCI Editor](screenshots/vfio.png)
+![Block Device Selector](screenshots/blockdev.png)
+![Resize HDD Image](screenshots/imgresizer.png)
 
 Based on AQEMU — a Qt5 frontend for QEMU with optional embedded VNC display and DBus service.
 
