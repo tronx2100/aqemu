@@ -152,6 +152,7 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 	this->Machine_Name = vm.Get_Machine_Name();
 	this->Computer_Type = vm.Get_Computer_Type();
 	this->Machine_Type = vm.Get_Machine_Type();
+	this->Machine_Options = vm.Get_Machine_Options();
 	this->CPU_Type = vm.Get_CPU_Type();
 	this->CPU_Flags = vm.Get_CPU_Flags();
 	this->SMP = vm.Get_SMP();
@@ -383,6 +384,7 @@ void Virtual_Machine::Shared_Constructor()
 	Machine_Name = "NO_NAME";
 	Computer_Type = "";
 	Machine_Type = "";
+	Machine_Options = "";
 	CPU_Type = "";
 	CPU_Flags = "";
 	SMP.SMP_Count = 1;
@@ -542,6 +544,7 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
 		this->Machine_Name == vm.Get_Machine_Name() &&
         this->Machine_Accelerator == vm.Get_Machine_Accelerator() &&
 		this->Machine_Type == vm.Get_Machine_Type() &&
+		this->Machine_Options == vm.Get_Machine_Options() &&
 		this->CPU_Type == vm.Get_CPU_Type() &&
 		this->CPU_Flags == vm.Get_CPU_Flags() &&
 		this->SMP == vm.Get_SMP() &&
@@ -793,6 +796,7 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->Machine_Name = vm.Get_Machine_Name();
 	this->Computer_Type = vm.Get_Computer_Type();
 	this->Machine_Type = vm.Get_Machine_Type();
+	this->Machine_Options = vm.Get_Machine_Options();
 	this->CPU_Type = vm.Get_CPU_Type();
 	this->CPU_Flags = vm.Get_CPU_Flags();
 	this->SMP = vm.Get_SMP();
@@ -1093,6 +1097,12 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 	Dom_Element = New_Dom_Document.createElement( "Machine_Type" );
 	VM_Element.appendChild( Dom_Element );
 	Dom_Text = New_Dom_Document.createTextNode( Machine_Type );
+	Dom_Element.appendChild( Dom_Text );
+
+	// Machine Options
+	Dom_Element = New_Dom_Document.createElement( "Machine_Options" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( Machine_Options );
 	Dom_Element.appendChild( Dom_Text );
 	
 	// CPU Type
@@ -3998,6 +4008,7 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 			
 			// Machine Type
 			Machine_Type = Child_Element.firstChildElement("Machine_Type").text();
+			Machine_Options = Child_Element.firstChildElement("Machine_Options").text();
 			
 			// CPU Type
 			CPU_Type = Child_Element.firstChildElement("CPU_Type").text();
@@ -5971,6 +5982,9 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 
 	if( Current_Emulator_Devices.PSO_KVM_Shadow_Memory && KVM_Shadow_Memory )
 		props << "kvm_shadow_mem=" + QString::number( KVM_Shadow_Memory_Size * 1024 );
+
+	if( ! Machine_Options.isEmpty() )
+		props << Machine_Options;
 
     Args << props.join(",");
 	
@@ -8673,6 +8687,16 @@ const QString &Virtual_Machine::Get_Machine_Type() const
 void Virtual_Machine::Set_Machine_Type( const QString &type )
 {
 	Machine_Type = type;
+}
+
+const QString &Virtual_Machine::Get_Machine_Options() const
+{
+	return Machine_Options;
+}
+
+void Virtual_Machine::Set_Machine_Options( const QString &opts )
+{
+	Machine_Options = opts;
 }
 
 const QString &Virtual_Machine::Get_CPU_Type() const

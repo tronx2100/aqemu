@@ -390,11 +390,11 @@ Missing values (zeroes) get computed automatically.</string>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="PB_Detect_Host_CPU">
-       <property name="text">
-        <string>&amp;Detect &amp;Optimize</string>
-       </property>
-      </widget>
+       <widget class="QPushButton" name="PB_OSX_Preset">
+        <property name="text">
+         <string>OSX &amp;Preset</string>
+        </property>
+       </widget>
      </item>
      <item>
       <spacer name="horizontalSpacer">
@@ -451,7 +451,7 @@ Missing values (zeroes) get computed automatically.</string>
    <tabstop>CH_CPU_PM_Overcommit</tabstop>
    <tabstop>PB_Optimized_AMD</tabstop>
    <tabstop>PB_Optimized_Intel</tabstop>
-   <tabstop>PB_Detect_Host_CPU</tabstop>
+    <tabstop>PB_OSX_Preset</tabstop>
  </tabstops>
  <resources>
   <include location="../resources/icons.qrc"/>

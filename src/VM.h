@@ -154,6 +154,9 @@ class Virtual_Machine: public QObject
 		
 		const QString &Get_Machine_Type() const;
 		void Set_Machine_Type( const QString &type );
+
+		const QString &Get_Machine_Options() const;
+		void Set_Machine_Options( const QString &opts );
 		
 		const QString &Get_CPU_Type() const;
 		void Set_CPU_Type( const QString &type );
@@ -570,6 +573,7 @@ class Virtual_Machine: public QObject
 		QString Computer_Type; // PC, MAC, ARM...
 		QString Machine_Name; // this machine name
 		QString Machine_Type; // All QEMU Mach Types
+		QString Machine_Options; // Additional -machine options
 		QString CPU_Type; // x86, ppc, sparc...
 		QString CPU_Flags; // CPU feature flags (e.g. kvm=off,+topoext,...)
 		VM::SMP_Options SMP; // All SMP Settings

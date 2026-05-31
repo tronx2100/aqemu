@@ -71,26 +71,10 @@ SMP_Settings_Window::SMP_Settings_Window( QWidget *parent )
 		Set_Optimized_Preset( "GenuineIntel", "GenuineIntel" );
 	});
 
-	connect( ui.PB_Detect_Host_CPU, &QPushButton::clicked, this, [this]()
+	connect( ui.PB_OSX_Preset, &QPushButton::clicked, this, [this]()
 	{
-		QFile cpuinfo( "/proc/cpuinfo" );
-		if( cpuinfo.open(QIODevice::ReadOnly) )
-		{
-			QTextStream in( &cpuinfo );
-			while( ! in.atEnd() )
-			{
-				QString line = in.readLine();
-				if( line.startsWith("vendor_id") )
-				{
-					QString vendor = line.section( ':', 1 ).trimmed();
-					if( vendor == "AuthenticAMD" )
-						Set_Optimized_Preset( "AuthenticAMD", "AuthenticAMD" );
-					else
-						Set_Optimized_Preset( "GenuineIntel", "GenuineIntel" );
-					break;
-				}
-			}
-		}
+		Set_Optimized_Preset( "GenuineIntel", "GenuineIntel" );
+		Set_CPU_Type( "Penryn" );
 	});
 }
 

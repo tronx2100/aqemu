@@ -43,6 +43,9 @@ class SMP_Settings_Window: public QDialog
 		void Set_CPU_PM_Overcommit( bool use );
 		
 		void Set_SMP_Count( int count );
+
+	signals:
+		void Set_CPU_Type( const QString &cpu_type );
 	
 	private slots:
 		void done(int);

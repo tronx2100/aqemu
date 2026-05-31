@@ -80,8 +80,8 @@ Main_Window::Main_Window( QWidget *parent )
 
     ui.setupUi( this );
 	ui_ao.setupUi( Advanced_Options );
-    Advanced_Options->setMinimumSize( 1000, 800 );
-    Advanced_Options->resize( 1000, 800 );
+    Advanced_Options->setMinimumSize( 1000, 1000 );
+    Advanced_Options->resize( 1000, 1000 );
 
     connect(ui_ao.CH_Start_Date,SIGNAL(toggled(bool)),this,SLOT(adv_on_CH_Start_Date_toggled(bool)));
 
@@ -383,13 +383,23 @@ void Main_Window::Connect_Signals()
 	connect( ui.CB_Computer_Type, SIGNAL(currentIndexChanged(int)),
 			 this, SLOT(VM_Changed()) );
 
-    connect( ui_arch.CB_CPU_Type, SIGNAL(currentIndexChanged(int)),
+	connect( ui_arch.CB_CPU_Type, SIGNAL(currentIndexChanged(int)),
 			 this, SLOT(VM_Changed()) );
 
-	connect( ui.CB_CPU_Count, SIGNAL(editTextChanged(const QString &)),
-			 this, SLOT(VM_Changed()) );
+	connect( SMP_Settings, &SMP_Settings_Window::Set_CPU_Type, this, [this]( const QString &cpu_type )
+	{
+		// Find and set the CPU type in the Architecture Options dialog
+		for( int cx = 0; cx < ui_arch.CB_CPU_Type->count(); ++cx )
+		{
+			if( ui_arch.CB_CPU_Type->itemText( cx ) == cpu_type )
+			{
+				ui_arch.CB_CPU_Type->setCurrentIndex( cx );
+				break;
+			}
+		}
+	});
 
-    connect( ui_arch.CB_Machine_Type, SIGNAL(currentIndexChanged(int)),
+	connect( ui_arch.CB_Machine_Type, SIGNAL(currentIndexChanged(int)),
              this, SLOT(VM_Changed()) );
 
 	connect( ui.CB_Boot_Priority, SIGNAL(currentIndexChanged(int)),
@@ -977,6 +987,7 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 
 	// Machine Type
 	tmp_vm->Set_Machine_Type( curComp.Machine_List[ui_arch.CB_Machine_Type->currentIndex()].QEMU_Name );
+	tmp_vm->Set_Machine_Options( ui_arch.LE_Machine_Options->text() );
 
 	// CPU Type
 	tmp_vm->Set_CPU_Type( curComp.CPU_List[ui_arch.CB_CPU_Type->currentIndex()].QEMU_Name );
@@ -1002,7 +1013,7 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
         smp.SMP_Count = ui.CB_CPU_Count->currentText().toInt(); // combobox is authoritative
         tmp_vm->Set_SMP( smp );
     }
-    tmp_vm->Set_CPU_Flags( SMP_Settings->Get_CPU_Flags() );
+    tmp_vm->Set_CPU_Flags( ui_arch.LE_CPU_Flags->text() );
     tmp_vm->Set_CPU_PM_Overcommit( SMP_Settings->Get_CPU_PM_Overcommit() );
 
 	// Keyboard Layout
@@ -1590,6 +1601,12 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 			break;
 		}
 	}
+
+	// CPU Flags
+	ui_arch.LE_CPU_Flags->setText( tmp_vm->Get_CPU_Flags() );
+
+	// Machine Options
+	ui_arch.LE_Machine_Options->setText( tmp_vm->Get_Machine_Options() );
 
 	// Video Card
 	tmp_str = tmp_vm->Get_Video_Card();
@@ -4724,6 +4741,9 @@ void Main_Window::on_TB_Show_SMP_Settings_Window_clicked()
 		{
 			changed = true;
 		}
+
+		// Sync CPU_Flags from SMP dialog back to Architecture Options
+		ui_arch.LE_CPU_Flags->setText( SMP_Settings->Get_CPU_Flags() );
 
 		if( changed ) VM_Changed();
 	}
