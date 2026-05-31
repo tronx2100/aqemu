@@ -1,8 +1,25 @@
-### What's new in 0.9.8 (May 2026)
+### What's new in 0.9.9 (May 2026)
 
-**UEFI & Modern OS Support**
-- UEFI (OVMF) firmware with Secure Boot toggle
-- Windows 10/11 VM templates (Secure Boot, TPM 2.0, 4+ GB RAM presets)
+**macOS Guest Support**
+- New "OSX Preset" button in SMP dialog (CPU Penryn + SSE flags)
+- Machine options checkboxes (vmport=off, i8042=off, hpet=off)
+- RTC clock=rt option in Advanced Options
+- CPU PM overcommit toggle in SMP dialog
+- MacOS X x86 template updated with working defaults
+- Boot args `colors=32` troubleshooting documented
+
+**CPU & SMP**
+- SSE flag checkboxes: +sse4.1, +sse4.2, +ssse3
+- Optimized AMD/Intel topology presets
+- Clear_All_Flags() prevents stale flags between presets
+
+**Bug Fixes**
+- USB keyboard/mouse save/load: devices were stored on VM root instead
+  of inside USB_Port_N, causing duplicate mouse and missing keyboard
+  after restart
+- Inconsistent -M / -machine QEMU args unified into single -machine
+- Architecture Options dialog height increased
+- operator= in VM model had wrong method names (dead code exposed)
 
 **TPM (Trusted Platform Module)**
 - Full TPM 2.0 device setup via swtpm backend
