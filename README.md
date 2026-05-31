@@ -49,6 +49,13 @@ ninja
 
 Based on AQEMU — a Qt5 frontend for QEMU with optional embedded VNC display and DBus service.
 
+## Mac OS X / macOS Guest Troubleshooting
+
+- **Black screen after boot**: Open *Boot Settings* → set *bootargs=* to `colors=32` (`-boot args=colors=32`)
+- **Kernel panic "vm_page_set_colors"**: Use CPU type `Penryn` with flags `+sse4.1,+sse4.2,+ssse3` (OSX Preset in SMP dialog)
+- **No boot / hangs**: Set machine type to `pc-q35` (or `pc-q35-7.2`) with options `vmport=off,i8042=off,hpet=off`
+- **Snow Leopard compatibility**: Must use `Penryn` CPU (not `host`), enable `RTC clock=rt` in Advanced Options
+
 ---
 
 Use cmake to build.

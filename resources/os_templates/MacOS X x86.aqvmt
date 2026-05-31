@@ -8,31 +8,36 @@
         <Screenshot_Path></Screenshot_Path>
         <Machine_Name>Mac OS X</Machine_Name>
         <Computer_Type>qemu-system-x86</Computer_Type>
-        <Machine_Type></Machine_Type>
-        <CPU_Type>host</CPU_Type>
-        <CPU_Flags>kvm=off,-hypervisor,+topoext,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time,hv_vendor_id=GenuineIntel</CPU_Flags>
-        <SMP_CPU_Count>1</SMP_CPU_Count>
+        <Machine_Type>pc</Machine_Type>
+        <Machine_Options>vmport=off,i8042=off,hpet=off</Machine_Options>
+        <CPU_Type>Penryn</CPU_Type>
+        <CPU_Flags>+sse4.1,+sse4.2,+ssse3</CPU_Flags>
+        <SMP_CPU_Count>2</SMP_CPU_Count>
+        <SMP_Cores>2</SMP_Cores>
+        <SMP_Threads>1</SMP_Threads>
+        <SMP_Sockets>1</SMP_Sockets>
+        <SMP_MaxCPUs>2</SMP_MaxCPUs>
         <CPU_PM_Overcommit>true</CPU_PM_Overcommit>
-        <Keyboard_Layout>Default</Keyboard_Layout>
+        <Keyboard_Layout>de</Keyboard_Layout>
         <Boot_Device>CDROM</Boot_Device>
         <Video_Card></Video_Card>
         <KQEMU_Mode>Default</KQEMU_Mode>
         <Audio_Cards>
             <Audio_sb16>false</Audio_sb16>
-            <Audio_es1370>true</Audio_es1370>
+            <Audio_es1370>false</Audio_es1370>
             <Audio_Adlib>false</Audio_Adlib>
             <Audio_PC_Speaker>false</Audio_PC_Speaker>
             <Audio_GUS>false</Audio_GUS>
-            <Audio_AC97>false</Audio_AC97>
+            <Audio_AC97>true</Audio_AC97>
             <Audio_HDA>false</Audio_HDA>
             <Audio_cs4231a>false</Audio_cs4231a>
         </Audio_Cards>
         <Check_Free_RAM>false</Check_Free_RAM>
-        <Memory_Size>1024</Memory_Size>
+        <Memory_Size>4096</Memory_Size>
         <Fullscreen>false</Fullscreen>
         <Win2K_Hack>false</Win2K_Hack>
         <Local_Time>true</Local_Time>
-        <Check_FDD_Boot_Sector>true</Check_FDD_Boot_Sector>
+        <Check_FDD_Boot_Sector>false</Check_FDD_Boot_Sector>
         <ACPI>true</ACPI>
         <Snapshot_Mode>false</Snapshot_Mode>
         <Start_CPU>true</Start_CPU>
@@ -76,11 +81,11 @@
         <Use_Redirections>false</Use_Redirections>
         <Network_Cards_Count>1</Network_Cards_Count>
         <Network_Card_0>
-            <Card_Model></Card_Model>
+            <Card_Model>rtl8139</Card_Model>
             <Network_Mode>Usermode</Network_Mode>
-            <Hostname></Hostname>
+            <Hostname>O0</Hostname>
             <IP_Address></IP_Address>
-            <MAC_Address></MAC_Address>
+            <MAC_Address>00:e0:4c:1b:b1:2b</MAC_Address>
             <Port>0</Port>
             <VLAN>0</VLAN>
             <Use_TUN_TAP_Script>true</Use_TUN_TAP_Script>
@@ -90,7 +95,7 @@
         </Network_Card_0>
         <Redirections_Count>0</Redirections_Count>
         <TFTP_Prefix></TFTP_Prefix>
-        <SMB_Directory></SMB_Directory>
+        <SMB_Directory>/</SMB_Directory>
         <Serial_Port>
             <Port_Redirection>Default</Port_Redirection>
             <Parametrs></Parametrs>
@@ -100,7 +105,33 @@
             <Parametrs></Parametrs>
         </Parallel_Port>
         <USB_Hub>true</USB_Hub>
-        <USB_Ports_Count>0</USB_Ports_Count>
+        <USB_Ports_Count>2</USB_Ports_Count>
+        <USB_Port_0>
+            <Use_Host_Device>false</Use_Host_Device>
+            <Manufacturer_Name></Manufacturer_Name>
+            <Product_Name></Product_Name>
+            <Vendor_ID></Vendor_ID>
+            <Product_ID></Product_ID>
+            <Serial_Number></Serial_Number>
+            <Speed></Speed>
+            <Bus></Bus>
+            <Addr></Addr>
+            <Path></Path>
+            <USB_Mouse>true</USB_Mouse>
+        </USB_Port_0>
+        <USB_Port_1>
+            <Use_Host_Device>false</Use_Host_Device>
+            <Manufacturer_Name></Manufacturer_Name>
+            <Product_Name></Product_Name>
+            <Vendor_ID></Vendor_ID>
+            <Product_ID></Product_ID>
+            <Serial_Number></Serial_Number>
+            <Speed></Speed>
+            <Bus></Bus>
+            <Addr></Addr>
+            <Path></Path>
+            <USB_Keyboard>true</USB_Keyboard>
+        </USB_Port_1>
         <Linux_Boot>false</Linux_Boot>
         <bzImage_Path></bzImage_Path>
         <Initrd_Path></Initrd_Path>
@@ -143,10 +174,5 @@
         <VNC_x509_Folder_Path></VNC_x509_Folder_Path>
         <Use_VNC_x509verify>false</Use_VNC_x509verify>
         <VNC_x509verify_Folder_Path></VNC_x509verify_Folder_Path>
-        <Use_SMBIOS_Type2>true</Use_SMBIOS_Type2>
-        <SMBIOS_Manufacturer>Apple Inc.</SMBIOS_Manufacturer>
-        <SMBIOS_Product>iMac19,1</SMBIOS_Product>
-        <SMBIOS_Version>1.0</SMBIOS_Version>
-        <SMBIOS_Serial></SMBIOS_Serial>
     </Virtual_Machine>
 </AQEMU_Template>

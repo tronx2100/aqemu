@@ -81,33 +81,35 @@
      </property>
     </widget>
    </item>
-    <item row="2" column="0">
-     <widget class="QLabel" name="Label_CPU_Flags">
+    <item row="2" column="0" colspan="2">
+     <widget class="QLabel" name="Label_Machine_Options">
       <property name="text">
-       <string>CPU &amp;Flags:</string>
-      </property>
-      <property name="buddy">
-       <cstring>LE_CPU_Flags</cstring>
+       <string>Machine options (appended to -machine):</string>
       </property>
      </widget>
     </item>
-    <item row="2" column="1">
-     <widget class="QLineEdit" name="LE_CPU_Flags"/>
-    </item>
     <item row="3" column="0">
-     <widget class="QLabel" name="Label_Machine_Options">
+     <widget class="QCheckBox" name="CH_VMPort_Off">
       <property name="text">
-       <string>Machine &amp;Options:</string>
-      </property>
-      <property name="buddy">
-       <cstring>LE_Machine_Options</cstring>
+       <string>vmport=off</string>
       </property>
      </widget>
     </item>
     <item row="3" column="1">
-     <widget class="QLineEdit" name="LE_Machine_Options"/>
+     <widget class="QCheckBox" name="CH_I8042_Off">
+      <property name="text">
+       <string>i8042=off</string>
+      </property>
+     </widget>
     </item>
-    <item row="4" column="0" colspan="2">
+    <item row="4" column="0">
+     <widget class="QCheckBox" name="CH_HPET_Off">
+      <property name="text">
+       <string>hpet=off</string>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="0" colspan="2">
      <widget class="Dialog_Button_Box" name="buttonBox">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>

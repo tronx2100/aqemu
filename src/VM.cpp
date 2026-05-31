@@ -2963,34 +2963,34 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 			USB_Ports[ux].Get_USB_QEMU_Devices( usb_k, usb_m, usb_t, usb_wt, usb_b );
 			
 			// Keyboard
-			Dom_Element = New_Dom_Document.createElement( "USB_Keyboard" );
-			VM_Element.appendChild( Dom_Element );
+			Sec_Element = New_Dom_Document.createElement( "USB_Keyboard" );
+			Dom_Element.appendChild( Sec_Element );
 			Dom_Text = New_Dom_Document.createTextNode( usb_k ? "true" : "false" );
-			Dom_Element.appendChild( Dom_Text );
+			Sec_Element.appendChild( Dom_Text );
 			
 			// Mouse
-			Dom_Element = New_Dom_Document.createElement( "USB_Mouse" );
-			VM_Element.appendChild( Dom_Element );
+			Sec_Element = New_Dom_Document.createElement( "USB_Mouse" );
+			Dom_Element.appendChild( Sec_Element );
 			Dom_Text = New_Dom_Document.createTextNode( usb_m ? "true" : "false" );
-			Dom_Element.appendChild( Dom_Text );
+			Sec_Element.appendChild( Dom_Text );
 			
 			// Tablet
-			Dom_Element = New_Dom_Document.createElement( "USB_Tablet" );
-			VM_Element.appendChild( Dom_Element );
+			Sec_Element = New_Dom_Document.createElement( "USB_Tablet" );
+			Dom_Element.appendChild( Sec_Element );
 			Dom_Text = New_Dom_Document.createTextNode( usb_t ? "true" : "false" );
-			Dom_Element.appendChild( Dom_Text );
+			Sec_Element.appendChild( Dom_Text );
 			
 			// Wacom Tablet
-			Dom_Element = New_Dom_Document.createElement( "USB_WacomTablet" );
-			VM_Element.appendChild( Dom_Element );
+			Sec_Element = New_Dom_Document.createElement( "USB_WacomTablet" );
+			Dom_Element.appendChild( Sec_Element );
 			Dom_Text = New_Dom_Document.createTextNode( usb_wt ? "true" : "false" );
-			Dom_Element.appendChild( Dom_Text );
+			Sec_Element.appendChild( Dom_Text );
 			
 			// Braille
-			Dom_Element = New_Dom_Document.createElement( "USB_Braille" );
-			VM_Element.appendChild( Dom_Element );
+			Sec_Element = New_Dom_Document.createElement( "USB_Braille" );
+			Dom_Element.appendChild( Sec_Element );
 			Dom_Text = New_Dom_Document.createTextNode( usb_b ? "true" : "false" );
-			Dom_Element.appendChild( Dom_Text );
+			Sec_Element.appendChild( Dom_Text );
 		}
 	}
 	
@@ -4876,20 +4876,32 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 				bool usb_k, usb_m, usb_t, usb_wt, usb_b;
 				usb_k = usb_m = usb_t = usb_wt = usb_b = false;
 				
-				// Keyboard
-				usb_k = (Child_Element.firstChildElement("USB_Keyboard").text() == "true" );
-				
-				// Mouse
-				usb_m = (Child_Element.firstChildElement("USB_Mouse").text() == "true" );
-				
-				// Tablet
-				usb_t = (Child_Element.firstChildElement("USB_Tablet").text() == "true" );
-				
-				// Wacom Tablet
-				usb_wt = (Child_Element.firstChildElement("USB_WacomTablet").text() == "true" );
-				
-				// Braille
-				usb_b = (Child_Element.firstChildElement("USB_Braille").text() == "true" );
+				// Read from inside USB_Port_N (new format); fall back to VM root (old format)
+				{
+					QString k = Second_Element.firstChildElement("USB_Keyboard").text();
+					if( k.isEmpty() ) k = Child_Element.firstChildElement("USB_Keyboard").text();
+					usb_k = (k == "true");
+				}
+				{
+					QString m = Second_Element.firstChildElement("USB_Mouse").text();
+					if( m.isEmpty() ) m = Child_Element.firstChildElement("USB_Mouse").text();
+					usb_m = (m == "true");
+				}
+				{
+					QString t = Second_Element.firstChildElement("USB_Tablet").text();
+					if( t.isEmpty() ) t = Child_Element.firstChildElement("USB_Tablet").text();
+					usb_t = (t == "true");
+				}
+				{
+					QString wt = Second_Element.firstChildElement("USB_WacomTablet").text();
+					if( wt.isEmpty() ) wt = Child_Element.firstChildElement("USB_WacomTablet").text();
+					usb_wt = (wt == "true");
+				}
+				{
+					QString b = Second_Element.firstChildElement("USB_Braille").text();
+					if( b.isEmpty() ) b = Child_Element.firstChildElement("USB_Braille").text();
+					usb_b = (b == "true");
+				}
 				
 				// Set
 				tmp_usb.Set_USB_QEMU_Devices( usb_k, usb_m, usb_t, usb_wt, usb_b );
@@ -5933,10 +5945,6 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 		}
 	}
 
-	// Machine Type
-	if( ! Machine_Type.isEmpty() )
-		Args << "-M" << Machine_Type;
-	
 	// Keyboard Layout (language)
 	if( Keyboard_Layout != "Default" )
 		Args << "-k" << Get_Keyboard_Layout();
@@ -5974,6 +5982,8 @@ QStringList Virtual_Machine::Build_QEMU_Args()
     Args << "-machine";
 
     QStringList props;
+    if( ! Machine_Type.isEmpty() )
+        props << Machine_Type;
     props << "accel="+VM::Accel_To_String( Machine_Accelerator );
 	if( Use_Memory_Backend )
 		props << "memory-backend=ram0";
@@ -7151,21 +7161,16 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 					
 					if( usb_k )
 						Args << "-device" << "usb-kbd";
-					else if( usb_m )
+					if( usb_m )
 						Args << "-device" << "usb-mouse";
-					else if( usb_t )
+					if( usb_t )
 						Args << "-device" << "usb-tablet";
-					else if( usb_wt )
+					if( usb_wt )
 						Args << "-device" << "usb-wacom-tablet";
-					else if( usb_b )
+					if( usb_b )
 					{
 						Args << "-chardev" << "braille,id=usb_braille";
 						Args << "-device" << "usb-braille,chardev=usb_braille";
-					}
-					else
-					{
-						AQError( "QStringList Virtual_Machine::Build_QEMU_Args()",
-								 "Incorrcect USB Device!" );
 					}
 				}
 			}

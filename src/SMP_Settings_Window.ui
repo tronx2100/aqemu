@@ -350,11 +350,32 @@ Missing values (zeroes) get computed automatically.</string>
             </widget>
            </item>
           </layout>
+          </item>
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="CB_SSE41">
+            <property name="text">
+             <string>+sse4.1</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QCheckBox" name="CB_SSE42">
+            <property name="text">
+             <string>+sse4.2</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QCheckBox" name="CB_SSSE3">
+            <property name="text">
+             <string>+ssse3</string>
+            </property>
+           </widget>
+          </item>
+          </layout>
          </item>
-         </layout>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="CH_CPU_PM_Overcommit">
+         <item>
+          <widget class="QCheckBox" name="CH_CPU_PM_Overcommit">
           <property name="text">
            <string>CPU PM overcommit (cpu-pm=on)</string>
           </property>
@@ -448,7 +469,10 @@ Missing values (zeroes) get computed automatically.</string>
   <tabstop>LE_HV_Spinlocks</tabstop>
    <tabstop>CB_HV_Vendor_ID</tabstop>
    <tabstop>LE_HV_Vendor_ID</tabstop>
-   <tabstop>CH_CPU_PM_Overcommit</tabstop>
+    <tabstop>CH_CPU_PM_Overcommit</tabstop>
+    <tabstop>CB_SSE41</tabstop>
+    <tabstop>CB_SSE42</tabstop>
+    <tabstop>CB_SSSE3</tabstop>
    <tabstop>PB_Optimized_AMD</tabstop>
    <tabstop>PB_Optimized_Intel</tabstop>
     <tabstop>PB_OSX_Preset</tabstop>

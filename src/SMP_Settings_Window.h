@@ -61,6 +61,7 @@ class SMP_Settings_Window: public QDialog
 		bool Syncing_Flags = false;
 
 		void Set_Optimized_Preset( const QString &vendor, const QString &vendorId );
+		void Clear_All_Flags();
 };
 
 #endif

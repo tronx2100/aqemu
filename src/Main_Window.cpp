@@ -402,6 +402,13 @@ void Main_Window::Connect_Signals()
 	connect( ui_arch.CB_Machine_Type, SIGNAL(currentIndexChanged(int)),
              this, SLOT(VM_Changed()) );
 
+	connect( ui_arch.CH_VMPort_Off, SIGNAL(clicked()),
+			 this, SLOT(VM_Changed()) );
+	connect( ui_arch.CH_I8042_Off, SIGNAL(clicked()),
+			 this, SLOT(VM_Changed()) );
+	connect( ui_arch.CH_HPET_Off, SIGNAL(clicked()),
+			 this, SLOT(VM_Changed()) );
+
 	connect( ui.CB_Boot_Priority, SIGNAL(currentIndexChanged(int)),
 			 this, SLOT(VM_Changed()) );
 
@@ -987,7 +994,13 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 
 	// Machine Type
 	tmp_vm->Set_Machine_Type( curComp.Machine_List[ui_arch.CB_Machine_Type->currentIndex()].QEMU_Name );
-	tmp_vm->Set_Machine_Options( ui_arch.LE_Machine_Options->text() );
+	{
+		QStringList mach_opts;
+		if( ui_arch.CH_VMPort_Off->isChecked() ) mach_opts << "vmport=off";
+		if( ui_arch.CH_I8042_Off->isChecked() )  mach_opts << "i8042=off";
+		if( ui_arch.CH_HPET_Off->isChecked() )   mach_opts << "hpet=off";
+		tmp_vm->Set_Machine_Options( mach_opts.join(",") );
+	}
 
 	// CPU Type
 	tmp_vm->Set_CPU_Type( curComp.CPU_List[ui_arch.CB_CPU_Type->currentIndex()].QEMU_Name );
@@ -1013,7 +1026,7 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
         smp.SMP_Count = ui.CB_CPU_Count->currentText().toInt(); // combobox is authoritative
         tmp_vm->Set_SMP( smp );
     }
-    tmp_vm->Set_CPU_Flags( ui_arch.LE_CPU_Flags->text() );
+    tmp_vm->Set_CPU_Flags( SMP_Settings->Get_CPU_Flags() );
     tmp_vm->Set_CPU_PM_Overcommit( SMP_Settings->Get_CPU_PM_Overcommit() );
 
 	// Keyboard Layout
@@ -1602,11 +1615,13 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 		}
 	}
 
-	// CPU Flags
-	ui_arch.LE_CPU_Flags->setText( tmp_vm->Get_CPU_Flags() );
-
 	// Machine Options
-	ui_arch.LE_Machine_Options->setText( tmp_vm->Get_Machine_Options() );
+	{
+		QString mach_opts = tmp_vm->Get_Machine_Options();
+		ui_arch.CH_VMPort_Off->setChecked( mach_opts.contains("vmport=off") );
+		ui_arch.CH_I8042_Off->setChecked( mach_opts.contains("i8042=off") );
+		ui_arch.CH_HPET_Off->setChecked( mach_opts.contains("hpet=off") );
+	}
 
 	// Video Card
 	tmp_str = tmp_vm->Get_Video_Card();
@@ -4741,9 +4756,6 @@ void Main_Window::on_TB_Show_SMP_Settings_Window_clicked()
 		{
 			changed = true;
 		}
-
-		// Sync CPU_Flags from SMP dialog back to Architecture Options
-		ui_arch.LE_CPU_Flags->setText( SMP_Settings->Get_CPU_Flags() );
 
 		if( changed ) VM_Changed();
 	}

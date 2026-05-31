@@ -74,6 +74,10 @@ SMP_Settings_Window::SMP_Settings_Window( QWidget *parent )
 	connect( ui.PB_OSX_Preset, &QPushButton::clicked, this, [this]()
 	{
 		Set_Optimized_Preset( "GenuineIntel", "GenuineIntel" );
+		ui.CB_SSE41->setChecked( true );
+		ui.CB_SSE42->setChecked( true );
+		ui.CB_SSSE3->setChecked( true );
+		Sync_Checkboxes_To_Text();
 		Set_CPU_Type( "Penryn" );
 	});
 }
@@ -137,8 +141,29 @@ void SMP_Settings_Window::Set_CPU_PM_Overcommit( bool use )
 	ui.CH_CPU_PM_Overcommit->setChecked( use );
 }
 
+void SMP_Settings_Window::Clear_All_Flags()
+{
+	ui.CB_KVM_Off->setChecked( false );
+	ui.CB_Hide_Hypervisor->setChecked( false );
+	ui.CB_TopoExt->setChecked( false );
+	ui.CB_HV_Relaxed->setChecked( false );
+	ui.CB_HV_VAPIC->setChecked( false );
+	ui.CB_HV_Time->setChecked( false );
+	ui.CB_HV_Stimer->setChecked( false );
+	ui.CB_HV_SynIC->setChecked( false );
+	ui.CB_HV_Reset->setChecked( false );
+	ui.CB_HV_Frequencies->setChecked( false );
+	ui.CB_HV_Spinlocks->setChecked( false );
+	ui.CB_HV_Vendor_ID->setChecked( false );
+	ui.CB_SSE41->setChecked( false );
+	ui.CB_SSE42->setChecked( false );
+	ui.CB_SSSE3->setChecked( false );
+	ui.CH_CPU_PM_Overcommit->setChecked( false );
+}
+
 void SMP_Settings_Window::Set_Optimized_Preset( const QString &vendor, const QString &vendorId )
 {
+	Clear_All_Flags();
 	ui.CB_KVM_Off->setChecked( true );
 	ui.CB_Hide_Hypervisor->setChecked( true );
 	ui.CB_TopoExt->setChecked( vendor == "AuthenticAMD" );
@@ -212,12 +237,16 @@ void SMP_Settings_Window::Sync_Checkboxes_To_Text()
 		parts << "hv_spinlocks=" + ui.LE_HV_Spinlocks->text();
 	if( ui.CB_HV_Vendor_ID->isChecked() )
 		parts << "hv_vendor_id=" + ui.LE_HV_Vendor_ID->text();
+	if( ui.CB_SSE41->isChecked() )  parts << "+sse4.1";
+	if( ui.CB_SSE42->isChecked() )  parts << "+sse4.2";
+	if( ui.CB_SSSE3->isChecked() )  parts << "+ssse3";
 	
 	// Preserve any manually typed flags that don't match checkboxes
 	QStringList current = ui.LE_CPU_Flags->text().split(",", Qt::SkipEmptyParts);
 	QStringList known_prefixes = { "kvm", "-hypervisor", "+topoext", "hv_relaxed", "hv_vapic",
 	                               "hv_time", "hv_stimer", "hv_synic", "hv_reset",
-	                               "hv_frequencies", "hv_spinlocks", "hv_vendor_id" };
+	                               "hv_frequencies", "hv_spinlocks", "hv_vendor_id",
+	                               "+sse4.1", "+sse4.2", "+ssse3" };
 	for( int i = 0; i < current.count(); ++i )
 	{
 		bool is_known = false;
@@ -254,6 +283,9 @@ void SMP_Settings_Window::Sync_Text_To_Checkboxes()
 	ui.CB_HV_Frequencies->setChecked( false );
 	ui.CB_HV_Spinlocks->setChecked( false );
 	ui.CB_HV_Vendor_ID->setChecked( false );
+	ui.CB_SSE41->setChecked( false );
+	ui.CB_SSE42->setChecked( false );
+	ui.CB_SSSE3->setChecked( false );
 	
 	QStringList parts = ui.LE_CPU_Flags->text().split(",", Qt::SkipEmptyParts);
 	for( int i = 0; i < parts.count(); ++i )
@@ -279,6 +311,9 @@ void SMP_Settings_Window::Sync_Text_To_Checkboxes()
 			ui.CB_HV_Vendor_ID->setChecked( true );
 			ui.LE_HV_Vendor_ID->setText( p.mid(QString("hv_vendor_id=").length()) );
 		}
+		else if( p == "+sse4.1" )   ui.CB_SSE41->setChecked( true );
+		else if( p == "+sse4.2" )   ui.CB_SSE42->setChecked( true );
+		else if( p == "+ssse3" )    ui.CB_SSSE3->setChecked( true );
 	}
 	
 	Syncing_Flags = false;
