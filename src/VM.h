@@ -425,8 +425,25 @@ class Virtual_Machine: public QObject
 		bool Use_RTC_TD_Hack() const;
 		void Use_RTC_TD_Hack( bool use );
 
+		bool Get_RTC_Use_Clock_RT() const;
+		void Set_RTC_Use_Clock_RT( bool use );
+
 		bool Use_No_Defaults() const;
 		void Use_No_Defaults( bool use );
+
+		bool Get_CPU_PM_Overcommit() const;
+		void Set_CPU_PM_Overcommit( bool use );
+
+		bool Get_Use_SMBIOS_Type2() const;
+		void Set_Use_SMBIOS_Type2( bool use );
+		const QString &Get_SMBIOS_Manufacturer() const;
+		void Set_SMBIOS_Manufacturer( const QString &str );
+		const QString &Get_SMBIOS_Product() const;
+		void Set_SMBIOS_Product( const QString &str );
+		const QString &Get_SMBIOS_Version() const;
+		void Set_SMBIOS_Version( const QString &str );
+		const QString &Get_SMBIOS_Serial() const;
+		void Set_SMBIOS_Serial( const QString &str );
 
 		bool Use_Start_Date() const;
 		void Use_Start_Date( bool use );
@@ -659,7 +676,14 @@ class Virtual_Machine: public QObject
 		bool Show_Cursor;
 		bool Curses;
 		bool RTC_TD_Hack;
+		bool RTC_Use_Clock_RT;
 		bool No_Defaults;
+		bool CPU_PM_Overcommit;
+		bool Use_SMBIOS_Type2;
+		QString SMBIOS_Manufacturer;
+		QString SMBIOS_Product;
+		QString SMBIOS_Version;
+		QString SMBIOS_Serial;
 
 		QString Display_Type;
 		QList<VM_PCI_Device> PCI_Devices;

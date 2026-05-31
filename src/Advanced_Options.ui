@@ -84,8 +84,18 @@
         </property>
        </widget>
       </item>
-      <item row="8" column="0">
-        <widget class="QCheckBox" name="CH_Advanced_TPM">
+       <item row="8" column="0">
+         <widget class="QCheckBox" name="CH_RTC_Clock_RT">
+          <property name="text">
+           <string>RTC clock=rt (host real-time clock)</string>
+          </property>
+          <property name="toolTip">
+           <string>Use host real-time clock for RTC (-rtc base=localtime,clock=rt). Recommended for macOS/OSX guests.</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="0">
+         <widget class="QCheckBox" name="CH_Advanced_TPM">
         <property name="toolTip">
          <string>Enable the QEMU TPM emulator and TPM-TIS device (-tpmdev emulator,id=tpm0,chardev=chrtpm -device tpm-tis,tpmdev=tpm0)</string>
         </property>
@@ -94,18 +104,18 @@
         </property>
        </widget>
       </item>
-      <item row="9" column="0">
-        <widget class="QCheckBox" name="CH_Use_Custom_Audio_Backend">
-        <property name="toolTip">
-         <string>Use a VM-specific audio backend instead of the global default audio backend.</string>
-        </property>
-        <property name="text">
-         <string>Override audio backend</string>
-        </property>
-       </widget>
-      </item>
-      <item row="9" column="1">
-        <widget class="QComboBox" name="CB_Audio_Backend">
+       <item row="10" column="0">
+         <widget class="QCheckBox" name="CH_Use_Custom_Audio_Backend">
+         <property name="toolTip">
+          <string>Use a VM-specific audio backend instead of the global default audio backend.</string>
+         </property>
+         <property name="text">
+          <string>Override audio backend</string>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="1">
+         <widget class="QComboBox" name="CB_Audio_Backend">
         <property name="enabled">
          <bool>false</bool>
         </property>
@@ -154,8 +164,8 @@
         </item>
        </widget>
       </item>
-       <item row="10" column="0">
-        <widget class="QCheckBox" name="CH_Start_Date">
+        <item row="11" column="0">
+         <widget class="QCheckBox" name="CH_Start_Date">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -167,8 +177,8 @@
         </property>
        </widget>
       </item>
-       <item row="10" column="1">
-        <widget class="QDateTimeEdit" name="DTE_Start_Date">
+        <item row="11" column="1">
+         <widget class="QDateTimeEdit" name="DTE_Start_Date">
         <property name="enabled">
          <bool>false</bool>
         </property>
@@ -251,10 +261,69 @@
       </layout>
      </widget>
     </item>
-    <item row="2" column="0">
-     <widget class="QGroupBox" name="groupBox_CLI">
-     <property name="title">
-      <string>Custom QEMU Command Line Arguments</string>
+     <item row="2" column="0">
+      <widget class="QGroupBox" name="groupBox_SMBIOS">
+       <property name="title">
+        <string>SMBIOS Type 2 (System Info)</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_SMBIOS">
+        <item row="0" column="0">
+         <widget class="QCheckBox" name="CH_Use_SMBIOS_Type2">
+          <property name="text">
+           <string>Enable SMBIOS type 2</string>
+          </property>
+          <property name="toolTip">
+           <string>Set SMBIOS type 2 system information (-smbios type=2,...). Required for macOS/OSX guests.</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_SMBIOS_Manufacturer">
+          <property name="text">
+           <string>Manufacturer:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="Edit_SMBIOS_Manufacturer"/>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_SMBIOS_Product">
+          <property name="text">
+           <string>Product:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="Edit_SMBIOS_Product"/>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_SMBIOS_Version">
+          <property name="text">
+           <string>Version:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLineEdit" name="Edit_SMBIOS_Version"/>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_SMBIOS_Serial">
+          <property name="text">
+           <string>Serial:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLineEdit" name="Edit_SMBIOS_Serial"/>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QGroupBox" name="groupBox_CLI">
+      <property name="title">
+       <string>Custom QEMU Command Line Arguments</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="1" column="0">
@@ -287,7 +356,7 @@
      </layout>
     </widget>
    </item>
-    <item row="3" column="0">
+    <item row="4" column="0">
      <widget class="Dialog_Button_Box" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>

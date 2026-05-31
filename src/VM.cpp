@@ -502,7 +502,10 @@ void Virtual_Machine::Shared_Constructor()
 	Show_Cursor = false;
 	Curses = false;
 	RTC_TD_Hack = false;
+	RTC_Use_Clock_RT = false;
 	No_Defaults = false;
+	CPU_PM_Overcommit = false;
+	Use_SMBIOS_Type2 = false;
 	Display_Type = "";
 	
 	Start_Date = false;
@@ -610,7 +613,14 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
 		this->Show_Cursor == vm.Use_Show_Cursor() &&
 		this->Curses == vm.Use_Curses() &&
 		this->RTC_TD_Hack == vm.Use_RTC_TD_Hack() &&
+		this->RTC_Use_Clock_RT == vm.Get_RTC_Use_Clock_RT() &&
 		this->No_Defaults == vm.Use_No_Defaults() &&
+		this->CPU_PM_Overcommit == vm.Get_CPU_PM_Overcommit() &&
+		this->Use_SMBIOS_Type2 == vm.Get_Use_SMBIOS_Type2() &&
+		this->SMBIOS_Manufacturer == vm.Get_SMBIOS_Manufacturer() &&
+		this->SMBIOS_Product == vm.Get_SMBIOS_Product() &&
+		this->SMBIOS_Version == vm.Get_SMBIOS_Version() &&
+		this->SMBIOS_Serial == vm.Get_SMBIOS_Serial() &&
 		this->Display_Type == vm.Get_Display_Type() &&
 		this->PCI_Devices == vm.Get_PCI_Devices() &&
 		this->Start_Date == vm.Use_Start_Date() &&
@@ -779,12 +789,9 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	
 	this->Icon_Path = vm.Get_Icon_Path();
 	this->Screenshot_Path = vm.Get_Screenshot_Path();
-    this->QEMU_Error_Log_Entries = vm.QEMU_Error_Log_Entries;
 	
-	// General Tab
 	this->Machine_Name = vm.Get_Machine_Name();
 	this->Computer_Type = vm.Get_Computer_Type();
-    this->Machine_Accelerator = vm.Get_Machine_Accelerator();
 	this->Machine_Type = vm.Get_Machine_Type();
 	this->CPU_Type = vm.Get_CPU_Type();
 	this->CPU_Flags = vm.Get_CPU_Flags();
@@ -796,8 +803,8 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->Audio_Card = vm.Get_Audio_Cards();
 	this->Use_Custom_Audio_Backend = vm.Get_Use_Custom_Audio_Backend();
 	this->Audio_Backend = vm.Get_Audio_Backend();
-	this->Memory_Size = vm.Get_Memory_Size();
 	this->Remove_RAM_Size_Limitation = vm.Get_Remove_RAM_Size_Limitation();
+	this->Memory_Size = vm.Get_Memory_Size();
 	this->Use_Memory_Backend = vm.Get_Use_Memory_Backend();
 	this->Fullscreen = vm.Use_Fullscreen_Mode();
 	this->Win2K_Hack = vm.Use_Win2K_Hack();
@@ -809,13 +816,17 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->No_Reboot = vm.Use_No_Reboot();
 	this->No_Shutdown = vm.Use_No_Shutdown();
 	this->Use_TPM = vm.Get_Use_TPM();
-	
-	// FDD/CD/DVD Tab
+	this->CPU_PM_Overcommit = vm.Get_CPU_PM_Overcommit();
+	this->RTC_Use_Clock_RT = vm.Get_RTC_Use_Clock_RT();
+	this->Use_SMBIOS_Type2 = vm.Get_Use_SMBIOS_Type2();
+	this->SMBIOS_Manufacturer = vm.Get_SMBIOS_Manufacturer();
+	this->SMBIOS_Product = vm.Get_SMBIOS_Product();
+	this->SMBIOS_Version = vm.Get_SMBIOS_Version();
+	this->SMBIOS_Serial = vm.Get_SMBIOS_Serial();
+
 	this->FD0 = vm.Get_FD0();
 	this->FD1 = vm.Get_FD1();
 	this->CD_ROM = vm.Get_CD_ROM();
-	
-	// HDD Tab
 	this->HDA = vm.Get_HDA();
 	this->HDB = vm.Get_HDB();
 	this->HDC = vm.Get_HDC();
@@ -904,6 +915,13 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->KVM_Nesting = vm.Use_KVM_Nesting();
 	this->KVM_Shadow_Memory = vm.Use_KVM_Shadow_Memory();
 	this->KVM_Shadow_Memory_Size = vm.Get_KVM_Shadow_Memory_Size();
+	this->CPU_PM_Overcommit = vm.Get_CPU_PM_Overcommit();
+	this->RTC_Use_Clock_RT = vm.Get_RTC_Use_Clock_RT();
+	this->Use_SMBIOS_Type2 = vm.Get_Use_SMBIOS_Type2();
+	this->SMBIOS_Manufacturer = vm.Get_SMBIOS_Manufacturer();
+	this->SMBIOS_Product = vm.Get_SMBIOS_Product();
+	this->SMBIOS_Version = vm.Get_SMBIOS_Version();
+	this->SMBIOS_Serial = vm.Get_SMBIOS_Serial();
 	
 	this->Init_Graphic_Mode = vm.Get_Init_Graphic_Mode();
 	
@@ -3392,6 +3410,53 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 	
 	Dom_Element.appendChild( Dom_Text );
 
+	// RTC Use Clock RT
+	Dom_Element = New_Dom_Document.createElement( "RTC_Use_Clock_RT" );
+	VM_Element.appendChild( Dom_Element );
+	if( RTC_Use_Clock_RT )
+		Dom_Text = New_Dom_Document.createTextNode( "true" );
+	else
+		Dom_Text = New_Dom_Document.createTextNode( "false" );
+	Dom_Element.appendChild( Dom_Text );
+
+	// CPU PM Overcommit
+	Dom_Element = New_Dom_Document.createElement( "CPU_PM_Overcommit" );
+	VM_Element.appendChild( Dom_Element );
+	if( CPU_PM_Overcommit )
+		Dom_Text = New_Dom_Document.createTextNode( "true" );
+	else
+		Dom_Text = New_Dom_Document.createTextNode( "false" );
+	Dom_Element.appendChild( Dom_Text );
+
+	// SMBIOS Type 2
+	Dom_Element = New_Dom_Document.createElement( "Use_SMBIOS_Type2" );
+	VM_Element.appendChild( Dom_Element );
+	if( Use_SMBIOS_Type2 )
+		Dom_Text = New_Dom_Document.createTextNode( "true" );
+	else
+		Dom_Text = New_Dom_Document.createTextNode( "false" );
+	Dom_Element.appendChild( Dom_Text );
+
+	Dom_Element = New_Dom_Document.createElement( "SMBIOS_Manufacturer" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( SMBIOS_Manufacturer );
+	Dom_Element.appendChild( Dom_Text );
+
+	Dom_Element = New_Dom_Document.createElement( "SMBIOS_Product" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( SMBIOS_Product );
+	Dom_Element.appendChild( Dom_Text );
+
+	Dom_Element = New_Dom_Document.createElement( "SMBIOS_Version" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( SMBIOS_Version );
+	Dom_Element.appendChild( Dom_Text );
+
+	Dom_Element = New_Dom_Document.createElement( "SMBIOS_Serial" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( SMBIOS_Serial );
+	Dom_Element.appendChild( Dom_Text );
+
 	// No default devices
 	Dom_Element = New_Dom_Document.createElement( "No_Defaults" );
 	VM_Element.appendChild( Dom_Element );
@@ -5000,6 +5065,19 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 		// RTC_TD_Hack
 		RTC_TD_Hack = (Child_Element.firstChildElement("RTC_TD_Hack").text() == "true");
 
+		// RTC_Use_Clock_RT
+		RTC_Use_Clock_RT = (Child_Element.firstChildElement("RTC_Use_Clock_RT").text() == "true");
+
+		// CPU_PM_Overcommit
+		CPU_PM_Overcommit = (Child_Element.firstChildElement("CPU_PM_Overcommit").text() == "true");
+
+		// SMBIOS Type 2
+		Use_SMBIOS_Type2 = (Child_Element.firstChildElement("Use_SMBIOS_Type2").text() == "true");
+		SMBIOS_Manufacturer = Child_Element.firstChildElement("SMBIOS_Manufacturer").text();
+		SMBIOS_Product = Child_Element.firstChildElement("SMBIOS_Product").text();
+		SMBIOS_Version = Child_Element.firstChildElement("SMBIOS_Version").text();
+		SMBIOS_Serial = Child_Element.firstChildElement("SMBIOS_Serial").text();
+
 			// No default devices
 			No_Defaults = (Child_Element.firstChildElement("No_Defaults").text() == "true");
 
@@ -5756,7 +5834,11 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 			cpu_arg += "," + CPU_Flags;
 		Args << "-cpu" << cpu_arg;
 	}
-	
+
+	// CPU PM overcommit
+	if( CPU_PM_Overcommit )
+		Args << "-overcommit" << "cpu-pm=on";
+
 	// Audio
 	QStringList audio_list;
 	QStringList audio_device_args;
@@ -7134,11 +7216,29 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	if( Current_Emulator_Devices.PSO_RTC_TD_Hack && RTC_TD_Hack )
 	    rtc_list.last() += ",driftfix=slew";
 
+	if( RTC_Use_Clock_RT )
+		rtc_list.last() += ",clock=rt";
+
     Args << rtc_list;
 
 	// No default devices
 	if( No_Defaults )
 		Args << "-nodefaults";
+
+	// SMBIOS type 2
+	if( Use_SMBIOS_Type2 )
+	{
+		QString smbios = "type=2";
+		if( ! SMBIOS_Manufacturer.isEmpty() )
+			smbios += ",manufacturer=" + SMBIOS_Manufacturer;
+		if( ! SMBIOS_Product.isEmpty() )
+			smbios += ",product=" + SMBIOS_Product;
+		if( ! SMBIOS_Version.isEmpty() )
+			smbios += ",version=" + SMBIOS_Version;
+		if( ! SMBIOS_Serial.isEmpty() )
+			smbios += ",serial=" + SMBIOS_Serial;
+		Args << "-smbios" << smbios;
+	}
 
 	// QEMU 0.9.1 Options
 	// on-board Flash memory image
@@ -9728,6 +9828,76 @@ bool Virtual_Machine::Use_No_Defaults() const
 void Virtual_Machine::Use_No_Defaults( bool use )
 {
 	No_Defaults = use;
+}
+
+bool Virtual_Machine::Get_RTC_Use_Clock_RT() const
+{
+	return RTC_Use_Clock_RT;
+}
+
+void Virtual_Machine::Set_RTC_Use_Clock_RT( bool use )
+{
+	RTC_Use_Clock_RT = use;
+}
+
+bool Virtual_Machine::Get_CPU_PM_Overcommit() const
+{
+	return CPU_PM_Overcommit;
+}
+
+void Virtual_Machine::Set_CPU_PM_Overcommit( bool use )
+{
+	CPU_PM_Overcommit = use;
+}
+
+bool Virtual_Machine::Get_Use_SMBIOS_Type2() const
+{
+	return Use_SMBIOS_Type2;
+}
+
+void Virtual_Machine::Set_Use_SMBIOS_Type2( bool use )
+{
+	Use_SMBIOS_Type2 = use;
+}
+
+const QString &Virtual_Machine::Get_SMBIOS_Manufacturer() const
+{
+	return SMBIOS_Manufacturer;
+}
+
+void Virtual_Machine::Set_SMBIOS_Manufacturer( const QString &str )
+{
+	SMBIOS_Manufacturer = str;
+}
+
+const QString &Virtual_Machine::Get_SMBIOS_Product() const
+{
+	return SMBIOS_Product;
+}
+
+void Virtual_Machine::Set_SMBIOS_Product( const QString &str )
+{
+	SMBIOS_Product = str;
+}
+
+const QString &Virtual_Machine::Get_SMBIOS_Version() const
+{
+	return SMBIOS_Version;
+}
+
+void Virtual_Machine::Set_SMBIOS_Version( const QString &str )
+{
+	SMBIOS_Version = str;
+}
+
+const QString &Virtual_Machine::Get_SMBIOS_Serial() const
+{
+	return SMBIOS_Serial;
+}
+
+void Virtual_Machine::Set_SMBIOS_Serial( const QString &str )
+{
+	SMBIOS_Serial = str;
 }
 
 bool Virtual_Machine::Use_Start_Date() const

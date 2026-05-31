@@ -351,13 +351,23 @@ Missing values (zeroes) get computed automatically.</string>
            </item>
           </layout>
          </item>
-        </layout>
-       </item>
-      </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="Line" name="line_2">
+         </layout>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="CH_CPU_PM_Overcommit">
+          <property name="text">
+           <string>CPU PM overcommit (cpu-pm=on)</string>
+          </property>
+          <property name="toolTip">
+           <string>Enable overcommit for CPU power management (-overcommit cpu-pm=on). Useful for macOS/OSX guests.</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="Line" name="line_2">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
@@ -365,6 +375,27 @@ Missing values (zeroes) get computed automatically.</string>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_Buttons">
+     <item>
+      <widget class="QPushButton" name="PB_Optimized_AMD">
+       <property name="text">
+        <string>Optimized &amp;AMD</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="PB_Optimized_Intel">
+       <property name="text">
+        <string>Optimized &amp;Intel</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="PB_Detect_Host_CPU">
+       <property name="text">
+        <string>&amp;Detect &amp;Optimize</string>
+       </property>
+      </widget>
+     </item>
      <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
@@ -415,8 +446,12 @@ Missing values (zeroes) get computed automatically.</string>
   <tabstop>CB_HV_Frequencies</tabstop>
   <tabstop>CB_HV_Spinlocks</tabstop>
   <tabstop>LE_HV_Spinlocks</tabstop>
-  <tabstop>CB_HV_Vendor_ID</tabstop>
-  <tabstop>LE_HV_Vendor_ID</tabstop>
+   <tabstop>CB_HV_Vendor_ID</tabstop>
+   <tabstop>LE_HV_Vendor_ID</tabstop>
+   <tabstop>CH_CPU_PM_Overcommit</tabstop>
+   <tabstop>PB_Optimized_AMD</tabstop>
+   <tabstop>PB_Optimized_Intel</tabstop>
+   <tabstop>PB_Detect_Host_CPU</tabstop>
  </tabstops>
  <resources>
   <include location="../resources/icons.qrc"/>

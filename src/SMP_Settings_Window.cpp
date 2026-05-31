@@ -22,6 +22,8 @@
 
 #include "SMP_Settings_Window.h"
 
+#include <QTextStream>
+
 SMP_Settings_Window::SMP_Settings_Window( QWidget *parent )
 	: QDialog( parent )
 {
@@ -56,6 +58,39 @@ SMP_Settings_Window::SMP_Settings_Window( QWidget *parent )
 		ui.SB_Threads->setValue( threads );
 		ui.SB_Sockets->setValue( 1 );
 		ui.SB_MaxCPUs->setValue( count );
+	});
+
+	// Optimized presets
+	connect( ui.PB_Optimized_AMD, &QPushButton::clicked, this, [this]()
+	{
+		Set_Optimized_Preset( "AuthenticAMD", "AuthenticAMD" );
+	});
+
+	connect( ui.PB_Optimized_Intel, &QPushButton::clicked, this, [this]()
+	{
+		Set_Optimized_Preset( "GenuineIntel", "GenuineIntel" );
+	});
+
+	connect( ui.PB_Detect_Host_CPU, &QPushButton::clicked, this, [this]()
+	{
+		QFile cpuinfo( "/proc/cpuinfo" );
+		if( cpuinfo.open(QIODevice::ReadOnly) )
+		{
+			QTextStream in( &cpuinfo );
+			while( ! in.atEnd() )
+			{
+				QString line = in.readLine();
+				if( line.startsWith("vendor_id") )
+				{
+					QString vendor = line.section( ':', 1 ).trimmed();
+					if( vendor == "AuthenticAMD" )
+						Set_Optimized_Preset( "AuthenticAMD", "AuthenticAMD" );
+					else
+						Set_Optimized_Preset( "GenuineIntel", "GenuineIntel" );
+					break;
+				}
+			}
+		}
 	});
 }
 
@@ -105,6 +140,37 @@ void SMP_Settings_Window::Set_CPU_Flags( const QString &flags )
 	Backup_CPU_Flags = flags;
 	ui.LE_CPU_Flags->setText( flags );
 	Sync_Text_To_Checkboxes();
+}
+
+bool SMP_Settings_Window::Get_CPU_PM_Overcommit() const
+{
+	return ui.CH_CPU_PM_Overcommit->isChecked();
+}
+
+void SMP_Settings_Window::Set_CPU_PM_Overcommit( bool use )
+{
+	Backup_CPU_PM_Overcommit = use;
+	ui.CH_CPU_PM_Overcommit->setChecked( use );
+}
+
+void SMP_Settings_Window::Set_Optimized_Preset( const QString &vendor, const QString &vendorId )
+{
+	ui.CB_KVM_Off->setChecked( true );
+	ui.CB_Hide_Hypervisor->setChecked( true );
+	ui.CB_TopoExt->setChecked( vendor == "AuthenticAMD" );
+	ui.CB_HV_Relaxed->setChecked( true );
+	ui.CB_HV_VAPIC->setChecked( true );
+	ui.CB_HV_Time->setChecked( true );
+	ui.CB_HV_Stimer->setChecked( false );
+	ui.CB_HV_SynIC->setChecked( false );
+	ui.CB_HV_Reset->setChecked( false );
+	ui.CB_HV_Frequencies->setChecked( false );
+	ui.CB_HV_Spinlocks->setChecked( true );
+	ui.LE_HV_Spinlocks->setText( "0x1fff" );
+	ui.CB_HV_Vendor_ID->setChecked( true );
+	ui.LE_HV_Vendor_ID->setText( vendorId );
+	ui.CH_CPU_PM_Overcommit->setChecked( true );
+	Sync_Checkboxes_To_Text();
 }
 
 void SMP_Settings_Window::Set_SMP_Count( int count )
@@ -279,6 +345,7 @@ void SMP_Settings_Window::done(int r)
         Backup_SMP.SMP_Sockets = ui.SB_Sockets->value();
         Backup_SMP.SMP_MaxCPUs = ui.SB_MaxCPUs->value();
         Backup_CPU_Flags = ui.LE_CPU_Flags->text();
+        Backup_CPU_PM_Overcommit = ui.CH_CPU_PM_Overcommit->isChecked();
 
         QDialog::done(r);
         return;
@@ -291,6 +358,7 @@ void SMP_Settings_Window::done(int r)
 	    ui.SB_Sockets->setValue( Backup_SMP.SMP_Sockets );
 	    ui.SB_MaxCPUs->setValue( Backup_SMP.SMP_MaxCPUs );
 	    Set_CPU_Flags( Backup_CPU_Flags );
+	    ui.CH_CPU_PM_Overcommit->setChecked( Backup_CPU_PM_Overcommit );
 	
 	    QDialog::done(r);
     }

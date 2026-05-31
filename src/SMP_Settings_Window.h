@@ -38,6 +38,9 @@ class SMP_Settings_Window: public QDialog
 						 bool PSO_SMP_Threads, bool PSO_SMP_Sockets, bool PSO_SMP_MaxCPUs );
 		QString Get_CPU_Flags() const;
 		void Set_CPU_Flags( const QString &flags );
+
+		bool Get_CPU_PM_Overcommit() const;
+		void Set_CPU_PM_Overcommit( bool use );
 		
 		void Set_SMP_Count( int count );
 	
@@ -51,7 +54,10 @@ class SMP_Settings_Window: public QDialog
 		Ui::SMP_Settings_Window ui;
 		VM::SMP_Options Backup_SMP;
 		QString Backup_CPU_Flags;
+		bool Backup_CPU_PM_Overcommit;
 		bool Syncing_Flags = false;
+
+		void Set_Optimized_Preset( const QString &vendor, const QString &vendorId );
 };
 
 #endif

@@ -594,6 +594,30 @@ void Main_Window::Connect_Signals()
 	connect( ui_ao.CH_Advanced_TPM, SIGNAL(clicked()),
 			 this, SLOT(VM_Changed()) );
 
+	connect( ui_ao.CH_RTC_Clock_RT, SIGNAL(clicked()),
+			 this, SLOT(VM_Changed()) );
+
+	connect( ui_ao.CH_Use_SMBIOS_Type2, SIGNAL(toggled(bool)),
+			 ui_ao.Edit_SMBIOS_Manufacturer, SLOT(setEnabled(bool)) );
+	connect( ui_ao.CH_Use_SMBIOS_Type2, SIGNAL(toggled(bool)),
+			 ui_ao.Edit_SMBIOS_Product, SLOT(setEnabled(bool)) );
+	connect( ui_ao.CH_Use_SMBIOS_Type2, SIGNAL(toggled(bool)),
+			 ui_ao.Edit_SMBIOS_Version, SLOT(setEnabled(bool)) );
+	connect( ui_ao.CH_Use_SMBIOS_Type2, SIGNAL(toggled(bool)),
+			 ui_ao.Edit_SMBIOS_Serial, SLOT(setEnabled(bool)) );
+
+	connect( ui_ao.CH_Use_SMBIOS_Type2, SIGNAL(clicked()),
+			 this, SLOT(VM_Changed()) );
+
+	connect( ui_ao.Edit_SMBIOS_Manufacturer, SIGNAL(textChanged(const QString &)),
+			 this, SLOT(VM_Changed()) );
+	connect( ui_ao.Edit_SMBIOS_Product, SIGNAL(textChanged(const QString &)),
+			 this, SLOT(VM_Changed()) );
+	connect( ui_ao.Edit_SMBIOS_Version, SIGNAL(textChanged(const QString &)),
+			 this, SLOT(VM_Changed()) );
+	connect( ui_ao.Edit_SMBIOS_Serial, SIGNAL(textChanged(const QString &)),
+			 this, SLOT(VM_Changed()) );
+
 	connect( ui_ao.CH_Advanced_GA, SIGNAL(toggled(bool)),
 			 ui_ao.Edit_Advanced_GA_Path, SLOT(setEnabled(bool)) );
 
@@ -979,6 +1003,7 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
         tmp_vm->Set_SMP( smp );
     }
     tmp_vm->Set_CPU_Flags( SMP_Settings->Get_CPU_Flags() );
+    tmp_vm->Set_CPU_PM_Overcommit( SMP_Settings->Get_CPU_PM_Overcommit() );
 
 	// Keyboard Layout
 	if( ui.CB_Keyboard_Layout->currentIndex() == 0 ) // Default
@@ -1025,6 +1050,7 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 	tmp_vm->Use_No_Reboot( ui_ao.CH_No_Reboot->isChecked() );
 	tmp_vm->Use_No_Shutdown( ui_ao.CH_No_Shutdown->isChecked() );
 	tmp_vm->Set_Use_TPM( ui_ao.CH_Advanced_TPM->isChecked() );
+	tmp_vm->Set_RTC_Use_Clock_RT( ui_ao.CH_RTC_Clock_RT->isChecked() );
 
 	tmp_vm->Use_Guest_Agent( ui_ao.CH_Advanced_GA->isChecked() );
 	tmp_vm->Set_GA_Socket_Path( ui_ao.Edit_Advanced_GA_Path->text() );
@@ -1248,6 +1274,14 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 
 	// RTC_TD_Hack
 	tmp_vm->Use_RTC_TD_Hack( ui_ao.CH_RTC_TD_Hack->isChecked() );
+	tmp_vm->Set_RTC_Use_Clock_RT( ui_ao.CH_RTC_Clock_RT->isChecked() );
+
+	// SMBIOS type 2
+	tmp_vm->Set_Use_SMBIOS_Type2( ui_ao.CH_Use_SMBIOS_Type2->isChecked() );
+	tmp_vm->Set_SMBIOS_Manufacturer( ui_ao.Edit_SMBIOS_Manufacturer->text() );
+	tmp_vm->Set_SMBIOS_Product( ui_ao.Edit_SMBIOS_Product->text() );
+	tmp_vm->Set_SMBIOS_Version( ui_ao.Edit_SMBIOS_Version->text() );
+	tmp_vm->Set_SMBIOS_Serial( ui_ao.Edit_SMBIOS_Serial->text() );
 
 	// No default devices
 	tmp_vm->Use_No_Defaults( ui_ao.CH_No_Defaults->isChecked() );
@@ -1573,6 +1607,7 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
     SMP_Settings->Set_Values( tmp_vm->Get_SMP(), curComp.PSO_SMP_Count, curComp.PSO_SMP_Cores,
 							 curComp.PSO_SMP_Threads, curComp.PSO_SMP_Sockets, curComp.PSO_SMP_MaxCPUs );
     SMP_Settings->Set_CPU_Flags( tmp_vm->Get_CPU_Flags() );
+    SMP_Settings->Set_CPU_PM_Overcommit( tmp_vm->Get_CPU_PM_Overcommit() );
 
 	// Keyboard Layout
 	int lang_index = ui.CB_Keyboard_Layout->findText( tmp_vm->Get_Keyboard_Layout() );
@@ -1707,6 +1742,12 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 
 	// Additional Options
 	ui_ao.CH_RTC_TD_Hack->setChecked( tmp_vm->Use_RTC_TD_Hack() );
+	ui_ao.CH_RTC_Clock_RT->setChecked( tmp_vm->Get_RTC_Use_Clock_RT() );
+	ui_ao.CH_Use_SMBIOS_Type2->setChecked( tmp_vm->Get_Use_SMBIOS_Type2() );
+	ui_ao.Edit_SMBIOS_Manufacturer->setText( tmp_vm->Get_SMBIOS_Manufacturer() );
+	ui_ao.Edit_SMBIOS_Product->setText( tmp_vm->Get_SMBIOS_Product() );
+	ui_ao.Edit_SMBIOS_Version->setText( tmp_vm->Get_SMBIOS_Version() );
+	ui_ao.Edit_SMBIOS_Serial->setText( tmp_vm->Get_SMBIOS_Serial() );
 	ui_ao.CH_No_Defaults->setChecked( tmp_vm->Use_No_Defaults() );
 	ui_ao.CH_No_Shutdown->setChecked( tmp_vm->Use_No_Shutdown() );
 	ui_ao.CH_No_Reboot->setChecked( tmp_vm->Use_No_Reboot() );

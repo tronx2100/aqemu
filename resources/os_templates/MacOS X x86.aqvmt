@@ -9,8 +9,10 @@
         <Machine_Name>Mac OS X</Machine_Name>
         <Computer_Type>qemu-system-x86</Computer_Type>
         <Machine_Type></Machine_Type>
-        <CPU_Type></CPU_Type>
+        <CPU_Type>host</CPU_Type>
+        <CPU_Flags>kvm=off,-hypervisor,+topoext,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time,hv_vendor_id=GenuineIntel</CPU_Flags>
         <SMP_CPU_Count>1</SMP_CPU_Count>
+        <CPU_PM_Overcommit>true</CPU_PM_Overcommit>
         <Keyboard_Layout>Default</Keyboard_Layout>
         <Boot_Device>CDROM</Boot_Device>
         <Video_Card></Video_Card>
@@ -130,6 +132,7 @@
         <Use_Portrait>false</Use_Portrait>
         <Use_Start_Date>false</Use_Start_Date>
         <Start_Date>20.01.2009 14:30:00</Start_Date>
+        <RTC_Use_Clock_RT>true</RTC_Use_Clock_RT>
         <Use_VNC>false</Use_VNC>
         <VNC_Socket_Mode>false</VNC_Socket_Mode>
         <VNC_Unix_Socket_Path></VNC_Unix_Socket_Path>
@@ -140,5 +143,10 @@
         <VNC_x509_Folder_Path></VNC_x509_Folder_Path>
         <Use_VNC_x509verify>false</Use_VNC_x509verify>
         <VNC_x509verify_Folder_Path></VNC_x509verify_Folder_Path>
+        <Use_SMBIOS_Type2>true</Use_SMBIOS_Type2>
+        <SMBIOS_Manufacturer>Apple Inc.</SMBIOS_Manufacturer>
+        <SMBIOS_Product>iMac19,1</SMBIOS_Product>
+        <SMBIOS_Version>1.0</SMBIOS_Version>
+        <SMBIOS_Serial></SMBIOS_Serial>
     </Virtual_Machine>
 </AQEMU_Template>
