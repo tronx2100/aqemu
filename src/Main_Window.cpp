@@ -1571,14 +1571,18 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 		return;
 	}*/
 
-	// Get current VM devices
-	Available_Devices curComp = tmp_vm->Get_Emulator().Get_Devices()[ tmp_vm->Get_Computer_Type() ];
-
-	if( curComp.System.QEMU_Name.isEmpty() )
+	// Get current VM devices - prefer live-scanned list for correct matching
+	bool liveOk = false;
+	Available_Devices curComp = Get_Current_Machine_Devices( &liveOk );
+	if( !liveOk )
 	{
-		AQError( "void Main_Window::Update_VM_Ui()",
-				 "cur_comp not valid!" );
-		return;
+		curComp = tmp_vm->Get_Emulator().Get_Devices()[ tmp_vm->Get_Computer_Type() ];
+		if( curComp.System.QEMU_Name.isEmpty() )
+		{
+			AQError( "void Main_Window::Update_VM_Ui()",
+					 "cur_comp not valid!" );
+			return;
+		}
 	}
 
 	// Computer Type
@@ -4613,7 +4617,6 @@ void Main_Window::on_TB_Show_Architecture_Options_Window_clicked()
 void Main_Window::Discard_Changes(QDialog* dialog)
 {
     auto old_vm = Get_Current_VM();
-    Virtual_Machine old_vm_copy(*old_vm);
     Virtual_Machine tmp_vm;
     bool ok = Create_VM_From_Ui(&tmp_vm, old_vm, false);
     bool a = ui.Button_Apply->isEnabled();
@@ -4624,13 +4627,11 @@ void Main_Window::Discard_Changes(QDialog* dialog)
 
     if ( ok )
     {
-        *old_vm = tmp_vm;
         Update_VM_Ui(false);
 
-        *old_vm = old_vm_copy;
-
-	    ui.Button_Apply->setEnabled( a );
-	    ui.Button_Cancel->setEnabled( c );
+        // Restore Apply/Cancel to pre-dialog state (VM_Changed may have been triggered during dialog exec)
+        ui.Button_Apply->setEnabled( a );
+        ui.Button_Cancel->setEnabled( c );
     }
 }
 
