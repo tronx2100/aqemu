@@ -133,32 +133,37 @@ void AQEMU_Service::vm_state_changed(Virtual_Machine *vm, VM::VM_State s)
                 .arg(main_window)
                 .arg(machines.count()) );
 
-    if (! QDBusConnection::sessionBus().isConnected())
+    // Direct signal path handles state propagation when running with GUI.
+    // Only fall back to DBus for external (CLI/headless) callers.
+    if ( !main_window )
     {
-        fprintf(stderr, "Cannot connect to the D-Bus session bus.\n"
-                "To start it, run:\n"
-                "\teval `dbus-launch --auto-syntax`\n");
-    }
-    else
-    {
-        QDBusInterface iface("org.aqemu.main_window", "/main_window", "", QDBusConnection::sessionBus());
-        if (iface.isValid()) {
-            /*QDBusReply<QString> reply =*/
-
-            iface.call(QDBus::NoBlock, "VM_State_Changed", vm->Get_VM_XML_File_Path(), s );
-
-            /*if (reply.isValid()) {
-                printf("Reply was: %s\n", qPrintable(reply.value()));*/
-            //    return;
-            /*}
-
-            fprintf(stderr, "Call failed: %s\n", qPrintable(reply.error().message()));
-            return;*/
+        if (! QDBusConnection::sessionBus().isConnected())
+        {
+            fprintf(stderr, "Cannot connect to the D-Bus session bus.\n"
+                    "To start it, run:\n"
+                    "\teval `dbus-launch --auto-syntax`\n");
         }
         else
         {
-            fprintf(stderr, "%s\n",
-                    qPrintable(QDBusConnection::sessionBus().lastError().message()));
+            QDBusInterface iface("org.aqemu.main_window", "/main_window", "", QDBusConnection::sessionBus());
+            if (iface.isValid()) {
+                /*QDBusReply<QString> reply =*/
+
+                iface.call(QDBus::NoBlock, "VM_State_Changed", vm->Get_VM_XML_File_Path(), s );
+
+                /*if (reply.isValid()) {
+                    printf("Reply was: %s\n", qPrintable(reply.value()));*/
+                //    return;
+                /*}
+
+                fprintf(stderr, "Call failed: %s\n", qPrintable(reply.error().message()));
+                return;*/
+            }
+            else
+            {
+                fprintf(stderr, "%s\n",
+                        qPrintable(QDBusConnection::sessionBus().lastError().message()));
+            }
         }
     }
 

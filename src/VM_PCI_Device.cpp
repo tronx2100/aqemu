@@ -152,22 +152,30 @@ QString VM_PCI_Device::To_QEMU_Device_Arg() const
 
 QStringList VM_PCI_Device::Build_Root_Port_Args( const QList<VM_PCI_Device> &devices )
 {
+    // Collect unique bus names
     QSet<QString> seenBuses;
-    QStringList args;
-    int portNum = 0;
-
     for ( int i = 0; i < devices.count(); i++ )
     {
         if ( !devices[i].IsEnabled() )
             continue;
 
         const QString &bus = devices[i].Get_Bus();
-        if ( bus.isEmpty() || seenBuses.contains( bus ) )
-            continue;
+        if ( !bus.isEmpty() )
+            seenBuses.insert( bus );
+    }
 
-        seenBuses.insert( bus );
-        portNum++;
-        // addr = 1c.0 for port 1, 1e.0 for port 2, 20.0 for port 3, …
+    // Sort by numeric suffix so root.1 is always generated before root.2 etc.
+    QStringList sortedBuses = seenBuses.values();
+    std::sort( sortedBuses.begin(), sortedBuses.end(), []( const QString &a, const QString &b ) {
+        return a.section( '.', -1 ).toInt() < b.section( '.', -1 ).toInt();
+    } );
+
+    // Generate ioh3420 root port, using the numeric suffix directly as port/chassis
+    QStringList args;
+    for ( int i = 0; i < sortedBuses.size(); i++ )
+    {
+        const QString &bus = sortedBuses[i];
+        int portNum = bus.section( '.', -1 ).toInt(); // "root.1" -> 1
         int hexAddr = 0x1c + ( portNum - 1 ) * 2;
         QString rootAddr = QString( "%1.0" ).arg( hexAddr, 0, 16 );
         args << QString( "ioh3420,bus=pcie.0,addr=%1,multifunction=on,port=%2,chassis=%2,id=%3" )

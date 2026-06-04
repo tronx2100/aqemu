@@ -41,6 +41,8 @@ private slots:
     void on_Disable_Idle_Changed( int state );
     void on_Add_Flag();
     void on_Remove_Flag();
+    void on_Move_Up_clicked();
+    void on_Move_Down_clicked();
 
 private:
     struct DeviceRow {
@@ -58,6 +60,7 @@ private:
     void Clear_Flag_UI();
     QString Make_Address_Short( const QString &fullAddr ) const;
     void Assign_Topology();
+    void Rebuild_Table_From_Rows();
 
     QLineEdit *Filter_Edit;
     QCheckBox *Show_All_Check;
@@ -77,6 +80,8 @@ private:
     QPushButton *Flag_Add_Button;
     QPushButton *Flag_Remove_Button;
     QLabel *Flag_Header_Label;
+    QPushButton *Move_Up_Button;
+    QPushButton *Move_Down_Button;
 
     QList<DeviceRow> Device_Rows;
     QList<PCI_Host_Device> All_Host_Devices;

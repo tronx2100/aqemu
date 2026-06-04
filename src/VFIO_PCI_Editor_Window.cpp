@@ -158,6 +158,16 @@ VFIO_PCI_Editor_Window::VFIO_PCI_Editor_Window( QWidget *parent )
 
     // === Bottom buttons ===
     QHBoxLayout *buttonLayout = new QHBoxLayout();
+
+    Move_Up_Button = new QPushButton( tr("Move Up") );
+    Move_Up_Button->setEnabled( false );
+    Move_Up_Button->setToolTip( tr("Move the selected device earlier in the list (lower root port number)") );
+    buttonLayout->addWidget( Move_Up_Button );
+    Move_Down_Button = new QPushButton( tr("Move Down") );
+    Move_Down_Button->setEnabled( false );
+    Move_Down_Button->setToolTip( tr("Move the selected device later in the list (higher root port number)") );
+    buttonLayout->addWidget( Move_Down_Button );
+
     buttonLayout->addStretch();
     QPushButton *okBtn = new QPushButton( tr("OK") );
     QPushButton *cancelBtn = new QPushButton( tr("Cancel") );
@@ -165,12 +175,18 @@ VFIO_PCI_Editor_Window::VFIO_PCI_Editor_Window( QWidget *parent )
     buttonLayout->addWidget( cancelBtn );
     mainLayout->addLayout( buttonLayout );
 
+    connect( Move_Up_Button, &QPushButton::clicked, this, &VFIO_PCI_Editor_Window::on_Move_Up_clicked );
+    connect( Move_Down_Button, &QPushButton::clicked, this, &VFIO_PCI_Editor_Window::on_Move_Down_clicked );
     connect( okBtn, &QPushButton::clicked, this, &QDialog::accept );
     connect( cancelBtn, &QPushButton::clicked, this, &QDialog::reject );
     connect( Filter_Edit, &QLineEdit::textChanged, this, &VFIO_PCI_Editor_Window::on_Filter_Text_Changed );
     connect( Show_All_Check, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_Show_All_Changed );
     connect( Device_Table, &QTableWidget::itemChanged, this, &VFIO_PCI_Editor_Window::on_Table_Item_Changed );
     connect( Device_Table, &QTableWidget::currentItemChanged, this, &VFIO_PCI_Editor_Window::on_Table_Current_Item_Changed );
+    connect( Device_Table, &QTableWidget::currentCellChanged, this, [this]( int row, int, int, int ) {
+        Move_Up_Button->setEnabled( row > 0 && row < Device_Rows.size() );
+        Move_Down_Button->setEnabled( row >= 0 && row < Device_Rows.size() - 1 );
+    } );
     connect( Flag_Bus_Edit, &QLineEdit::textChanged, this, &VFIO_PCI_Editor_Window::on_Bus_Changed );
     connect( Flag_Addr_Edit, &QLineEdit::textChanged, this, &VFIO_PCI_Editor_Window::on_Addr_Changed );
     connect( Flag_Multifunction, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_Multifunction_Changed );
@@ -531,17 +547,21 @@ void VFIO_PCI_Editor_Window::Set_PCI_Devices( const QList<VM_PCI_Device> &device
         }
     }
 
-    // Update UI checkboxes
-    for ( int r = 0; r < Device_Rows.size(); r++ )
-    {
-        QWidget *w = Device_Table->cellWidget( r, 0 );
-        if ( w )
-        {
-            QCheckBox *cb = w->findChild<QCheckBox*>();
-            if ( cb )
-                cb->setChecked( Device_Rows[r].Config.IsEnabled() );
-        }
-    }
+    // Restore manual order by sorting on bus number (root.1, root.2, …)
+    // Devices without a bus (previously unconfigured) stay at the end.
+    std::sort( Device_Rows.begin(), Device_Rows.end(), []( const DeviceRow &a, const DeviceRow &b ) {
+        bool aOk = false, bOk = false;
+        int busA = a.Config.Get_Bus().section( '.', -1 ).toInt( &aOk );
+        int busB = b.Config.Get_Bus().section( '.', -1 ).toInt( &bOk );
+        if ( aOk != bOk )
+            return aOk; // configured before unconfigured
+        if ( aOk )
+            return busA < busB;
+        return a.Info.ShortAddress < b.Info.ShortAddress;
+    } );
+
+    // Rebuild the table to reflect the new row order
+    Rebuild_Table_From_Rows();
 }
 
 QList<VM_PCI_Device> VFIO_PCI_Editor_Window::Get_PCI_Devices() const
@@ -617,56 +637,109 @@ static int pciFunction( const QString &shortAddr )
 }
 #endif
 
+void VFIO_PCI_Editor_Window::Rebuild_Table_From_Rows()
+{
+    Updating_Table = true;
+    Device_Table->setRowCount( 0 );
+    Device_Table->setRowCount( Device_Rows.size() );
+
+    for ( int i = 0; i < Device_Rows.size(); i++ )
+    {
+        Device_Rows[i].Row = i;
+        Fill_Row( i, Device_Rows[i].Info, Device_Rows[i].Config.IsEnabled() );
+
+        QWidget *cbWidget = Device_Table->cellWidget( i, 0 );
+        if ( cbWidget )
+        {
+            QCheckBox *cb = cbWidget->findChild<QCheckBox*>();
+            if ( cb )
+            {
+                int captureRow = i;
+                connect( cb, &QCheckBox::toggled, this, [this, captureRow]( bool checked ) {
+                    on_Enabled_Check_Changed( captureRow, checked );
+                });
+            }
+        }
+    }
+    Updating_Table = false;
+}
+
+void VFIO_PCI_Editor_Window::on_Move_Up_clicked()
+{
+    int row = Device_Table->currentRow();
+    if ( row <= 0 || row >= Device_Rows.size() )
+        return;
+
+    DeviceRow temp = Device_Rows[row];
+    Device_Rows[row] = Device_Rows[row - 1];
+    Device_Rows[row - 1] = temp;
+
+    Rebuild_Table_From_Rows();
+    Device_Table->selectRow( row - 1 );
+    Assign_Topology();
+    Update_Flag_UI( row - 1 );
+}
+
+void VFIO_PCI_Editor_Window::on_Move_Down_clicked()
+{
+    int row = Device_Table->currentRow();
+    if ( row < 0 || row >= Device_Rows.size() - 1 )
+        return;
+
+    DeviceRow temp = Device_Rows[row];
+    Device_Rows[row] = Device_Rows[row + 1];
+    Device_Rows[row + 1] = temp;
+
+    Rebuild_Table_From_Rows();
+    Device_Table->selectRow( row + 1 );
+    Assign_Topology();
+    Update_Flag_UI( row + 1 );
+}
+
 void VFIO_PCI_Editor_Window::Assign_Topology()
 {
-    // Group enabled devices by base address (bus:device, without function)
-    QMap< QString, QList<int> > groups;
+    // Assign root port numbers based on visual order in Device_Rows.
+    // Devices sharing the same base address (bus:device, without function)
+    // form a group and get the same root bus.
+    QMap<QString, int> baseToPort;   // base address -> root port number
+    QMap<QString, int> baseToCount;  // base address -> total enabled devices in group
+
+    // First pass: assign port numbers on first occurrence, count group sizes
+    int portNum = 0;
     for ( int i = 0; i < Device_Rows.size(); i++ )
     {
         if ( !Device_Rows[i].Config.IsEnabled() )
             continue;
 
-        const PCI_Host_Device &info = Device_Rows[i].Info;
-        QString base = pciBaseName( info.ShortAddress );
-        groups[base].append( i );
+        QString base = pciBaseName( Device_Rows[i].Info.ShortAddress );
+        if ( !baseToPort.contains( base ) )
+        {
+            portNum++;
+            baseToPort[base] = portNum;
+        }
+        baseToCount[base]++;
     }
 
-    int portNum = 0;
-    for ( auto it = groups.begin(); it != groups.end(); ++it )
+    // Second pass: assign bus, addr, multifunction, x-vga
+    QMap<QString, int> baseToFunc;
+    for ( int i = 0; i < Device_Rows.size(); i++ )
     {
-        portNum++;
-        QList<int> &indices = it.value();
+        if ( !Device_Rows[i].Config.IsEnabled() )
+            continue;
 
-        // Sort by function number
-        std::sort( indices.begin(), indices.end(), [this]( int a, int b ) {
-            return Device_Rows[a].Info.ShortAddress < Device_Rows[b].Info.ShortAddress;
-        } );
+        QString base = pciBaseName( Device_Rows[i].Info.ShortAddress );
+        int p = baseToPort[base];
+        int f = baseToFunc[base];
+        baseToFunc[base] = f + 1;
 
-        bool isVGA = false;
-        for ( int f = 0; f < indices.size(); f++ )
-        {
-            int ri = indices[f];
-            QComboBox *combo = static_cast<QComboBox*>( Device_Table->cellWidget( ri, 6 ) );
-            if ( combo && combo->currentData().toString() == "vga" )
-                isVGA = true;
-        }
+        Device_Rows[i].Config.Set_Bus( QString( "root.%1" ).arg( p ) );
+        Device_Rows[i].Config.Set_Addr( QString( "00.%1" ).arg( f ) );
+        Device_Rows[i].Config.Set_Multifunction( baseToCount[base] > 1 );
 
-        for ( int f = 0; f < indices.size(); f++ )
-        {
-            int ri = indices[f];
-
-            Device_Rows[ri].Config.Set_Bus( QString( "root.%1" ).arg( portNum ) );
-            Device_Rows[ri].Config.Set_Addr( QString( "00.%1" ).arg( f ) );
-            Device_Rows[ri].Config.Set_Multifunction( indices.size() > 1 );
-
-            // x-vga=on for any device typed VGA in this group
-            if ( isVGA )
-            {
-                QComboBox *combo = static_cast<QComboBox*>( Device_Table->cellWidget( ri, 6 ) );
-                if ( combo && combo->currentData().toString() == "vga" )
-                    Device_Rows[ri].Config.Set_XVGA( true );
-            }
-        }
+        // x-vga=on for any device typed VGA
+        QComboBox *combo = static_cast<QComboBox*>( Device_Table->cellWidget( i, 6 ) );
+        if ( combo && combo->currentData().toString() == "vga" )
+            Device_Rows[i].Config.Set_XVGA( true );
     }
 }
 
