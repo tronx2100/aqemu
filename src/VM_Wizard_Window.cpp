@@ -48,6 +48,62 @@ VM_Wizard_Window::VM_Wizard_Window( QWidget *parent )
 	ui.setupUi( this );
 	ui.Label_Page->setBackgroundRole( QPalette::Base );
     ui.Wizard_Pages->setCurrentIndex(0);
+
+	// --- Hugepages memory backend widgets ---
+	QGridLayout *wizMemGrid = qobject_cast<QGridLayout*>( ui.Memory_Page->layout() );
+	if( wizMemGrid )
+	{
+		QLabel *typeLabel = new QLabel( tr("Backend:") );
+		CB_Memory_Backend_Type = new QComboBox();
+		CB_Memory_Backend_Type->addItem( tr("memory-backend-ram"), "ram" );
+		CB_Memory_Backend_Type->addItem( tr("memory-backend-file (hugepages)"), "file" );
+
+		QLabel *pathLabel = new QLabel( tr("mem-path:") );
+		Edit_Memory_Backend_Path = new QLineEdit();
+		Edit_Memory_Backend_Path->setPlaceholderText( "/dev/hugepages (e.g. /dev/hugepages1G, /dev/hugepages2M)" );
+
+		CH_Memory_Backend_Share = new QCheckBox( tr("share") );
+		CH_Memory_Backend_Share->setChecked( true );
+		CH_Memory_Backend_Prealloc = new QCheckBox( tr("prealloc") );
+		CH_Memory_Backend_Prealloc->setChecked( true );
+
+		int r = wizMemGrid->rowCount();
+		wizMemGrid->addWidget( typeLabel, r, 0 );
+		wizMemGrid->addWidget( CB_Memory_Backend_Type, r, 1, 1, 2 );
+		r++;
+		wizMemGrid->addWidget( pathLabel, r, 0 );
+		wizMemGrid->addWidget( Edit_Memory_Backend_Path, r, 1, 1, 2 );
+		r++;
+		QHBoxLayout *fileOpts = new QHBoxLayout();
+		fileOpts->addWidget( CH_Memory_Backend_Share );
+		fileOpts->addWidget( CH_Memory_Backend_Prealloc );
+		fileOpts->addStretch();
+		wizMemGrid->addLayout( fileOpts, r, 0, 1, 3 );
+
+		// Toggle visibility based on type
+		auto updFile = [this, wizMemGrid, r]() {
+			bool isFile = ( CB_Memory_Backend_Type->currentData().toString() == "file" );
+			Edit_Memory_Backend_Path->setVisible( isFile );
+			CH_Memory_Backend_Share->setVisible( isFile );
+			CH_Memory_Backend_Prealloc->setVisible( isFile );
+		};
+		connect( CB_Memory_Backend_Type, QOverload<int>::of(&QComboBox::currentIndexChanged),
+				 this, [updFile](int) { updFile(); } );
+
+		auto updBackend = [this, updFile]() {
+			bool en = ui.CH_Use_Memory_Backend->isChecked();
+			CB_Memory_Backend_Type->setVisible( en );
+			if( en ) updFile();
+			else {
+				Edit_Memory_Backend_Path->setVisible( false );
+				CH_Memory_Backend_Share->setVisible( false );
+				CH_Memory_Backend_Prealloc->setVisible( false );
+			}
+		};
+		connect( ui.CH_Use_Memory_Backend, &QCheckBox::toggled,
+				 this, [updBackend](bool) { updBackend(); } );
+		updBackend();
+	}
 	
 	New_VM = new Virtual_Machine();
 	
@@ -317,6 +373,10 @@ void VM_Wizard_Window::applyTemplate()
 		// Memory
 		ui.Memory_Size->setValue( New_VM->Get_Memory_Size() );
 		ui.CH_Use_Memory_Backend->setChecked( New_VM->Get_Use_Memory_Backend() );
+		CB_Memory_Backend_Type->setCurrentIndex( New_VM->Get_Memory_Backend_Is_File() ? 1 : 0 );
+		Edit_Memory_Backend_Path->setText( New_VM->Get_Memory_Backend_File_Path() );
+		CH_Memory_Backend_Share->setChecked( New_VM->Get_Memory_Backend_Share() );
+		CH_Memory_Backend_Prealloc->setChecked( New_VM->Get_Memory_Backend_Prealloc() );
 		
 		// HDA
 		double hda_size = New_VM->Get_HDA().Get_Virtual_Size_in_GB();
@@ -483,6 +543,10 @@ bool VM_Wizard_Window::Create_New_VM(bool simulate)
 	// RAM
 	New_VM->Set_Memory_Size( ui.Memory_Size->value() );
 	New_VM->Set_Use_Memory_Backend( ui.CH_Use_Memory_Backend->isChecked() );
+	New_VM->Set_Memory_Backend_Is_File( CB_Memory_Backend_Type->currentData().toString() == "file" );
+	New_VM->Set_Memory_Backend_File_Path( Edit_Memory_Backend_Path->text().trimmed() );
+	New_VM->Set_Memory_Backend_Share( CH_Memory_Backend_Share->isChecked() );
+	New_VM->Set_Memory_Backend_Prealloc( CH_Memory_Backend_Prealloc->isChecked() );
 
 	// Wizard Mode
 	if( ui.RB_Typical->isChecked() )

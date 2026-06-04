@@ -166,6 +166,10 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 	this->Memory_Size = vm.Get_Memory_Size();
 	this->Remove_RAM_Size_Limitation = vm.Get_Remove_RAM_Size_Limitation();
 	this->Use_Memory_Backend = vm.Get_Use_Memory_Backend();
+	this->Memory_Backend_Is_File = vm.Get_Memory_Backend_Is_File();
+	this->Memory_Backend_File_Path = vm.Get_Memory_Backend_File_Path();
+	this->Memory_Backend_Share = vm.Get_Memory_Backend_Share();
+	this->Memory_Backend_Prealloc = vm.Get_Memory_Backend_Prealloc();
 	
 	this->Fullscreen = vm.Use_Fullscreen_Mode();
 	this->Win2K_Hack = vm.Use_Win2K_Hack();
@@ -432,6 +436,10 @@ void Virtual_Machine::Shared_Constructor()
 		Audio_Backend = Get_Preferred_Audio_Backend();
 	Remove_RAM_Size_Limitation = false;
 	Use_Memory_Backend = false;
+	Memory_Backend_Is_File = false;
+	Memory_Backend_File_Path = QString();
+	Memory_Backend_Share = true;
+	Memory_Backend_Prealloc = true;
 	Memory_Size = 128;
 	
 	Fullscreen = false;
@@ -557,6 +565,10 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
 		this->Memory_Size == vm.Get_Memory_Size() &&
 		this->Remove_RAM_Size_Limitation == vm.Get_Remove_RAM_Size_Limitation() &&
 		this->Use_Memory_Backend == vm.Get_Use_Memory_Backend() &&
+		this->Memory_Backend_Is_File == vm.Get_Memory_Backend_Is_File() &&
+		this->Memory_Backend_File_Path == vm.Get_Memory_Backend_File_Path() &&
+		this->Memory_Backend_Share == vm.Get_Memory_Backend_Share() &&
+		this->Memory_Backend_Prealloc == vm.Get_Memory_Backend_Prealloc() &&
 		this->Fullscreen == vm.Use_Fullscreen_Mode() &&
 		this->Win2K_Hack == vm.Use_Win2K_Hack() &&
 		this->Local_Time == vm.Use_Local_Time() &&
@@ -810,6 +822,10 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->Remove_RAM_Size_Limitation = vm.Get_Remove_RAM_Size_Limitation();
 	this->Memory_Size = vm.Get_Memory_Size();
 	this->Use_Memory_Backend = vm.Get_Use_Memory_Backend();
+	this->Memory_Backend_Is_File = vm.Get_Memory_Backend_Is_File();
+	this->Memory_Backend_File_Path = vm.Get_Memory_Backend_File_Path();
+	this->Memory_Backend_Share = vm.Get_Memory_Backend_Share();
+	this->Memory_Backend_Prealloc = vm.Get_Memory_Backend_Prealloc();
 	this->Fullscreen = vm.Use_Fullscreen_Mode();
 	this->Win2K_Hack = vm.Use_Win2K_Hack();
 	this->Local_Time = vm.Use_Local_Time();
@@ -1354,6 +1370,27 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 		Dom_Text = New_Dom_Document.createTextNode( "true" );
 	else
 		Dom_Text = New_Dom_Document.createTextNode( "false" );
+	Dom_Element.appendChild( Dom_Text );
+
+	// Memory Backend File (hugepages)
+	Dom_Element = New_Dom_Document.createElement( "Memory_Backend_Is_File" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( Memory_Backend_Is_File ? "true" : "false" );
+	Dom_Element.appendChild( Dom_Text );
+
+	Dom_Element = New_Dom_Document.createElement( "Memory_Backend_File_Path" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( Memory_Backend_File_Path );
+	Dom_Element.appendChild( Dom_Text );
+
+	Dom_Element = New_Dom_Document.createElement( "Memory_Backend_Share" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( Memory_Backend_Share ? "true" : "false" );
+	Dom_Element.appendChild( Dom_Text );
+
+	Dom_Element = New_Dom_Document.createElement( "Memory_Backend_Prealloc" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( Memory_Backend_Prealloc ? "true" : "false" );
 	Dom_Element.appendChild( Dom_Text );
 	
 	// Fullscreen
@@ -4185,6 +4222,10 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 			// Memory Size ( RAM )
 			Memory_Size = Child_Element.firstChildElement("Memory_Size").text().toInt();
 			Use_Memory_Backend = (Child_Element.firstChildElement("Use_Memory_Backend").text() == "true");
+			Memory_Backend_Is_File = (Child_Element.firstChildElement("Memory_Backend_Is_File").text() == "true");
+			Memory_Backend_File_Path = Child_Element.firstChildElement("Memory_Backend_File_Path").text();
+			Memory_Backend_Share = (Child_Element.firstChildElement("Memory_Backend_Share").text() == "true");
+			Memory_Backend_Prealloc = (Child_Element.firstChildElement("Memory_Backend_Prealloc").text() == "true");
 			
 			// Fullscreen
 			Fullscreen = (Child_Element.firstChildElement("Fullscreen").text() == "true");
@@ -5975,7 +6016,21 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	// Memory backend
 	if( Use_Memory_Backend )
 	{
-		Args << "-object" << QString("memory-backend-ram,id=ram0,size=%1M").arg( Memory_Size );
+		if( Memory_Backend_Is_File && !Memory_Backend_File_Path.isEmpty() )
+		{
+			QStringList beArgs;
+			beArgs << QString("memory-backend-file,id=ram0,size=%1M").arg( Memory_Size )
+			       << QString("mem-path=%1").arg( Memory_Backend_File_Path );
+			if( Memory_Backend_Share )
+				beArgs << "share=on";
+			if( Memory_Backend_Prealloc )
+				beArgs << "prealloc=on";
+			Args << "-object" << beArgs.join(",");
+		}
+		else
+		{
+			Args << "-object" << QString("memory-backend-ram,id=ram0,size=%1M").arg( Memory_Size );
+		}
 	}
 
     // Accelerator
@@ -8657,6 +8712,46 @@ bool Virtual_Machine::Get_Use_Memory_Backend() const
 void Virtual_Machine::Set_Use_Memory_Backend( bool on )
 {
 	Use_Memory_Backend = on;
+}
+
+bool Virtual_Machine::Get_Memory_Backend_Is_File() const
+{
+	return Memory_Backend_Is_File;
+}
+
+void Virtual_Machine::Set_Memory_Backend_Is_File( bool on )
+{
+	Memory_Backend_Is_File = on;
+}
+
+const QString &Virtual_Machine::Get_Memory_Backend_File_Path() const
+{
+	return Memory_Backend_File_Path;
+}
+
+void Virtual_Machine::Set_Memory_Backend_File_Path( const QString &path )
+{
+	Memory_Backend_File_Path = path;
+}
+
+bool Virtual_Machine::Get_Memory_Backend_Share() const
+{
+	return Memory_Backend_Share;
+}
+
+void Virtual_Machine::Set_Memory_Backend_Share( bool on )
+{
+	Memory_Backend_Share = on;
+}
+
+bool Virtual_Machine::Get_Memory_Backend_Prealloc() const
+{
+	return Memory_Backend_Prealloc;
+}
+
+void Virtual_Machine::Set_Memory_Backend_Prealloc( bool on )
+{
+	Memory_Backend_Prealloc = on;
 }
 
 int Virtual_Machine::Get_Memory_Size() const

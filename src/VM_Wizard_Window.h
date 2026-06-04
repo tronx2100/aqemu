@@ -26,6 +26,9 @@
 
 #include <QFileInfoList>
 #include <QSettings>
+#include <QComboBox>
+#include <QLineEdit>
+#include <QCheckBox>
 
 #include "VM.h"
 #include "ui_VM_Wizard_Window.h"
@@ -75,6 +78,12 @@ class VM_Wizard_Window: public QDialog
 
 		QSettings Settings;
 		Ui::VM_Wizard_Window ui;
+
+		// Programmatic memory backend widgets (hugepages)
+		QComboBox *CB_Memory_Backend_Type;
+		QLineEdit *Edit_Memory_Backend_Path;
+		QCheckBox *CH_Memory_Backend_Share;
+		QCheckBox *CH_Memory_Backend_Prealloc;
 		
 		QFileInfoList OS_Templates_List;
 		QList<Virtual_Machine*> *VM_List;

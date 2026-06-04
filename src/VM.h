@@ -197,6 +197,14 @@ class Virtual_Machine: public QObject
 		void Set_Remove_RAM_Size_Limitation( bool on );
 		bool Get_Use_Memory_Backend() const;
 		void Set_Use_Memory_Backend( bool on );
+		bool Get_Memory_Backend_Is_File() const;
+		void Set_Memory_Backend_Is_File( bool on );
+		const QString &Get_Memory_Backend_File_Path() const;
+		void Set_Memory_Backend_File_Path( const QString &path );
+		bool Get_Memory_Backend_Share() const;
+		void Set_Memory_Backend_Share( bool on );
+		bool Get_Memory_Backend_Prealloc() const;
+		void Set_Memory_Backend_Prealloc( bool on );
 		
 		bool Use_Fullscreen_Mode() const;
 		void Use_Fullscreen_Mode( bool use );
@@ -584,9 +592,13 @@ class Virtual_Machine: public QObject
 			VM::Sound_Cards Audio_Card; // sb16, es1370
 			bool Use_Custom_Audio_Backend;
 			QString Audio_Backend;
-			bool Remove_RAM_Size_Limitation; // true - limitation off
-			bool Use_Memory_Backend; // use memory-backend-ram for main RAM
-			int Memory_Size; // RAM Size
+		bool Remove_RAM_Size_Limitation; // true - limitation off
+		bool Use_Memory_Backend; // use memory-backend-ram for main RAM
+		bool Memory_Backend_Is_File; // use memory-backend-file (hugepages) instead of memory-backend-ram
+		QString Memory_Backend_File_Path; // mem-path for memory-backend-file
+		bool Memory_Backend_Share; // share=on
+		bool Memory_Backend_Prealloc; // prealloc=on
+		int Memory_Size; // RAM Size
 		
 		// General Tab Options
 		bool Fullscreen;

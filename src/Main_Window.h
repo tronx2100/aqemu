@@ -26,6 +26,9 @@
 
 #include <QList>
 #include <QCloseEvent>
+#include <QComboBox>
+#include <QLineEdit>
+#include <QCheckBox>
 
 #include "VM.h"
 #include "Utils.h"
@@ -242,6 +245,12 @@ class Main_Window: public QMainWindow
 		Ui::Advanced_Options ui_ao;
 		Ui::KVM_Options ui_kvm;
         Ui::Architecture_Options ui_arch;
+
+        // Programmatic memory backend widgets (hugepages)
+        QComboBox *CB_Memory_Backend_Type;
+        QLineEdit *Edit_Memory_Backend_Path;
+        QCheckBox *CH_Memory_Backend_Share;
+        QCheckBox *CH_Memory_Backend_Prealloc;
 
         QDialog* Advanced_Options;
         QDialog* Accelerator_Options;

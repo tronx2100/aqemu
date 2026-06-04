@@ -193,6 +193,90 @@ Main_Window::Main_Window( QWidget *parent )
 	// Get max RAM size
 	on_TB_Update_Available_RAM_Size_clicked();
 
+	// --- Hugepages memory backend widgets ---
+	QGridLayout *memGrid = qobject_cast<QGridLayout*>( ui.GB_Memory->layout() );
+	if( memGrid )
+	{
+		// Backend type combo
+		QLabel *typeLabel = new QLabel( tr("Backend:") );
+		CB_Memory_Backend_Type = new QComboBox();
+		CB_Memory_Backend_Type->addItem( tr("memory-backend-ram"), "ram" );
+		CB_Memory_Backend_Type->addItem( tr("memory-backend-file (hugepages)"), "file" );
+		CB_Memory_Backend_Type->setToolTip( tr("memory-backend-file enables hugepages support via mem-path") );
+
+		// Mem-path field
+		QLabel *pathLabel = new QLabel( tr("mem-path:") );
+		Edit_Memory_Backend_Path = new QLineEdit();
+		Edit_Memory_Backend_Path->setPlaceholderText( "/dev/hugepages (e.g. /dev/hugepages1G, /dev/hugepages2M)" );
+		Edit_Memory_Backend_Path->setToolTip( tr("Path to hugepages mount point for memory-backend-file") );
+
+		// Share and Prealloc checkboxes
+		CH_Memory_Backend_Share = new QCheckBox( tr("share") );
+		CH_Memory_Backend_Share->setToolTip( tr("Enable share=on (allows sharing with other processes)") );
+		CH_Memory_Backend_Share->setChecked( true );
+
+		CH_Memory_Backend_Prealloc = new QCheckBox( tr("prealloc") );
+		CH_Memory_Backend_Prealloc->setToolTip( tr("Enable prealloc=on (pre-allocate hugepages at startup)") );
+		CH_Memory_Backend_Prealloc->setChecked( true );
+
+		int nextRow = memGrid->rowCount();
+		memGrid->addWidget( typeLabel, nextRow, 0 );
+		memGrid->addWidget( CB_Memory_Backend_Type, nextRow, 1, 1, 2 );
+		nextRow++;
+
+		memGrid->addWidget( pathLabel, nextRow, 0 );
+		memGrid->addWidget( Edit_Memory_Backend_Path, nextRow, 1, 1, 2 );
+		nextRow++;
+
+		QHBoxLayout *fileOpts = new QHBoxLayout();
+		fileOpts->addWidget( CH_Memory_Backend_Share );
+		fileOpts->addWidget( CH_Memory_Backend_Prealloc );
+		fileOpts->addStretch();
+		memGrid->addLayout( fileOpts, nextRow, 0, 1, 3 );
+
+		// Show/hide file-specific controls based on type selection
+		auto updateFileVisibility = [this, memGrid, nextRow]() {
+			bool isFile = ( CB_Memory_Backend_Type->currentData().toString() == "file" );
+			Edit_Memory_Backend_Path->setVisible( isFile );
+			CH_Memory_Backend_Share->setVisible( isFile );
+			CH_Memory_Backend_Prealloc->setVisible( isFile );
+			// Find and toggle the path label too
+			if( auto *pathLabelW = qobject_cast<QWidget*>( memGrid->itemAtPosition( nextRow - 1, 0 )->widget() ) )
+				pathLabelW->setVisible( isFile );
+		};
+		connect( CB_Memory_Backend_Type, QOverload<int>::of(&QComboBox::currentIndexChanged),
+				 this, [updateFileVisibility](int) { updateFileVisibility(); } );
+
+		// Initially hide file-specific controls if backend is ram
+		updateFileVisibility();
+
+		// Hide all file controls when backend is disabled
+		auto updateBackendVisibility = [this, updateFileVisibility]() {
+			bool enabled = ui.CH_Use_Memory_Backend->isChecked();
+			CB_Memory_Backend_Type->setVisible( enabled );
+			// Re-evaluate file visibility within that
+			if( enabled )
+				updateFileVisibility();
+			else
+			{
+				Edit_Memory_Backend_Path->setVisible( false );
+				CH_Memory_Backend_Share->setVisible( false );
+				CH_Memory_Backend_Prealloc->setVisible( false );
+			}
+		};
+		connect( ui.CH_Use_Memory_Backend, &QCheckBox::toggled,
+				 this, [updateBackendVisibility](bool) { updateBackendVisibility(); } );
+
+		connect( CB_Memory_Backend_Type, SIGNAL(currentIndexChanged(int)),
+				 this, SLOT(VM_Changed()) );
+		connect( Edit_Memory_Backend_Path, SIGNAL(textChanged(const QString&)),
+				 this, SLOT(VM_Changed()) );
+		connect( CH_Memory_Backend_Share, SIGNAL(clicked()),
+				 this, SLOT(VM_Changed()) );
+		connect( CH_Memory_Backend_Prealloc, SIGNAL(clicked()),
+				 this, SLOT(VM_Changed()) );
+	}
+
     init_dbus();
 
     // Direct state-change signal from service (bypasses DBus)
@@ -1061,6 +1145,10 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 	// Check free ram
 	tmp_vm->Set_Remove_RAM_Size_Limitation( ui.CH_Remove_RAM_Size_Limitation->isChecked() );
 	tmp_vm->Set_Use_Memory_Backend( ui.CH_Use_Memory_Backend->isChecked() );
+	tmp_vm->Set_Memory_Backend_Is_File( CB_Memory_Backend_Type->currentData().toString() == "file" );
+	tmp_vm->Set_Memory_Backend_File_Path( Edit_Memory_Backend_Path->text().trimmed() );
+	tmp_vm->Set_Memory_Backend_Share( CH_Memory_Backend_Share->isChecked() );
+	tmp_vm->Set_Memory_Backend_Prealloc( CH_Memory_Backend_Prealloc->isChecked() );
 
 	// Options
 	tmp_vm->Use_Fullscreen_Mode( ui.CH_Fullscreen->isChecked() );
@@ -1705,6 +1793,10 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 	ui.CH_Remove_RAM_Size_Limitation->setChecked( tmp_vm->Get_Remove_RAM_Size_Limitation() );
 	on_CH_Remove_RAM_Size_Limitation_stateChanged( ui.CH_Remove_RAM_Size_Limitation->checkState() );
 	ui.CH_Use_Memory_Backend->setChecked( tmp_vm->Get_Use_Memory_Backend() );
+	CB_Memory_Backend_Type->setCurrentIndex( tmp_vm->Get_Memory_Backend_Is_File() ? 1 : 0 );
+	Edit_Memory_Backend_Path->setText( tmp_vm->Get_Memory_Backend_File_Path() );
+	CH_Memory_Backend_Share->setChecked( tmp_vm->Get_Memory_Backend_Share() );
+	CH_Memory_Backend_Prealloc->setChecked( tmp_vm->Get_Memory_Backend_Prealloc() );
 
 	// General Tab. Options
 	ui.CH_Fullscreen->setChecked( tmp_vm->Use_Fullscreen_Mode() );
