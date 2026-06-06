@@ -8007,8 +8007,8 @@ bool Virtual_Machine::Start_impl()
             if ( !CPU_Pinning.isEmpty() )
             {
                 tmp_list.prepend( bin_name );
-                tmp_list.prepend( "-c" );
                 tmp_list.prepend( CPU_Pinning );
+                tmp_list.prepend( "-c" );
                 bin_name = "taskset";
             }
             QEMU_Process->start( bin_name, tmp_list );
@@ -8078,8 +8078,8 @@ bool Virtual_Machine::Start_impl()
         if ( !CPU_Pinning.isEmpty() )
         {
             qemu_args.prepend( bin_path );
-            qemu_args.prepend( "-c" );
             qemu_args.prepend( CPU_Pinning );
+            qemu_args.prepend( "-c" );
             bin_path = "taskset";
         }
         QEMU_Process->start( bin_path, qemu_args );
