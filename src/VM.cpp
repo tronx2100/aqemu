@@ -3443,6 +3443,14 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_Disable_Idle() ? "true" : "false" ) );
 		Dom_Element.appendChild( tmpElement );
 
+		tmpElement = New_Dom_Document.createElement( "No_KVM_MSI" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_No_KVM_MSI() ? "true" : "false" ) );
+		Dom_Element.appendChild( tmpElement );
+
+		tmpElement = New_Dom_Document.createElement( "No_KVM_MSIX" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_No_KVM_MSIX() ? "true" : "false" ) );
+		Dom_Element.appendChild( tmpElement );
+
 		QStringList addFlags = PCI_Devices[px].Get_Additional_Flags();
 		tmpElement = New_Dom_Document.createElement( "Additional_Flags_Count" );
 		tmpElement.appendChild( New_Dom_Document.createTextNode( QString::number(addFlags.count()) ) );
@@ -5123,6 +5131,12 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 
 			tmpElement = PCIDevicesElement.firstChildElement( "Disable_Idle" );
 			dev.Set_Disable_Idle( tmpElement.text() == "true" );
+
+			tmpElement = PCIDevicesElement.firstChildElement( "No_KVM_MSI" );
+			dev.Set_No_KVM_MSI( tmpElement.text() == "true" );
+
+			tmpElement = PCIDevicesElement.firstChildElement( "No_KVM_MSIX" );
+			dev.Set_No_KVM_MSIX( tmpElement.text() == "true" );
 
 			QStringList addFlags;
 			PCIDevicesElement.firstChildElement( "Additional_Flags_Count" ).text().toInt();
