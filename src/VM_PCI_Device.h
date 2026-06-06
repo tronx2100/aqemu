@@ -69,6 +69,12 @@ public:
     bool Get_Disable_Idle() const;
     void Set_Disable_Idle( bool on );
 
+    bool Get_No_KVM_MSI() const;
+    void Set_No_KVM_MSI( bool on );
+
+    bool Get_No_KVM_MSIX() const;
+    void Set_No_KVM_MSIX( bool on );
+
     QStringList Get_Additional_Flags() const;
     void Set_Additional_Flags( const QStringList &flags );
 
@@ -91,6 +97,8 @@ private:
     QString ROM_Bar;
     bool Disable_VGA;
     bool Disable_Idle;
+    bool No_KVM_MSI;
+    bool No_KVM_MSIX;
     QStringList Additional_Flags; // raw key=value pairs appended to the device string
 };
 

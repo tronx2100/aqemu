@@ -5,7 +5,8 @@
 
 VM_PCI_Device::VM_PCI_Device()
     : Enabled(false), Multifunction(false), XVGA(false),
-      Use_ROM_File(false), Use_ROM_Bar(true), Disable_VGA(false), Disable_Idle(false)
+      Use_ROM_File(false), Use_ROM_Bar(true), Disable_VGA(false), Disable_Idle(false),
+      No_KVM_MSI(false), No_KVM_MSIX(false)
 {
 }
 
@@ -16,6 +17,7 @@ VM_PCI_Device::VM_PCI_Device( const VM_PCI_Device &other )
       Use_ROM_File(other.Use_ROM_File), ROM_File(other.ROM_File),
       Use_ROM_Bar(other.Use_ROM_Bar), ROM_Bar(other.ROM_Bar),
       Disable_VGA(other.Disable_VGA), Disable_Idle(other.Disable_Idle),
+      No_KVM_MSI(other.No_KVM_MSI), No_KVM_MSIX(other.No_KVM_MSIX),
       Additional_Flags(other.Additional_Flags)
 {
 }
@@ -38,6 +40,8 @@ bool VM_PCI_Device::operator==( const VM_PCI_Device &other ) const
         && ROM_Bar == other.ROM_Bar
         && Disable_VGA == other.Disable_VGA
         && Disable_Idle == other.Disable_Idle
+        && No_KVM_MSI == other.No_KVM_MSI
+        && No_KVM_MSIX == other.No_KVM_MSIX
         && Additional_Flags == other.Additional_Flags;
 }
 
@@ -62,6 +66,8 @@ VM_PCI_Device &VM_PCI_Device::operator=( const VM_PCI_Device &other )
         ROM_Bar = other.ROM_Bar;
         Disable_VGA = other.Disable_VGA;
         Disable_Idle = other.Disable_Idle;
+        No_KVM_MSI = other.No_KVM_MSI;
+        No_KVM_MSIX = other.No_KVM_MSIX;
         Additional_Flags = other.Additional_Flags;
     }
     return *this;
@@ -103,6 +109,12 @@ void VM_PCI_Device::Set_Disable_VGA( bool on ) { Disable_VGA = on; }
 bool VM_PCI_Device::Get_Disable_Idle() const { return Disable_Idle; }
 void VM_PCI_Device::Set_Disable_Idle( bool on ) { Disable_Idle = on; }
 
+bool VM_PCI_Device::Get_No_KVM_MSI() const { return No_KVM_MSI; }
+void VM_PCI_Device::Set_No_KVM_MSI( bool on ) { No_KVM_MSI = on; }
+
+bool VM_PCI_Device::Get_No_KVM_MSIX() const { return No_KVM_MSIX; }
+void VM_PCI_Device::Set_No_KVM_MSIX( bool on ) { No_KVM_MSIX = on; }
+
 QStringList VM_PCI_Device::Get_Additional_Flags() const { return Additional_Flags; }
 void VM_PCI_Device::Set_Additional_Flags( const QStringList &flags ) { Additional_Flags = flags; }
 
@@ -127,6 +139,12 @@ QString VM_PCI_Device::To_QEMU_Device_Arg() const
 
     if ( Disable_VGA )
         arg += ",disable-vga=on";
+
+    if ( No_KVM_MSI )
+        arg += ",x-no-kvm-msi=on";
+
+    if ( No_KVM_MSIX )
+        arg += ",x-no-kvm-msix=on";
 
     if ( Use_ROM_File && !ROM_File.isEmpty() )
         arg += QString( ",romfile=%1" ).arg( ROM_File );

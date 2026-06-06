@@ -38,6 +38,8 @@ private slots:
     void on_Use_ROM_File_Changed( int state );
     void on_ROM_File_Browse();
     void on_Disable_VGA_Changed( int state );
+    void on_No_KVM_MSI_Changed( int state );
+    void on_No_KVM_MSIX_Changed( int state );
     void on_Add_Flag();
     void on_Remove_Flag();
     void on_Move_Up_clicked();
@@ -73,6 +75,8 @@ private:
     QLineEdit *Flag_ROM_File_Edit;
     QPushButton *Flag_ROM_File_Browse;
     QCheckBox *Flag_Disable_VGA;
+    QCheckBox *Flag_No_KVM_MSI;
+    QCheckBox *Flag_No_KVM_MSIX;
     QListWidget *Flag_Additional_List;
     QLineEdit *Flag_New_Flag_Edit;
     QPushButton *Flag_Add_Button;
