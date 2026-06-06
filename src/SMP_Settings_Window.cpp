@@ -43,6 +43,7 @@ SMP_Settings_Window::SMP_Settings_Window( QWidget *parent )
 	connect( ui.CB_HV_Frequencies, &QCheckBox::toggled, this, cb );
 	connect( ui.CB_HV_Spinlocks, &QCheckBox::toggled, this, cb );
 	connect( ui.CB_HV_Vendor_ID, &QCheckBox::toggled, this, cb );
+	connect( ui.CB_PMU_Off, &QCheckBox::toggled, this, cb );
 	// Keep checkboxes in sync when text field is typed into
 	connect( ui.LE_CPU_Flags, &QLineEdit::textChanged, this, [this]() { Sync_Text_To_Checkboxes(); });
 	// Also update text when value sub-fields change
@@ -169,6 +170,7 @@ void SMP_Settings_Window::Clear_All_Flags()
 	ui.CB_SSE41->setChecked( false );
 	ui.CB_SSE42->setChecked( false );
 	ui.CB_SSSE3->setChecked( false );
+	ui.CB_PMU_Off->setChecked( false );
 	ui.CH_CPU_PM_Overcommit->setChecked( false );
 }
 
@@ -251,13 +253,14 @@ void SMP_Settings_Window::Sync_Checkboxes_To_Text()
 	if( ui.CB_SSE41->isChecked() )  parts << "+sse4.1";
 	if( ui.CB_SSE42->isChecked() )  parts << "+sse4.2";
 	if( ui.CB_SSSE3->isChecked() )  parts << "+ssse3";
+	if( ui.CB_PMU_Off->isChecked() )  parts << "pmu=off";
 	
 	// Preserve any manually typed flags that don't match checkboxes
 	QStringList current = ui.LE_CPU_Flags->text().split(",", Qt::SkipEmptyParts);
 	QStringList known_prefixes = { "kvm", "-hypervisor", "+topoext", "hv_relaxed", "hv_vapic",
 	                               "hv_time", "hv_stimer", "hv_synic", "hv_reset",
 	                               "hv_frequencies", "hv_spinlocks", "hv_vendor_id",
-	                               "+sse4.1", "+sse4.2", "+ssse3" };
+	                               "+sse4.1", "+sse4.2", "+ssse3", "pmu" };
 	for( int i = 0; i < current.count(); ++i )
 	{
 		bool is_known = false;
@@ -325,6 +328,7 @@ void SMP_Settings_Window::Sync_Text_To_Checkboxes()
 		else if( p == "+sse4.1" )   ui.CB_SSE41->setChecked( true );
 		else if( p == "+sse4.2" )   ui.CB_SSE42->setChecked( true );
 		else if( p == "+ssse3" )    ui.CB_SSSE3->setChecked( true );
+		else if( p == "pmu=off" )   ui.CB_PMU_Off->setChecked( true );
 	}
 	
 	Syncing_Flags = false;

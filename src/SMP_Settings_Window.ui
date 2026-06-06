@@ -372,6 +372,13 @@ Missing values (zeroes) get computed automatically.</string>
             </property>
            </widget>
           </item>
+          <item row="3" column="3">
+           <widget class="QCheckBox" name="CB_PMU_Off">
+            <property name="text">
+             <string>pmu=off</string>
+            </property>
+           </widget>
+          </item>
           </layout>
          </item>
          <item>
@@ -496,6 +503,7 @@ Missing values (zeroes) get computed automatically.</string>
     <tabstop>CB_SSE41</tabstop>
     <tabstop>CB_SSE42</tabstop>
     <tabstop>CB_SSSE3</tabstop>
+    <tabstop>CB_PMU_Off</tabstop>
    <tabstop>PB_Optimized_AMD</tabstop>
    <tabstop>PB_Optimized_Intel</tabstop>
     <tabstop>PB_OSX_Preset</tabstop>

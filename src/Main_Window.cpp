@@ -4855,6 +4855,7 @@ void Main_Window::on_TB_Show_SMP_Settings_Window_clicked()
 
 		if( SMP_Settings->Get_Values() != Get_Current_VM()->Get_SMP() ||
 			SMP_Settings->Get_CPU_Flags() != Get_Current_VM()->Get_CPU_Flags() ||
+			SMP_Settings->Get_CPU_PM_Overcommit() != Get_Current_VM()->Get_CPU_PM_Overcommit() ||
 			SMP_Settings->Get_CPU_Pinning() != Get_Current_VM()->Get_CPU_Pinning() )
 		{
 			changed = true;
