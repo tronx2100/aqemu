@@ -7208,26 +7208,17 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 						}
 						else if( Settings.value("USB_ID_Style","").toString() == "VendorProduct" )
 						{
-							// QEMU 11+ requires hex values to have 0x prefix
-							auto fix_hex = []( const QString &val ) -> QString {
-								if( ! val.startsWith("0x", Qt::CaseInsensitive) && ! val.isEmpty() )
-								{
-									bool all_digits = true;
-									for( int c = 0; c < val.length(); ++c )
-									{
-										if( val[c] >= '0' && val[c] <= '9' ) continue;
-										all_digits = false;
-										break;
-									}
-									if( ! all_digits ) return "0x" + val;
-								}
-								return val;
+							// SysFS stores IDs as hex without 0x; QEMU 11+ requires 0x prefix
+							auto add_0x = []( const QString &val ) -> QString {
+								return val.isEmpty() || val.startsWith("0x", Qt::CaseInsensitive)
+									? val
+									: "0x" + val;
 							};
 							Args << "-device"
 								 << QString( "usb-host,bus=%1,vendorid=%2,productid=%3" )
 									.arg( usbControllerID )
-									.arg( fix_hex(current_USB_Device.Get_Vendor_ID()) )
-									.arg( fix_hex(current_USB_Device.Get_Product_ID()) );
+									.arg( add_0x(current_USB_Device.Get_Vendor_ID()) )
+									.arg( add_0x(current_USB_Device.Get_Product_ID()) );
 						}
 						else // Bus.Path
 						{
