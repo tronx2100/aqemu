@@ -7090,6 +7090,7 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 		{
 			bool usb_ehci_arg_added = false; // USB 2.0 controller
 			bool usb_xhci_arg_added = false; // USB 3.0 controller
+			bool usb_uhci_arg_added = false; // USB 1.1 controller
 			
 			Args << "-usb";
 			
@@ -7187,6 +7188,11 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 						}
 						else // USB 1.1
 						{
+							if( ! usb_uhci_arg_added )
+							{
+								Args << "-device" << "usb-uhci,id=usb";
+								usb_uhci_arg_added = true;
+							}
 							usbControllerID = "usb.0";
 						}
 						
