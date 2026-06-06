@@ -155,6 +155,7 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 	this->Machine_Options = vm.Get_Machine_Options();
 	this->CPU_Type = vm.Get_CPU_Type();
 	this->CPU_Flags = vm.Get_CPU_Flags();
+	this->CPU_Pinning = vm.Get_CPU_Pinning();
 	this->SMP = vm.Get_SMP();
 	this->Keyboard_Layout = vm.Get_Keyboard_Layout();
 	this->Boot_Order_List = vm.Get_Boot_Order_List();
@@ -515,6 +516,7 @@ void Virtual_Machine::Shared_Constructor()
 	RTC_Use_Clock_RT = false;
 	No_Defaults = false;
 	CPU_PM_Overcommit = false;
+	CPU_Pinning = "";
 	Use_SMBIOS_Type2 = false;
 	Display_Type = "";
 	
@@ -555,6 +557,7 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
 		this->Machine_Options == vm.Get_Machine_Options() &&
 		this->CPU_Type == vm.Get_CPU_Type() &&
 		this->CPU_Flags == vm.Get_CPU_Flags() &&
+		this->CPU_Pinning == vm.Get_CPU_Pinning() &&
 		this->SMP == vm.Get_SMP() &&
 		this->Keyboard_Layout == vm.Get_Keyboard_Layout() &&
 		this->Show_Boot_Menu == vm.Get_Show_Boot_Menu() &&
@@ -811,6 +814,7 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->Machine_Options = vm.Get_Machine_Options();
 	this->CPU_Type = vm.Get_CPU_Type();
 	this->CPU_Flags = vm.Get_CPU_Flags();
+	this->CPU_Pinning = vm.Get_CPU_Pinning();
 	this->SMP = vm.Get_SMP();
 	this->Keyboard_Layout = vm.Get_Keyboard_Layout();
 	this->Boot_Order_List = vm.Get_Boot_Order_List();
@@ -1131,6 +1135,12 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 	Dom_Element = New_Dom_Document.createElement( "CPU_Flags" );
 	VM_Element.appendChild( Dom_Element );
 	Dom_Text = New_Dom_Document.createTextNode( CPU_Flags );
+	Dom_Element.appendChild( Dom_Text );
+
+	// CPU Pinning
+	Dom_Element = New_Dom_Document.createElement( "CPU_Pinning" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( CPU_Pinning );
 	Dom_Element.appendChild( Dom_Text );
 	
 	// SMP_CPU_Count
@@ -4050,6 +4060,7 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 			// CPU Type
 			CPU_Type = Child_Element.firstChildElement("CPU_Type").text();
 			CPU_Flags = Child_Element.firstChildElement("CPU_Flags").text();
+			CPU_Pinning = Child_Element.firstChildElement("CPU_Pinning").text();
 			
 			// SMP
 			SMP.SMP_Count = Child_Element.firstChildElement("SMP_CPU_Count").text().toInt();
@@ -7993,6 +8004,13 @@ bool Virtual_Machine::Start_impl()
         else
         {
             QString bin_name = tmp_list.takeAt( 0 );
+            if ( !CPU_Pinning.isEmpty() )
+            {
+                tmp_list.prepend( bin_name );
+                tmp_list.prepend( "-c" );
+                tmp_list.prepend( CPU_Pinning );
+                bin_name = "taskset";
+            }
             QEMU_Process->start( bin_name, tmp_list );
             TEMPODEBUG( "bool Virtual_Machine::Start_impl()",
                         QString("process start requested bin=\"%1\" args=\"%2\"")
@@ -8057,6 +8075,13 @@ bool Virtual_Machine::Start_impl()
                     QString("qemu_args_count=%1 qemu_args=\"%2\"")
                     .arg(qemu_args.count())
                     .arg(qemu_args.join(" ")) );
+        if ( !CPU_Pinning.isEmpty() )
+        {
+            qemu_args.prepend( bin_path );
+            qemu_args.prepend( "-c" );
+            qemu_args.prepend( CPU_Pinning );
+            bin_path = "taskset";
+        }
         QEMU_Process->start( bin_path, qemu_args );
         TEMPODEBUG( "bool Virtual_Machine::Start_impl()",
                     QString("process start requested bin=\"%1\" args=\"%2\"")
@@ -9972,6 +9997,16 @@ bool Virtual_Machine::Get_CPU_PM_Overcommit() const
 void Virtual_Machine::Set_CPU_PM_Overcommit( bool use )
 {
 	CPU_PM_Overcommit = use;
+}
+
+const QString &Virtual_Machine::Get_CPU_Pinning() const
+{
+	return CPU_Pinning;
+}
+
+void Virtual_Machine::Set_CPU_Pinning( const QString &pinning )
+{
+	CPU_Pinning = pinning;
 }
 
 bool Virtual_Machine::Get_Use_SMBIOS_Type2() const
@@ -11936,7 +11971,12 @@ QString Virtual_Machine::GenerateHTMLInfoText(int info_mode)
 
         cell = table2->cellAt( table2->rows()-1, 1 );
         cell_cursor = cell.firstCursorPosition();
-        cell_cursor.insertText( Build_QEMU_Args_For_Tab_Info().join(" ").replace(" -"," \\\n    -"), format );
+        {
+            QString pinning_prefix;
+            if ( !CPU_Pinning.isEmpty() )
+                pinning_prefix = "taskset -c " + CPU_Pinning + " ";
+            cell_cursor.insertText( pinning_prefix + Build_QEMU_Args_For_Tab_Info().join(" ").replace(" -"," \\\n    -"), format );
+        }
     }
 
     // Move the cursor to the top

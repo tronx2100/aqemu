@@ -385,10 +385,33 @@ Missing values (zeroes) get computed automatically.</string>
          </widget>
         </item>
        </layout>
-     </widget>
-    </item>
-    <item>
-     <widget class="Line" name="line_2">
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="GB_CPU_Pinning">
+       <property name="title">
+        <string>CPU Pinning (taskset)</string>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_Pinning">
+        <item>
+         <widget class="QLabel" name="Label_CPU_Pinning">
+          <property name="text">
+           <string>CPU list (e.g. 0-3,8-11):</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="LE_CPU_Pinning">
+          <property name="placeholderText">
+           <string>Leave empty for no pinning</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="Line" name="line_2">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>

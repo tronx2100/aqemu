@@ -1112,6 +1112,7 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
     }
     tmp_vm->Set_CPU_Flags( SMP_Settings->Get_CPU_Flags() );
     tmp_vm->Set_CPU_PM_Overcommit( SMP_Settings->Get_CPU_PM_Overcommit() );
+    tmp_vm->Set_CPU_Pinning( SMP_Settings->Get_CPU_Pinning() );
 
 	// Keyboard Layout
 	if( ui.CB_Keyboard_Layout->currentIndex() == 0 ) // Default
@@ -1732,6 +1733,7 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 							 curComp.PSO_SMP_Threads, curComp.PSO_SMP_Sockets, curComp.PSO_SMP_MaxCPUs );
     SMP_Settings->Set_CPU_Flags( tmp_vm->Get_CPU_Flags() );
     SMP_Settings->Set_CPU_PM_Overcommit( tmp_vm->Get_CPU_PM_Overcommit() );
+    SMP_Settings->Set_CPU_Pinning( tmp_vm->Get_CPU_Pinning() );
 
 	// Keyboard Layout
 	int lang_index = ui.CB_Keyboard_Layout->findText( tmp_vm->Get_Keyboard_Layout() );
@@ -2893,18 +2895,22 @@ QString Main_Window::Get_QEMU_Args()
 	}
 
 	QString line = "";
+	QString pinning = cur_vm->Get_CPU_Pinning();
+	QString taskset_prefix;
+	if ( !pinning.isEmpty() )
+		taskset_prefix = "taskset -c " + pinning + " ";
 
 	if( cur_vm->Get_Use_User_Emulator_Binary() &&
 		cur_vm->Get_Only_User_Args() )
 	{
 		QStringList all_args = cur_vm->Build_QEMU_Args_For_Tab_Info();
-		line = all_args.takeAt( 0 );
+		line = taskset_prefix + all_args.takeAt( 0 );
 
 		for( int i = 0; i < all_args.count(); ++i ) line += " " + all_args[i];
 	}
 	else
 	{
-		line = Get_Current_Binary_Name();
+		line = taskset_prefix + Get_Current_Binary_Name();
 
 		QStringList all_args = cur_vm->Build_QEMU_Args_For_Tab_Info();
 
@@ -4146,6 +4152,9 @@ void Main_Window::on_actionCreate_Shell_Script_triggered()
 	if( incl_before && ! before_cmd.isEmpty() )
 		script_code += "\n# Execute before QEMU start\n" + before_cmd + "\n";
 
+	QString pinning = cur_vm->Get_CPU_Pinning();
+	if ( !pinning.isEmpty() )
+		script_code += "taskset -c " + pinning + " ";
 	script_code += Get_Current_Binary_Name();
 	QStringList all_args = cur_vm->Build_QEMU_Args_For_Script();
 
@@ -4845,7 +4854,8 @@ void Main_Window::on_TB_Show_SMP_Settings_Window_clicked()
 		}
 
 		if( SMP_Settings->Get_Values() != Get_Current_VM()->Get_SMP() ||
-			SMP_Settings->Get_CPU_Flags() != Get_Current_VM()->Get_CPU_Flags() )
+			SMP_Settings->Get_CPU_Flags() != Get_Current_VM()->Get_CPU_Flags() ||
+			SMP_Settings->Get_CPU_Pinning() != Get_Current_VM()->Get_CPU_Pinning() )
 		{
 			changed = true;
 		}

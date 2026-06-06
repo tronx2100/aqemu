@@ -445,6 +445,9 @@ class Virtual_Machine: public QObject
 		bool Get_CPU_PM_Overcommit() const;
 		void Set_CPU_PM_Overcommit( bool use );
 
+		const QString &Get_CPU_Pinning() const;
+		void Set_CPU_Pinning( const QString &pinning );
+
 		bool Get_Use_SMBIOS_Type2() const;
 		void Set_Use_SMBIOS_Type2( bool use );
 		const QString &Get_SMBIOS_Manufacturer() const;
@@ -695,6 +698,7 @@ class Virtual_Machine: public QObject
 		bool RTC_Use_Clock_RT;
 		bool No_Defaults;
 		bool CPU_PM_Overcommit;
+		QString CPU_Pinning;
 		bool Use_SMBIOS_Type2;
 		QString SMBIOS_Manufacturer;
 		QString SMBIOS_Product;

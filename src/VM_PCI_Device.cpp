@@ -128,9 +128,6 @@ QString VM_PCI_Device::To_QEMU_Device_Arg() const
     if ( Disable_VGA )
         arg += ",disable-vga=on";
 
-    if ( Disable_Idle )
-        arg += ",disable-idle=on";
-
     if ( Use_ROM_File && !ROM_File.isEmpty() )
         arg += QString( ",romfile=%1" ).arg( ROM_File );
 

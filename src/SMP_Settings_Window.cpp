@@ -141,6 +141,17 @@ void SMP_Settings_Window::Set_CPU_PM_Overcommit( bool use )
 	ui.CH_CPU_PM_Overcommit->setChecked( use );
 }
 
+QString SMP_Settings_Window::Get_CPU_Pinning() const
+{
+	return ui.LE_CPU_Pinning->text();
+}
+
+void SMP_Settings_Window::Set_CPU_Pinning( const QString &pinning )
+{
+	Backup_CPU_Pinning = pinning;
+	ui.LE_CPU_Pinning->setText( pinning );
+}
+
 void SMP_Settings_Window::Clear_All_Flags()
 {
 	ui.CB_KVM_Off->setChecked( false );
@@ -365,6 +376,7 @@ void SMP_Settings_Window::done(int r)
         Backup_SMP.SMP_MaxCPUs = ui.SB_MaxCPUs->value();
         Backup_CPU_Flags = ui.LE_CPU_Flags->text();
         Backup_CPU_PM_Overcommit = ui.CH_CPU_PM_Overcommit->isChecked();
+        Backup_CPU_Pinning = ui.LE_CPU_Pinning->text();
 
         QDialog::done(r);
         return;
@@ -378,6 +390,7 @@ void SMP_Settings_Window::done(int r)
 	    ui.SB_MaxCPUs->setValue( Backup_SMP.SMP_MaxCPUs );
 	    Set_CPU_Flags( Backup_CPU_Flags );
 	    ui.CH_CPU_PM_Overcommit->setChecked( Backup_CPU_PM_Overcommit );
+	    ui.LE_CPU_Pinning->setText( Backup_CPU_Pinning );
 	
 	    QDialog::done(r);
     }

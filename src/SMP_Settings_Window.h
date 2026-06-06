@@ -41,6 +41,9 @@ class SMP_Settings_Window: public QDialog
 
 		bool Get_CPU_PM_Overcommit() const;
 		void Set_CPU_PM_Overcommit( bool use );
+
+		QString Get_CPU_Pinning() const;
+		void Set_CPU_Pinning( const QString &pinning );
 		
 		void Set_SMP_Count( int count );
 
@@ -58,6 +61,7 @@ class SMP_Settings_Window: public QDialog
 		VM::SMP_Options Backup_SMP;
 		QString Backup_CPU_Flags;
 		bool Backup_CPU_PM_Overcommit;
+		QString Backup_CPU_Pinning;
 		bool Syncing_Flags = false;
 
 		void Set_Optimized_Preset( const QString &vendor, const QString &vendorId );

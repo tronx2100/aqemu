@@ -116,11 +116,7 @@ VFIO_PCI_Editor_Window::VFIO_PCI_Editor_Window( QWidget *parent )
     Flag_Disable_VGA->setToolTip( tr("Enable disable-vga=on") );
     flagGrid->addWidget( Flag_Disable_VGA, 1, 3 );
 
-    // Row 2: disable-idle, ROM file
-    Flag_Disable_Idle = new QCheckBox( tr("Disable Idle") );
-    Flag_Disable_Idle->setToolTip( tr("Enable disable-idle=on") );
-    flagGrid->addWidget( Flag_Disable_Idle, 2, 0 );
-
+    // Row 2: ROM file
     Flag_Use_ROM_File = new QCheckBox( tr("Use ROM File") );
     Flag_Use_ROM_File->setToolTip( tr("Specify a custom VGA BIOS ROM file") );
     flagGrid->addWidget( Flag_Use_ROM_File, 2, 1 );
@@ -194,7 +190,6 @@ VFIO_PCI_Editor_Window::VFIO_PCI_Editor_Window( QWidget *parent )
     connect( Flag_Use_ROM_File, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_Use_ROM_File_Changed );
     connect( Flag_ROM_File_Browse, &QPushButton::clicked, this, &VFIO_PCI_Editor_Window::on_ROM_File_Browse );
     connect( Flag_Disable_VGA, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_Disable_VGA_Changed );
-    connect( Flag_Disable_Idle, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_Disable_Idle_Changed );
     connect( Flag_Add_Button, &QPushButton::clicked, this, &VFIO_PCI_Editor_Window::on_Add_Flag );
     connect( Flag_Remove_Button, &QPushButton::clicked, this, &VFIO_PCI_Editor_Window::on_Remove_Flag );
     connect( Flag_Additional_List, &QListWidget::currentRowChanged, this, [this](int) {
@@ -807,7 +802,6 @@ void VFIO_PCI_Editor_Window::Update_Flag_UI( int row )
     Flag_ROM_File_Edit->setEnabled( cfg.Get_Use_ROM_File() );
     Flag_ROM_File_Browse->setEnabled( cfg.Get_Use_ROM_File() );
     Flag_Disable_VGA->setChecked( cfg.Get_Disable_VGA() );
-    Flag_Disable_Idle->setChecked( cfg.Get_Disable_Idle() );
 
     Flag_Additional_List->clear();
     QStringList flags = cfg.Get_Additional_Flags();
@@ -831,7 +825,6 @@ void VFIO_PCI_Editor_Window::Clear_Flag_UI()
     Flag_ROM_File_Edit->setEnabled( false );
     Flag_ROM_File_Browse->setEnabled( false );
     Flag_Disable_VGA->setChecked( false );
-    Flag_Disable_Idle->setChecked( false );
     Flag_Additional_List->clear();
     Flag_New_Flag_Edit->clear();
     Flag_Remove_Button->setEnabled( false );
@@ -901,14 +894,6 @@ void VFIO_PCI_Editor_Window::on_Disable_VGA_Changed( int state )
     int row = Device_Table->currentRow();
     if ( row >= 0 && row < Device_Rows.size() )
         Device_Rows[row].Config.Set_Disable_VGA( state == Qt::Checked );
-}
-
-void VFIO_PCI_Editor_Window::on_Disable_Idle_Changed( int state )
-{
-    if ( Updating_Table ) return;
-    int row = Device_Table->currentRow();
-    if ( row >= 0 && row < Device_Rows.size() )
-        Device_Rows[row].Config.Set_Disable_Idle( state == Qt::Checked );
 }
 
 void VFIO_PCI_Editor_Window::on_Add_Flag()

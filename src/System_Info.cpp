@@ -2209,7 +2209,7 @@ bool System_Info::Scan_USB_Sys( QList<VM_USB> &list )
 	// add only unique usb device folders
 	QRegExp re_usbNum = QRegExp( "^usb\\d+$" ); // like: usb5
 	QRegExp re_NumNum = QRegExp( "^\\d+[-]\\d+$" ); // like: 1-2
-	QRegExp re_NumNumNum = QRegExp( "^\\d+[-]\\d+[.]\\d+$" ); // like: 1-2.1
+	QRegExp re_NumNumNum = QRegExp( "^\\d+[-]\\d+([.]\\d+)+$" ); // like: 1-2.1, 1-2.1.1, 1-2.3.2.1
 	
 	foreach( QString cur_dir, all_usb_dirs )
 	{
