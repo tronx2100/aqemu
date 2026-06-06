@@ -730,11 +730,6 @@ void VFIO_PCI_Editor_Window::Assign_Topology()
         Device_Rows[i].Config.Set_Bus( QString( "root.%1" ).arg( p ) );
         Device_Rows[i].Config.Set_Addr( QString( "00.%1" ).arg( f ) );
         Device_Rows[i].Config.Set_Multifunction( baseToCount[base] > 1 );
-
-        // x-vga=on for any device typed VGA
-        QComboBox *combo = static_cast<QComboBox*>( Device_Table->cellWidget( i, 6 ) );
-        if ( combo && combo->currentData().toString() == "vga" )
-            Device_Rows[i].Config.Set_XVGA( true );
     }
 }
 

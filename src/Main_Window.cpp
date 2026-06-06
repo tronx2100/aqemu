@@ -4166,18 +4166,18 @@ void Main_Window::on_actionCreate_Shell_Script_triggered()
 		script_code += "\n\n# Execute after QEMU exit\n" + after_cmd;
 
 	// Save Script
-	QString selectedFilter = "";
+	QString selectedFilter;
 	QString fileName = QFileDialog::getSaveFileName( this, tr("Save VM to Script"),
 											 "VM_" + Get_FS_Compatible_VM_Name(cur_vm->Get_Machine_Name()),
-											 tr("Shell Script Files (*.sh);;All Files (*)") );
+											 tr("Shell Script Files (*.sh);;All Files (*)"),
+											 &selectedFilter );
 
 	if( ! fileName.isEmpty() )
 	{
 		fileName = QDir::toNativeSeparators( fileName );
 
 		// Save to File
-		if( selectedFilter.indexOf("(*.sh)") >= 0 &&
-			fileName.endsWith(".sh") == false )
+		if( fileName.endsWith(".sh") == false )
 		{
 			fileName += ".sh";
 		}
