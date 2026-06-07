@@ -347,21 +347,11 @@ void SMP_Settings_Window::done(int r)
 
         if( product > 0 )
         {
-            // QEMU 9.x requires: sockets * cores * threads == maxcpus
-            if( maxcpus != product )
+            // QEMU requires: maxcpus >= sockets * cores * threads
+            if( maxcpus < product )
             {
-                // Try to preserve maxcpus by adjusting cores first
-                unsigned short base = threads * sockets;
-                if( base > 0 && maxcpus % base == 0 )
-                {
-                    cores = maxcpus / base;
-                    ui.SB_Cores->setValue( cores );
-                }
-                else
-                {
-                    maxcpus = product;
-                    ui.SB_MaxCPUs->setValue( maxcpus );
-                }
+                maxcpus = product;
+                ui.SB_MaxCPUs->setValue( maxcpus );
             }
 
             // Cap cpus to maxcpus
