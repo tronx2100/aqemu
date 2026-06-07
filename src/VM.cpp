@@ -178,6 +178,7 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 	this->Check_FDD_Boot_Sector = vm.Use_Check_FDD_Boot_Sector();
 	this->ACPI = vm.Use_ACPI();
 	this->Snapshot_Mode = vm.Use_Snapshot_Mode();
+	this->Prevent_Host_Sleep = vm.Use_Prevent_Host_Sleep();
 	this->Start_CPU = vm.Use_Start_CPU();
 	this->No_Reboot = vm.Use_No_Reboot();
 	this->No_Shutdown = vm.Use_No_Shutdown();
@@ -449,6 +450,7 @@ void Virtual_Machine::Shared_Constructor()
 	Check_FDD_Boot_Sector = true;
 	ACPI = true;
 	Snapshot_Mode = false;
+	Prevent_Host_Sleep = false;
 	Start_CPU = true;
 	No_Reboot = false;
 	No_Shutdown = false;
@@ -578,6 +580,7 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
 		this->Check_FDD_Boot_Sector == vm.Use_Check_FDD_Boot_Sector() &&
 		this->ACPI == vm.Use_ACPI() &&
 		this->Snapshot_Mode == vm.Use_Snapshot_Mode() &&
+		this->Prevent_Host_Sleep == vm.Use_Prevent_Host_Sleep() &&
 		this->No_Shutdown == vm.Use_No_Shutdown() &&
 		this->Start_CPU == vm.Use_Start_CPU() &&
 		this->No_Reboot == vm.Use_No_Reboot() &&
@@ -836,6 +839,7 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->Check_FDD_Boot_Sector = vm.Use_Check_FDD_Boot_Sector();
 	this->ACPI = vm.Use_ACPI();
 	this->Snapshot_Mode = vm.Use_Snapshot_Mode();
+	this->Prevent_Host_Sleep = vm.Use_Prevent_Host_Sleep();
 	this->Start_CPU = vm.Use_Start_CPU();
 	this->No_Reboot = vm.Use_No_Reboot();
 	this->No_Shutdown = vm.Use_No_Shutdown();
@@ -1463,6 +1467,17 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 	VM_Element.appendChild( Dom_Element );
 	
 	if( Snapshot_Mode )
+		Dom_Text = New_Dom_Document.createTextNode( "true" );
+	else
+		Dom_Text = New_Dom_Document.createTextNode( "false" );
+	
+	Dom_Element.appendChild( Dom_Text );
+	
+	// Prevent_Host_Sleep
+	Dom_Element = New_Dom_Document.createElement( "Prevent_Host_Sleep" );
+	VM_Element.appendChild( Dom_Element );
+	
+	if( Prevent_Host_Sleep )
 		Dom_Text = New_Dom_Document.createTextNode( "true" );
 	else
 		Dom_Text = New_Dom_Document.createTextNode( "false" );
@@ -3697,6 +3712,18 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 	Dom_Text = New_Dom_Document.createTextNode( SPICE.Use_Playback_Compression() ? "true" : "false" );
 	Sec_Element.appendChild( Dom_Text );
 	
+	// Use_x509_Dir
+	Sec_Element = New_Dom_Document.createElement( "Use_x509_Dir" );
+	Dom_Element.appendChild( Sec_Element );
+	Dom_Text = New_Dom_Document.createTextNode( SPICE.Use_x509_Dir() ? "true" : "false" );
+	Sec_Element.appendChild( Dom_Text );
+	
+	// x509_Dir
+	Sec_Element = New_Dom_Document.createElement( "x509_Dir" );
+	Dom_Element.appendChild( Sec_Element );
+	Dom_Text = New_Dom_Document.createTextNode( SPICE.Get_x509_Dir() );
+	Sec_Element.appendChild( Dom_Text );
+	
 	// Use_Password
 	Sec_Element = New_Dom_Document.createElement( "Use_Password" );
 	Dom_Element.appendChild( Sec_Element );
@@ -4263,6 +4290,9 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 			
 			// Snapshot_Mode
 			Snapshot_Mode = (Child_Element.firstChildElement("Snapshot_Mode").text() == "true");
+			
+			// Prevent_Host_Sleep
+			Prevent_Host_Sleep = (Child_Element.firstChildElement("Prevent_Host_Sleep").text() == "true");
 			
 			// Start_CPU
 			Start_CPU = (Child_Element.firstChildElement("Start_CPU").text() == "true");
@@ -5270,6 +5300,10 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 				
 				SPICE.Use_Playback_Compression( Second_Element.firstChildElement( "Use_Playback_Compression" ).text() == "true" );
 				
+				SPICE.Use_x509_Dir( Second_Element.firstChildElement( "Use_x509_Dir" ).text() == "true" );
+				
+				SPICE.Set_x509_Dir( Second_Element.firstChildElement( "x509_Dir" ).text() );
+				
 				SPICE.Use_Password( Second_Element.firstChildElement( "Use_Password" ).text() == "true" );
 				
 				SPICE.Set_Password( Second_Element.firstChildElement( "Password" ).text() );
@@ -6145,15 +6179,25 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 		Args << "-device" << "virtserialport,chardev=qga0,name=org.qemu.guest_agent.0";
 	}
 	
-	if( Current_Emulator_Devices.PSO_Show_Cursor && Show_Cursor )
-		Args << "-show-cursor";
-	
-	if( Current_Emulator_Devices.PSO_Curses && Curses )
-		Args << "-curses";
+	// Display backend (modern -display argument) with suboptions
+	{
+		QString displayType = Display_Type;
+		// When using suboptions, default to GTK (QEMU default) if no type set
+		if( displayType.isEmpty() && ( Show_Cursor || No_Quit ) )
+			displayType = "gtk";
 
-	// Display backend (modern -display argument)
-	if( ! Display_Type.isEmpty() )
-		Args << "-display" << Display_Type;
+		if( !displayType.isEmpty() )
+		{
+			QStringList subOpts;
+			if( Show_Cursor ) subOpts << "show-cursor=on";
+			if( No_Quit )    subOpts << "window-close=off";
+
+			QString displayArg = displayType;
+			if( !subOpts.isEmpty() )
+				displayArg += "," + subOpts.join(",");
+			Args << "-display" << displayArg;
+		}
+	}
 
 	// Generate root port devices for VFIO topology (must be before vfio-pci)
 	QStringList rootPorts = VM_PCI_Device::Build_Root_Port_Args( PCI_Devices );
@@ -7398,30 +7442,10 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 		}
 	}
 	
-	// Set the initial graphical resolution and depth
-	if( Current_Emulator_Devices.PSO_Initial_Graphic_Mode &&
-		Init_Graphic_Mode.Get_Enabled() )
-	{
-		Args << "-g" << QString::number( Init_Graphic_Mode.Get_Width() ) + "x" +
-						QString::number( Init_Graphic_Mode.Get_Height() ) + "x" +
-						QString::number( Init_Graphic_Mode.Get_Depth() );
-	}
-	
-	// open SDL window without a frame and window decorations
-	if( Current_Emulator_Devices.PSO_No_Frame && No_Frame )
-		Args << "-no-frame";
-	
-	// use Ctrl-Alt-Shift to grab mouse (instead of Ctrl-Alt)
-	if( Current_Emulator_Devices.PSO_Alt_Grab && Alt_Grab )
-		Args << "-alt-grab";
-	
-	// disable SDL window close capability
-	if( Current_Emulator_Devices.PSO_No_Quit && No_Quit )
-		Args << "-no-quit";
-	
-	// rotate graphical output 90 deg left (only PXA LCD)
-	if( Current_Emulator_Devices.PSO_Portrait && Portrait )
-		Args << "-portrait";
+	// Note: -g (initial graphic mode), -no-frame, -alt-grab,
+	// -no-quit and -portrait were removed in QEMU 11+.
+	// -no-quit is now emitted as window-close=off via -display suboption above.
+	// The corresponding VM properties are kept for backward compat with old XML configs.
 	
 	// VM Name
 	if( Current_Emulator_Devices.PSO_Name )
@@ -7431,10 +7455,6 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	// FIXME. VNC and SPICE together?
 	if( SPICE.Use_SPICE() )
 	{
-		// QLX devices count and RAM size
-		if( Current_Emulator_Devices.PSO_QXL )
-			Args << "-qxl" << QString( "%1,ram=%2" ).arg( SPICE.Get_GXL_Devices_Count() ).arg( SPICE.Get_RAM_Size() );
-		
 		// Basic SPICE options
 		QStringList spiceArgs;
 		
@@ -7452,15 +7472,12 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 			switch( SPICE.Get_Image_Compression() )
 			{
 				case VM::SPICE_IC_Type_on:
-					spiceArgs << "image-compression=on";
-					break;
-					
 				case VM::SPICE_IC_Type_auto_glz:
 					spiceArgs << "image-compression=auto_glz";
 					break;
 					
 				case VM::SPICE_IC_Type_auto_lz:
-					spiceArgs << "image-compressionc=auto_lz";
+					spiceArgs << "image-compression=auto_lz";
 					break;
 					
 				case VM::SPICE_IC_Type_quic:
@@ -7490,62 +7507,23 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 		if( ! SPICE.Use_Video_Stream_Compression() )
 			spiceArgs << "streaming-video=off";
 		
-		// Select renderers. Multiple choice prioritized by order (default=cairo)		
-		if( SPICE.Use_Renderer() )
-		{
-			QString spiceRendersStr = "";
-			for( int ix = 0; ix < SPICE.Get_Renderer_List().count(); ++ix )
-			{
-				switch( SPICE.Get_Renderer_List()[ix] )
-				{
-					case VM::SPICE_Renderer_oglpbuf:
-						spiceRendersStr += "oglpbuf";
-						break;
-						
-					case VM::SPICE_Renderer_oglpixmap:
-						spiceRendersStr += "oglpixmap";
-						break;
-						
-					case VM::SPICE_Renderer_cairo:
-						spiceRendersStr += "cairo";
-						break;
-						
-					default:
-						AQError( "QStringList Virtual_Machine::Build_QEMU_Args()",
-								 "SPICE render type invalid!" );
-						break;
-				}
-				
-				if( ! spiceRendersStr.isEmpty() &&
-					ix != SPICE.Get_Renderer_List().count() -1 )
-				{
-					spiceRendersStr += "+";
-				}
-			}
-			
-			if( spiceRendersStr.isEmpty() )
-			{
-				AQError( "QStringList Virtual_Machine::Build_QEMU_Args()",
-						 "SPICE render type order list is empty!" );
-			}
-			else
-			{
-				spiceArgs << "renderer=" + spiceRendersStr;
-			}
-		}
-		
 		// Set playback compression, using the CELT algorithm (default=on)
 		if( ! SPICE.Use_Playback_Compression() )
 			spiceArgs << "playback-compression=off";
 		
+		// x509 TLS certificate directory
+		if( SPICE.Use_x509_Dir() && ! SPICE.Get_x509_Dir().isEmpty() )
+			spiceArgs << "x509-dir=" + SPICE.Get_x509_Dir();
+		
 		// Security options
 		if( SPICE.Use_Password() )
 		{
-			spiceArgs << "password=" + SPICE.Get_Password();
+			Args << "-object" << QString( "secret,id=spice_pass,data=%1" ).arg( SPICE.Get_Password() );
+			spiceArgs << "password-secret=spice_pass";
 		}
 		else
 		{
-			spiceArgs << "disable-ticketing";
+            spiceArgs << "disable-ticketing=on";
 		}
 		
 		// Add to args
@@ -8037,6 +8015,14 @@ bool Virtual_Machine::Start_impl()
                 tmp_list.prepend( "-c" );
                 bin_name = "taskset";
             }
+            if ( Prevent_Host_Sleep && QFile::exists( "/usr/bin/systemd-inhibit" ) )
+            {
+                tmp_list.prepend( bin_name );
+                tmp_list.prepend( "--why=VM is running" );
+                tmp_list.prepend( "--who=AQEMU" );
+                tmp_list.prepend( "--what=sleep:idle" );
+                bin_name = "systemd-inhibit";
+            }
             QEMU_Process->start( bin_name, tmp_list );
             TEMPODEBUG( "bool Virtual_Machine::Start_impl()",
                         QString("process start requested bin=\"%1\" args=\"%2\"")
@@ -8107,6 +8093,14 @@ bool Virtual_Machine::Start_impl()
             qemu_args.prepend( CPU_Pinning );
             qemu_args.prepend( "-c" );
             bin_path = "taskset";
+        }
+        if ( Prevent_Host_Sleep && QFile::exists( "/usr/bin/systemd-inhibit" ) )
+        {
+            qemu_args.prepend( bin_path );
+            qemu_args.prepend( "--why=VM is running" );
+            qemu_args.prepend( "--who=AQEMU" );
+            qemu_args.prepend( "--what=sleep:idle" );
+            bin_path = "systemd-inhibit";
         }
         QEMU_Process->start( bin_path, qemu_args );
         TEMPODEBUG( "bool Virtual_Machine::Start_impl()",
@@ -9028,6 +9022,16 @@ bool Virtual_Machine::Use_Snapshot_Mode() const
 void Virtual_Machine::Use_Snapshot_Mode( bool use )
 {
 	Snapshot_Mode = use;
+}
+
+bool Virtual_Machine::Use_Prevent_Host_Sleep() const
+{
+	return Prevent_Host_Sleep;
+}
+
+void Virtual_Machine::Use_Prevent_Host_Sleep( bool use )
+{
+	Prevent_Host_Sleep = use;
 }
 
 bool Virtual_Machine::Use_Win2K_Hack() const

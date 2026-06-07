@@ -246,6 +246,9 @@ class Main_Window: public QMainWindow
 		Ui::KVM_Options ui_kvm;
         Ui::Architecture_Options ui_arch;
 
+        // Programmatic host sleep prevention checkbox
+        QCheckBox *CH_Prevent_Host_Sleep;
+
         // Programmatic memory backend widgets (hugepages)
         QComboBox *CB_Memory_Backend_Type;
         QLineEdit *Edit_Memory_Backend_Path;

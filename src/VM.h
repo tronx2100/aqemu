@@ -224,6 +224,9 @@ class Virtual_Machine: public QObject
 		bool Use_Snapshot_Mode() const;
 		void Use_Snapshot_Mode( bool use );
 		
+		bool Use_Prevent_Host_Sleep() const;
+		void Use_Prevent_Host_Sleep( bool use );
+		
 		bool Use_Start_CPU() const;
 		void Use_Start_CPU( bool start );
 		
@@ -610,6 +613,7 @@ class Virtual_Machine: public QObject
 		bool Check_FDD_Boot_Sector;
 		bool ACPI;
 		bool Snapshot_Mode;
+		bool Prevent_Host_Sleep;
 		bool Start_CPU;
 		bool No_Reboot;
 		bool No_Shutdown;

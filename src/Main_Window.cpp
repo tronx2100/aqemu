@@ -193,6 +193,18 @@ Main_Window::Main_Window( QWidget *parent )
 	// Get max RAM size
 	on_TB_Update_Available_RAM_Size_clicked();
 
+	// --- Prevent host sleep checkbox ---
+	CH_Prevent_Host_Sleep = new QCheckBox( tr("Prevent host &sleep while VM is running") );
+	CH_Prevent_Host_Sleep->setToolTip( tr("Uses systemd-inhibit to prevent host from suspending.\n"
+	                                      "Falls back to just starting QEMU if systemd-inhibit is not available.") );
+	QGridLayout *optGrid = qobject_cast<QGridLayout*>( ui.GB_Options->layout() );
+	if( optGrid )
+	{
+		int optRow = optGrid->rowCount();
+		optGrid->addWidget( CH_Prevent_Host_Sleep, optRow, 0, 1, 3 );
+	}
+	connect( CH_Prevent_Host_Sleep, SIGNAL(clicked()), this, SLOT(VM_Changed()) );
+
 	// --- Hugepages memory backend widgets ---
 	QGridLayout *memGrid = qobject_cast<QGridLayout*>( ui.GB_Memory->layout() );
 	if( memGrid )
@@ -628,19 +640,7 @@ void Main_Window::Connect_Signals()
 	} );
 
 	// Advanced Tab
-	connect( ui.CH_No_Frame, SIGNAL(clicked()),
-			 this, SLOT(VM_Changed()) );
-
-	connect( ui.CH_Alt_Grab, SIGNAL(clicked()),
-			 this, SLOT(VM_Changed()) );
-
 	connect( ui.CH_No_Quit, SIGNAL(clicked()),
-			 this, SLOT(VM_Changed()) );
-
-	connect( ui.CH_Portrait, SIGNAL(clicked()),
-			 this, SLOT(VM_Changed()) );
-
-	connect( ui.CH_Curses, SIGNAL(clicked()),
 			 this, SLOT(VM_Changed()) );
 
 	connect( ui.CB_Display_Type, SIGNAL(currentIndexChanged(int)),
@@ -668,18 +668,6 @@ void Main_Window::Connect_Signals()
 			 this, SLOT(VM_Changed()) );
 
 	connect( ui_ao.DTE_Start_Date, SIGNAL(dateTimeChanged(const QDateTime &)),
-			 this, SLOT(VM_Changed()) );
-
-	connect( ui.CH_Init_Graphic_Mode, SIGNAL(clicked()),
-			 this, SLOT(VM_Changed()) );
-
-	connect( ui.SB_InitGM_Width, SIGNAL(valueChanged(int)),
-			 this, SLOT(VM_Changed()) );
-
-	connect( ui.SB_InitGM_Height, SIGNAL(valueChanged(int)),
-			 this, SLOT(VM_Changed()) );
-
-	connect( ui.CB_InitGM_Depth, SIGNAL(currentIndexChanged(int)),
 			 this, SLOT(VM_Changed()) );
 
 	// Advanced Options
@@ -1159,6 +1147,7 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 	tmp_vm->Use_Check_FDD_Boot_Sector( ui_ao.CH_FDD_Boot->isChecked() );
 	tmp_vm->Use_ACPI( ui_ao.CH_ACPI->isChecked() );
 	tmp_vm->Use_Snapshot_Mode( ui.CH_Snapshot->isChecked() );
+	tmp_vm->Use_Prevent_Host_Sleep( CH_Prevent_Host_Sleep->isChecked() );
 	tmp_vm->Use_Start_CPU( ui_ao.CH_Start_CPU->isChecked() );
 	tmp_vm->Use_No_Reboot( ui_ao.CH_No_Reboot->isChecked() );
 	tmp_vm->Use_No_Shutdown( ui_ao.CH_No_Shutdown->isChecked() );
@@ -1320,60 +1309,10 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 	tmp_vm->Use_KVM_Shadow_Memory( ui_kvm.CH_KVM_Shadow_Memory->isChecked() );
 	tmp_vm->Set_KVM_Shadow_Memory_Size( ui_kvm.SB_KVM_Shadow_Memory_Size->value() );
 
-	// Initial Graphical Mode
-	VM_Init_Graphic_Mode tmp_mode;
-
-	tmp_mode.Set_Enabled( ui.CH_Init_Graphic_Mode->isChecked() );
-	tmp_mode.Set_Width( ui.SB_InitGM_Width->value() );
-	tmp_mode.Set_Height( ui.SB_InitGM_Height->value() );
-
-	switch( ui.CB_InitGM_Depth->currentIndex() )
-	{
-		case 0:
-			tmp_mode.Set_Depth( 8 );
-			break;
-
-		case 1:
-			tmp_mode.Set_Depth( 16 );
-			break;
-
-		case 2:
-			tmp_mode.Set_Depth( 24 );
-			break;
-
-		case 3:
-			tmp_mode.Set_Depth( 32 );
-			break;
-
-		default:
-            if ( show_user_errors )
-            {
-                AQError( "bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, QListWidgetItem *item )",
-                         "Initial Graphical Mode: Default Section!" );
-            }
-			tmp_mode.Set_Depth( 24 );
-			break;
-	}
-
-	tmp_vm->Set_Init_Graphic_Mode( tmp_mode );
-
-	// Show QEMU Window Without a Frame and Window Decorations
-	tmp_vm->Use_No_Frame( ui.CH_No_Frame->isChecked() );
-
-	// Use Ctrl-Alt-Shift to Grab Mouse (Instead of Ctrl-Alt)
-	tmp_vm->Use_Alt_Grab( ui.CH_Alt_Grab->isChecked() );
-
-	// Disable SDL Window Close Capability
+	// Disable QEMU window close capability (emitted as -display window-close=off)
 	tmp_vm->Use_No_Quit( ui.CH_No_Quit->isChecked() );
-
-	// Rotate Graphical Output 90 Deg Left (Only PXA LCD)
-	tmp_vm->Use_Portrait( ui.CH_Portrait->isChecked() );
-
-	// Show_Cursor
+	// Show cursor (emitted as -display show-cursor=on)
 	tmp_vm->Use_Show_Cursor( ui.CH_Show_Cursor->isChecked() );
-
-	// Curses
-	tmp_vm->Use_Curses( ui.CH_Curses->isChecked() );
 
 	// Display Type
 	{
@@ -1804,6 +1743,7 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 	ui.CH_Fullscreen->setChecked( tmp_vm->Use_Fullscreen_Mode() );
 	ui_ao.CH_ACPI->setChecked( tmp_vm->Use_ACPI() );
 	ui.CH_Snapshot->setChecked( tmp_vm->Use_Snapshot_Mode() );
+	CH_Prevent_Host_Sleep->setChecked( tmp_vm->Use_Prevent_Host_Sleep() );
 	ui_ao.CH_FDD_Boot->setChecked( tmp_vm->Use_Check_FDD_Boot_Sector() );
 	ui.CH_Local_Time->setChecked( tmp_vm->Use_Local_Time() );
 	ui_ao.CH_Win2K_Hack->setChecked( tmp_vm->Use_Win2K_Hack() );
@@ -1905,20 +1845,8 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 
 	// QEMU Window Option
 
-	// Show QEMU Window Without a Frame and Window Decorations
-	ui.CH_No_Frame->setChecked( tmp_vm->Use_No_Frame() );
-
-	// Use Ctrl-Alt-Shift to Grab Mouse (Instead of Ctrl-Alt)
-	ui.CH_Alt_Grab->setChecked( tmp_vm->Use_Alt_Grab() );
-
-	// Disable SDL Window Close Capability
+	// Disable QEMU window close capability
 	ui.CH_No_Quit->setChecked( tmp_vm->Use_No_Quit() );
-
-	// Rotate Graphical Output 90 Deg Left (Only PXA LCD)
-	ui.CH_Portrait->setChecked( tmp_vm->Use_Portrait() );
-
-	// Curses
-	ui.CH_Curses->setChecked( tmp_vm->Use_Curses() );
 
 	// Display Type
 	{
@@ -1934,35 +1862,13 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 	// Show_Cursor
 	ui.CH_Show_Cursor->setChecked( tmp_vm->Use_Show_Cursor() );
 
-	// Initial Graphical Mode
-	ui.CH_Init_Graphic_Mode->setChecked( tmp_vm->Get_Init_Graphic_Mode().Get_Enabled() );
-	ui.SB_InitGM_Width->setValue( tmp_vm->Get_Init_Graphic_Mode().Get_Width() );
-	ui.SB_InitGM_Height->setValue( tmp_vm->Get_Init_Graphic_Mode().Get_Height() );
-
-	switch( tmp_vm->Get_Init_Graphic_Mode().Get_Depth() )
-	{
-		case 8:
-			ui.CB_InitGM_Depth->setCurrentIndex( 0 );
-			break;
-
-		case 16:
-			ui.CB_InitGM_Depth->setCurrentIndex( 1 );
-			break;
-
-		case 24:
-			ui.CB_InitGM_Depth->setCurrentIndex( 2 );
-			break;
-
-		case 32:
-			ui.CB_InitGM_Depth->setCurrentIndex( 3 );
-			break;
-
-		default:
-			AQError( "void Main_Window::Update_VM_Ui()",
-					 "Initial Graphical Mode: Default Section!" );
-			ui.CB_InitGM_Depth->setCurrentIndex( 2 );
-			break;
-	}
+	// Hide deprecated display options removed in QEMU 11+
+	ui.CH_No_Frame->setVisible( false );
+	ui.CH_Alt_Grab->setVisible( false );
+	ui.CH_Portrait->setVisible( false );
+	ui.CH_Curses->setVisible( false );
+	ui.CH_Init_Graphic_Mode->setVisible( false );
+	ui.Initial_Graphical_Mode_Widget->setVisible( false );
 
 	// Other tab
 	ui.CH_Use_Linux_Boot->setChecked( tmp_vm->Get_Use_Linux_Boot() );
@@ -2187,9 +2093,6 @@ void Main_Window::Update_Disabled_Controls()
 	if( curComp.PSO_Boot_Order ) ui.TB_Show_Boot_Settings_Window->setEnabled( true );
 	else ui.TB_Show_Boot_Settings_Window->setEnabled( false );
 
-	if( curComp.PSO_Initial_Graphic_Mode ) ui.CH_Init_Graphic_Mode->setEnabled( true );
-	else ui.CH_Init_Graphic_Mode->setEnabled( false );
-
 	if( curComp.PSO_No_FB_Boot_Check ) ui_ao.CH_FDD_Boot->setEnabled( true );
 	else ui_ao.CH_FDD_Boot->setEnabled( false );
 
@@ -2217,24 +2120,6 @@ void Main_Window::Update_Disabled_Controls()
 	//if( curComp.PSO_Name )
 	//else
 
-	if( curComp.PSO_Curses ) ui.CH_Curses->setEnabled( true );
-	else ui.CH_Curses->setEnabled( false );
-
-	if( curComp.PSO_No_Frame ) ui.CH_No_Frame->setEnabled( true );
-	else ui.CH_No_Frame->setEnabled( false );
-
-	if( curComp.PSO_Alt_Grab ) ui.CH_Alt_Grab->setEnabled( true );
-	else ui.CH_Alt_Grab->setEnabled( false );
-
-	if( curComp.PSO_No_Quit ) ui.CH_No_Quit->setEnabled( true );
-	else ui.CH_No_Quit->setEnabled( false );
-
-	//if( curComp.PSO_SDL )
-	//else
-
-	if( curComp.PSO_Portrait ) ui.CH_Portrait->setEnabled( true );
-	else ui.CH_Portrait->setEnabled( false );
-
 	if( curComp.PSO_No_Shutdown ) ui_ao.CH_No_Shutdown->setEnabled( true );
 	else ui_ao.CH_No_Shutdown->setEnabled( false );
 
@@ -2249,8 +2134,9 @@ void Main_Window::Update_Disabled_Controls()
 		ui_ao.DTE_Start_Date->setEnabled( false );
 	}
 
-	if( curComp.PSO_Show_Cursor ) ui.CH_Show_Cursor->setEnabled( true );
-	else ui.CH_Show_Cursor->setEnabled( false );
+	// CH_No_Quit and CH_Show_Cursor are always enabled (emit as -display suboptions)
+	// CH_Init_Graphic_Mode, CH_No_Frame, CH_Alt_Grab, CH_Portrait, CH_Curses
+	// were removed in QEMU 11+ and are hidden via setVisible(false) above.
 
 	//if( curComp.PSO_Bootp )
 	//else
@@ -4155,6 +4041,8 @@ void Main_Window::on_actionCreate_Shell_Script_triggered()
 	QString pinning = cur_vm->Get_CPU_Pinning();
 	if ( !pinning.isEmpty() )
 		script_code += "taskset -c " + pinning + " ";
+	if ( cur_vm->Use_Prevent_Host_Sleep() )
+		script_code += "systemd-inhibit --what=sleep:idle --who=AQEMU --why=\"VM is running\" ";
 	script_code += Get_Current_Binary_Name();
 	QStringList all_args = cur_vm->Build_QEMU_Args_For_Script();
 
