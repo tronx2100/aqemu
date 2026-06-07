@@ -42,6 +42,7 @@ class SPICE_Settings_Widget: public QWidget
 	private slots:
 		void on_TB_Up_clicked();
 		void on_TB_Down_clicked();
+		void on_TB_SPICE_x509_Browse_clicked();
 		
 	signals:
 		void State_Changed();

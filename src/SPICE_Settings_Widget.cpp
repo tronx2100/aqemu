@@ -21,6 +21,8 @@
 ****************************************************************************/
 
 #include <QApplication>
+#include <QDir>
+#include <QFileDialog>
 
 #include "SPICE_Settings_Widget.h"
 #include "QListWidgetItem"
@@ -58,6 +60,12 @@ SPICE_Settings_Widget::SPICE_Settings_Widget( QWidget *parent )
 	
 	connect( ui.RB_No_Password, SIGNAL(toggled(bool)), this, SIGNAL(State_Changed()) );
 	connect( ui.Edit_Password, SIGNAL(textChanged(const QString &)), this, SIGNAL(State_Changed()) );
+	
+	connect( ui.CH_SPICE_x509, SIGNAL(clicked()), this, SIGNAL(State_Changed()) );
+	connect( ui.Edit_SPICE_x509_Dir, SIGNAL(textChanged(const QString &)), this, SIGNAL(State_Changed()) );
+	// Enable/disable x509 path fields based on checkbox
+	connect( ui.CH_SPICE_x509, SIGNAL(toggled(bool)), ui.Edit_SPICE_x509_Dir, SLOT(setEnabled(bool)) );
+	connect( ui.CH_SPICE_x509, SIGNAL(toggled(bool)), ui.TB_SPICE_x509_Browse, SLOT(setEnabled(bool)) );
 
 
     ui.scrollArea->setStyleSheet(R"(
@@ -70,7 +78,20 @@ QWidget#scrollAreaWidgetContents
         background: transparent;
     }
 )");
-    
+
+    // Hide deprecated SPICE options removed in QEMU 11+
+    // -qxl flag, renderer selector and QXL device count are no longer supported
+    ui.CH_Set_Renderer->setVisible( false );
+    ui.Renderer_Order_List->setVisible( false );
+    ui.TB_Up->setVisible( false );
+    ui.TB_Down->setVisible( false );
+
+    // Add tooltip note about TLS port requiring certificate files
+    ui.CH_SPICE_SPort->setToolTip( tr("TLS requires certificate files (server-cert.pem, server-key.pem).\n"
+                                      "Without them, SPICE will fail to initialize.\n"
+                                      "Place certs in ~/.aqemu/spice/ or use QEMU's -spice x509-* options.") );
+    ui.Edit_SPICE_SPort->setToolTip( tr("TLS port requires certificate files.\n"
+                                        "Use only if you have configured SPICE TLS certificates.") );
 }
 
 void SPICE_Settings_Widget::My_Set_Enabled(bool enabled)
@@ -174,6 +195,9 @@ const VM_SPICE &SPICE_Settings_Widget::Get_Settings( bool &settingsValidated )
 	spiceSettings.Use_Video_Stream_Compression( ui.CH_Use_Video_Compression->isChecked() );
 	spiceSettings.Use_Playback_Compression( ui.CH_Use_Playback_Compression->isChecked() );
 	
+	spiceSettings.Use_x509_Dir( ui.CH_SPICE_x509->isChecked() );
+	spiceSettings.Set_x509_Dir( ui.Edit_SPICE_x509_Dir->text() );
+	
 	spiceSettings.Use_Password( ! ui.RB_No_Password->isChecked() );
 	spiceSettings.Set_Password( ui.Edit_Password->text() );
 	
@@ -238,6 +262,12 @@ void SPICE_Settings_Widget::Set_Settings( const VM_SPICE &settings )
 	ui.CH_Use_Video_Compression->setChecked( settings.Use_Video_Stream_Compression() );
 	ui.CH_Use_Playback_Compression->setChecked( settings.Use_Playback_Compression() );
 	
+	ui.CH_SPICE_x509->setChecked( settings.Use_x509_Dir() );
+	ui.Edit_SPICE_x509_Dir->setText( settings.Get_x509_Dir() );
+	ui.Edit_SPICE_x509_Dir->setEnabled( settings.Use_x509_Dir() );
+	ui.TB_SPICE_x509_Browse->setEnabled( settings.Use_x509_Dir() );
+	
+	ui.RB_Use_Password->setChecked( settings.Use_Password() );
 	ui.RB_No_Password->setChecked( ! settings.Use_Password() );
 	ui.Edit_Password->setText( settings.Get_Password() );
 }
@@ -329,4 +359,14 @@ void SPICE_Settings_Widget::Show_Renderer_List( const QList<VM::SPICE_Renderer> 
 		tmpItem->setData( Qt::UserRole, list[ix] );
 		ui.Renderer_Order_List->addItem( tmpItem );
 	}
+}
+
+void SPICE_Settings_Widget::on_TB_SPICE_x509_Browse_clicked()
+{
+	QString dir = QFileDialog::getExistingDirectory( this, tr("Select SPICE TLS Certificate Directory"),
+													 ui.Edit_SPICE_x509_Dir->text().isEmpty()
+														? QDir::homePath()
+														: ui.Edit_SPICE_x509_Dir->text() );
+	if( ! dir.isEmpty() )
+		ui.Edit_SPICE_x509_Dir->setText( QDir::toNativeSeparators(dir) );
 }

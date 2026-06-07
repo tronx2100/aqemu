@@ -1257,6 +1257,13 @@ class VM_SPICE
 		bool Use_Playback_Compression() const;
 		void Use_Playback_Compression( bool use );
 		
+		// x509 TLS certificate options
+		bool Use_x509_Dir() const;
+		void Use_x509_Dir( bool use );
+		
+		QString Get_x509_Dir() const;
+		void Set_x509_Dir( QString path );
+		
 		// Security options
 		bool Use_Password() const;
 		void Use_Password( bool use );
@@ -1282,6 +1289,9 @@ class VM_SPICE
 		bool _Use_Renderer;
 		QList<VM::SPICE_Renderer> Renderer_List;
 		bool _Use_Playback_Compression;
+		
+		bool _Use_x509_Dir;
+		QString _x509_Dir;
 		
 		bool _Use_Password;
 		QString Password;

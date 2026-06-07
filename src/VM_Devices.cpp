@@ -4314,6 +4314,9 @@ VM_SPICE::VM_SPICE()
 				  << VM::SPICE_Renderer_oglpixmap;
 	_Use_Playback_Compression = true;
 	
+	_Use_x509_Dir = false;
+	_x509_Dir = "";
+	
 	_Use_Password = false;
 	Password = "";
 }
@@ -4334,6 +4337,8 @@ VM_SPICE::VM_SPICE( const VM_SPICE &vm_spice )
 	_Use_Renderer = vm_spice.Use_Renderer();
 	Renderer_List = vm_spice.Get_Renderer_List();
 	_Use_Playback_Compression = vm_spice.Use_Playback_Compression();
+	_Use_x509_Dir = vm_spice.Use_x509_Dir();
+	_x509_Dir = vm_spice.Get_x509_Dir();
 	_Use_Password = vm_spice.Use_Password();
 	Password = vm_spice.Get_Password();
 }
@@ -4354,6 +4359,8 @@ bool VM_SPICE::operator==( const VM_SPICE &vm_spice ) const
 		_Use_Renderer == vm_spice.Use_Renderer() &&
 		Renderer_List == vm_spice.Get_Renderer_List() &&
 		_Use_Playback_Compression == vm_spice.Use_Playback_Compression() &&
+		_Use_x509_Dir == vm_spice.Use_x509_Dir() &&
+		_x509_Dir == vm_spice.Get_x509_Dir() &&
 		_Use_Password == vm_spice.Use_Password() &&
 		Password == vm_spice.Get_Password() )
 	{
@@ -4528,6 +4535,26 @@ QString VM_SPICE::Get_Password() const
 void VM_SPICE::Set_Password( QString password )
 {
 	Password = password;
+}
+
+bool VM_SPICE::Use_x509_Dir() const
+{
+	return _Use_x509_Dir;
+}
+
+void VM_SPICE::Use_x509_Dir( bool use )
+{
+	_Use_x509_Dir = use;
+}
+
+QString VM_SPICE::Get_x509_Dir() const
+{
+	return _x509_Dir;
+}
+
+void VM_SPICE::Set_x509_Dir( QString path )
+{
+	_x509_Dir = path;
 }
 
 //===========================================================================
