@@ -374,6 +374,7 @@ void VFIO_PCI_Editor_Window::Populate_Table()
         existingConfigs[dr.Info.Address] = dr.Config;
 
     Device_Rows.clear();
+    QSet<QString> matchedAddresses;
     int visibleRow = 0;
 
     for ( int i = 0; i < All_Host_Devices.size(); i++ )
@@ -399,10 +400,13 @@ void VFIO_PCI_Editor_Window::Populate_Table()
         // Restore existing config for this device
         VM_PCI_Device cfg = existingConfigs.value( info.Address );
 
+        matchedAddresses.insert( info.Address );
+
         DeviceRow dr;
         dr.Row = visibleRow;
         dr.Info = info;
         dr.Config = cfg;
+        dr.Available = true;
         Device_Rows << dr;
 
         bool enabled = cfg.IsEnabled();
@@ -423,11 +427,47 @@ void VFIO_PCI_Editor_Window::Populate_Table()
         }
     }
 
+    // Add configured devices that are no longer present on the host
+    for ( auto it = existingConfigs.constBegin(); it != existingConfigs.constEnd(); ++it )
+    {
+        const QString &addr = it.key();
+        if ( matchedAddresses.contains( addr ) )
+            continue;
+
+        PCI_Host_Device stub;
+        stub.ShortAddress = Make_Address_Short( addr );
+        stub.Address = addr;
+        stub.Driver = "-";
+
+        DeviceRow dr;
+        dr.Row = visibleRow;
+        dr.Info = stub;
+        dr.Config = it.value();
+        dr.Config.SetEnabled( false );
+        dr.Available = false;
+        Device_Rows << dr;
+
+        Fill_Row( visibleRow, stub, false );
+        visibleRow++;
+
+        QWidget *cbWidget = Device_Table->cellWidget( dr.Row, 0 );
+        if ( cbWidget )
+        {
+            QCheckBox *cb = cbWidget->findChild<QCheckBox*>();
+            if ( cb )
+            {
+                connect( cb, &QCheckBox::toggled, this, [this, dr]( bool checked ) {
+                    on_Enabled_Check_Changed( dr.Row, checked );
+                });
+            }
+        }
+    }
+
     Device_Table->setRowCount( visibleRow );
     Updating_Table = false;
 }
 
-void VFIO_PCI_Editor_Window::Fill_Row( int row, const PCI_Host_Device &info, bool enabled )
+void VFIO_PCI_Editor_Window::Fill_Row( int row, const PCI_Host_Device &info, bool enabled, bool available )
 {
     // Col 0: enabled checkbox
     QWidget *cbWidget = new QWidget();
@@ -436,12 +476,16 @@ void VFIO_PCI_Editor_Window::Fill_Row( int row, const PCI_Host_Device &info, boo
     cbLayout->setAlignment( Qt::AlignCenter );
     QCheckBox *cb = new QCheckBox();
     cb->setChecked( enabled );
+    if ( available )
+        cb->setToolTip( tr("Enable passthrough for this device") );
+    else
+        cb->setToolTip( tr("Device not found – uncheck to remove from configuration") );
     cbLayout->addWidget( cb );
     Device_Table->setCellWidget( row, 0, cbWidget );
 
     // Col 1: IOMMU Group
     QTableWidgetItem *iommuItem = new QTableWidgetItem();
-    if ( info.IOMMUGroup >= 0 )
+    if ( available && info.IOMMUGroup >= 0 )
         iommuItem->setText( QString::number( info.IOMMUGroup ) );
     else
         iommuItem->setText( "-" );
@@ -449,10 +493,15 @@ void VFIO_PCI_Editor_Window::Fill_Row( int row, const PCI_Host_Device &info, boo
     iommuItem->setFlags( Qt::ItemIsEnabled | Qt::ItemIsSelectable );
     Device_Table->setItem( row, 1, iommuItem );
 
-    // Col 2: Status LED (green if alone in group, yellow if shared)
+    // Col 2: Status LED (red = unavailable, green = alone, yellow = shared)
     QColor ledColor;
     QString tooltip;
-    if ( info.AloneInGroup )
+    if ( !available )
+    {
+        ledColor = QColor( 200, 40, 40 ); // red
+        tooltip = tr("Device not found on host");
+    }
+    else if ( info.AloneInGroup )
     {
         ledColor = QColor( 0, 160, 0 );   // dark green
         tooltip = tr("Device is alone in its IOMMU group (safe for passthrough)");
@@ -490,15 +539,23 @@ void VFIO_PCI_Editor_Window::Fill_Row( int row, const PCI_Host_Device &info, boo
     Device_Table->setItem( row, 3, addrItem );
 
     // Col 4: Device Name
-    QString devName = info.DeviceName;
-    if ( devName.isEmpty() )
+    QString devName;
+    if ( !available )
+        devName = tr("(not available)");
+    else if ( !info.DeviceName.isEmpty() )
+        devName = info.DeviceName;
+    else
         devName = QString( "PCI Device %1:%2" ).arg( info.VendorID, info.DeviceID );
     QTableWidgetItem *nameItem = new QTableWidgetItem( devName );
     nameItem->setFlags( Qt::ItemIsEnabled | Qt::ItemIsSelectable );
     Device_Table->setItem( row, 4, nameItem );
 
     // Col 5: Vendor:Device ID
-    QString idStr = QString( "%1:%2" ).arg( info.VendorID, info.DeviceID );
+    QString idStr;
+    if ( available )
+        idStr = QString( "%1:%2" ).arg( info.VendorID, info.DeviceID );
+    else
+        idStr = "-";
     QTableWidgetItem *idItem = new QTableWidgetItem( idStr );
     idItem->setTextAlignment( Qt::AlignCenter );
     idItem->setFlags( Qt::ItemIsEnabled | Qt::ItemIsSelectable );
@@ -510,17 +567,20 @@ void VFIO_PCI_Editor_Window::Fill_Row( int row, const PCI_Host_Device &info, boo
     typeCombo->addItem( tr("Audio"), "audio" );
     typeCombo->addItem( tr("VGA"),   "vga" );
     typeCombo->addItem( tr("USB"),   "usb" );
-    // Detect from class
-    if      ( pciClassTop( info.ClassID, 0x03 ) ) typeCombo->setCurrentIndex( 2 ); // VGA
-    else if ( pciClassTop( info.ClassID, 0x04 ) ) typeCombo->setCurrentIndex( 1 ); // Audio
-    else if ( pciClassTop( info.ClassID, 0x0C ) )
+    typeCombo->setEnabled( available );
+    if ( available )
     {
-        quint32 classVal = info.ClassID.toUInt( nullptr, 16 );
-        quint16 sub = classVal & 0xFFFF;
-        if ( ( sub & 0xFF00 ) == 0x0300 ) typeCombo->setCurrentIndex( 3 ); // USB
-        else                               typeCombo->setCurrentIndex( 0 ); // Other
+        if      ( pciClassTop( info.ClassID, 0x03 ) ) typeCombo->setCurrentIndex( 2 ); // VGA
+        else if ( pciClassTop( info.ClassID, 0x04 ) ) typeCombo->setCurrentIndex( 1 ); // Audio
+        else if ( pciClassTop( info.ClassID, 0x0C ) )
+        {
+            quint32 classVal = info.ClassID.toUInt( nullptr, 16 );
+            quint16 sub = classVal & 0xFFFF;
+            if ( ( sub & 0xFF00 ) == 0x0300 ) typeCombo->setCurrentIndex( 3 ); // USB
+            else                               typeCombo->setCurrentIndex( 0 ); // Other
+        }
+        else                                         typeCombo->setCurrentIndex( 0 ); // Other
     }
-    else                                         typeCombo->setCurrentIndex( 0 ); // Other
     int captureRow = row;
     connect( typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
              this, [this, captureRow]( int idx ) {
@@ -540,6 +600,8 @@ void VFIO_PCI_Editor_Window::Fill_Row( int row, const PCI_Host_Device &info, boo
 
 void VFIO_PCI_Editor_Window::Set_PCI_Devices( const QList<VM_PCI_Device> &devices )
 {
+    QSet<QString> matchedAddresses;
+
     // Merge existing config into our device rows
     for ( int r = 0; r < Device_Rows.size(); r++ )
     {
@@ -548,9 +610,31 @@ void VFIO_PCI_Editor_Window::Set_PCI_Devices( const QList<VM_PCI_Device> &device
             if ( Device_Rows[r].Info.ShortAddress == devices[d].Get_Host_Address() )
             {
                 Device_Rows[r].Config = devices[d];
+                matchedAddresses.insert( devices[d].Get_Host_Address() );
                 break;
             }
         }
+    }
+
+    // Add persisted devices that are no longer present on the host
+    for ( int d = 0; d < devices.size(); d++ )
+    {
+        const QString &addr = devices[d].Get_Host_Address();
+        if ( matchedAddresses.contains( addr ) )
+            continue;
+
+        PCI_Host_Device stub;
+        stub.ShortAddress = Make_Address_Short( addr );
+        stub.Address = addr;
+        stub.Driver = "-";
+
+        DeviceRow dr;
+        dr.Row = Device_Rows.size();
+        dr.Info = stub;
+        dr.Config = devices[d];
+        dr.Config.SetEnabled( false );
+        dr.Available = false;
+        Device_Rows << dr;
     }
 
     // Restore manual order by sorting on bus number (root.1, root.2, …)
@@ -652,7 +736,7 @@ void VFIO_PCI_Editor_Window::Rebuild_Table_From_Rows()
     for ( int i = 0; i < Device_Rows.size(); i++ )
     {
         Device_Rows[i].Row = i;
-        Fill_Row( i, Device_Rows[i].Info, Device_Rows[i].Config.IsEnabled() );
+        Fill_Row( i, Device_Rows[i].Info, Device_Rows[i].Config.IsEnabled(), Device_Rows[i].Available );
 
         QWidget *cbWidget = Device_Table->cellWidget( i, 0 );
         if ( cbWidget )
@@ -788,7 +872,11 @@ void VFIO_PCI_Editor_Window::Update_Flag_UI( int row )
     VM_PCI_Device &cfg = Device_Rows[row].Config;
     const PCI_Host_Device &info = Device_Rows[row].Info;
 
-    if ( !cfg.IsEnabled() )
+    if ( !Device_Rows[row].Available && !cfg.IsEnabled() )
+    {
+        // Unavailable and disabled – show flags readonly to allow inspection before removal
+    }
+    else if ( !cfg.IsEnabled() )
     {
         Clear_Flag_UI();
         return;

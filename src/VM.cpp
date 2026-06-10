@@ -287,6 +287,7 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 	this->Portrait = vm.Use_Portrait();
 	this->Show_Cursor = vm.Use_Show_Cursor();
 	this->Curses = vm.Use_Curses();
+	this->OpenGL = vm.Use_OpenGL();
 	this->RTC_TD_Hack = vm.Use_RTC_TD_Hack();
 	this->No_Defaults = vm.Use_No_Defaults();
 	this->Display_Type = vm.Get_Display_Type();
@@ -514,6 +515,7 @@ void Virtual_Machine::Shared_Constructor()
 	Portrait = false;
 	Show_Cursor = false;
 	Curses = false;
+	OpenGL = false;
 	RTC_TD_Hack = false;
 	RTC_Use_Clock_RT = false;
 	No_Defaults = false;
@@ -633,6 +635,7 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
 		this->Portrait  == vm.Use_Portrait() &&
 		this->Show_Cursor == vm.Use_Show_Cursor() &&
 		this->Curses == vm.Use_Curses() &&
+		this->OpenGL == vm.Use_OpenGL() &&
 		this->RTC_TD_Hack == vm.Use_RTC_TD_Hack() &&
 		this->RTC_Use_Clock_RT == vm.Get_RTC_Use_Clock_RT() &&
 		this->No_Defaults == vm.Use_No_Defaults() &&
@@ -959,6 +962,7 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->Portrait = vm.Use_Portrait();
 	this->Show_Cursor = vm.Use_Show_Cursor();
 	this->Curses = vm.Use_Curses();
+	this->OpenGL = vm.Use_OpenGL();
 	this->RTC_TD_Hack = vm.Use_RTC_TD_Hack();
 	this->No_Defaults = vm.Use_No_Defaults();
 	this->Display_Type = vm.Get_Display_Type();
@@ -3393,6 +3397,17 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 	
 	Dom_Element.appendChild( Dom_Text );
 
+	// Use_OpenGL (gl=on for -display)
+	Dom_Element = New_Dom_Document.createElement( "Use_OpenGL" );
+	VM_Element.appendChild( Dom_Element );
+
+	if( OpenGL )
+		Dom_Text = New_Dom_Document.createTextNode( "true" );
+	else
+		Dom_Text = New_Dom_Document.createTextNode( "false" );
+
+	Dom_Element.appendChild( Dom_Text );
+
 	// Display Type
 	Dom_Element = New_Dom_Document.createElement( "Display_Type" );
 	VM_Element.appendChild( Dom_Element );
@@ -5114,6 +5129,9 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 			// Curses
 			Curses = (Child_Element.firstChildElement("Curses").text() == "true");
 
+			// Use_OpenGL
+			OpenGL = (Child_Element.firstChildElement("Use_OpenGL").text() == "true");
+
 		// Display Type
 		Display_Type = Child_Element.firstChildElement( "Display_Type" ).text();
 
@@ -6067,6 +6085,14 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	{
 		Args << "-device" << "virtio-gpu";
 	}
+	else if( Video_Card == "virtio-gpu-gl" )
+	{
+		Args << "-device" << "virtio-gpu-gl";
+	}
+	else if( Video_Card == "virtio-vga-gl" )
+	{
+		Args << "-device" << "virtio-vga-gl";
+	}
 	else if( ! Video_Card.isEmpty() )
 	{
 		Args << "-vga" << Video_Card;
@@ -6191,6 +6217,8 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 			QStringList subOpts;
 			if( Show_Cursor ) subOpts << "show-cursor=on";
 			if( No_Quit )    subOpts << "window-close=off";
+			if( OpenGL && ( displayType == "gtk" || displayType == "sdl" ) )
+				subOpts << "gl=on";
 
 			QString displayArg = displayType;
 			if( !subOpts.isEmpty() )
@@ -9959,6 +9987,16 @@ void Virtual_Machine::Use_Show_Cursor( bool use )
 	Show_Cursor = use;
 }
 
+bool Virtual_Machine::Use_OpenGL() const
+{
+	return OpenGL;
+}
+
+void Virtual_Machine::Use_OpenGL( bool use )
+{
+	OpenGL = use;
+}
+
 bool Virtual_Machine::Use_Curses() const
 {
 	return Curses;
@@ -11775,6 +11813,7 @@ QString Virtual_Machine::GenerateHTMLInfoText(int info_mode)
         Settings.value("Info/Portrait", "no").toString() == "yes" ||
         Settings.value("Info/Curses", "no").toString() == "yes" ||
         Settings.value("Info/Show_Cursor", "no").toString() == "yes" ||
+        Settings.value("Info/Use_OpenGL", "no").toString() == "yes" ||
         (Settings.value("Info/Init_Graphical_Mode", "no").toString() == "yes" && Get_Init_Graphic_Mode().Get_Enabled() ) )
         && ! soph.preview )
     {
@@ -11954,6 +11993,18 @@ QString Virtual_Machine::GenerateHTMLInfoText(int info_mode)
             cell = table->cellAt( table->rows()-1, 2 );
             cell_cursor = cell.firstCursorPosition();
             cell_cursor.insertText( Use_Show_Cursor() ? tr("Yes") : tr("No"), format );
+            table->insertRows( table->rows(), 1 );
+        }
+
+        if( Settings.value("Info/Use_OpenGL", "no").toString() == "yes" )
+        {
+            cell = table->cellAt( table->rows()-1, 1 );
+            cell_cursor = cell.firstCursorPosition();
+            cell_cursor.insertText( tr("OpenGL (gl=on):"), format );
+
+            cell = table->cellAt( table->rows()-1, 2 );
+            cell_cursor = cell.firstCursorPosition();
+            cell_cursor.insertText( Use_OpenGL() ? tr("Yes") : tr("No"), format );
             table->insertRows( table->rows(), 1 );
         }
 

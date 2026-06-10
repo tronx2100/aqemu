@@ -430,6 +430,9 @@ class Virtual_Machine: public QObject
 		bool Use_Curses() const;
 		void Use_Curses( bool use );
 
+		bool Use_OpenGL() const;
+		void Use_OpenGL( bool use );
+
 		const QList<VM_PCI_Device> &Get_PCI_Devices() const;
 		void Set_PCI_Devices( const QList<VM_PCI_Device> &devices );
 
@@ -698,6 +701,7 @@ class Virtual_Machine: public QObject
 		bool Portrait;
 		bool Show_Cursor;
 		bool Curses;
+		bool OpenGL;
 		bool RTC_TD_Hack;
 		bool RTC_Use_Clock_RT;
 		bool No_Defaults;

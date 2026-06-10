@@ -136,6 +136,7 @@ Advanced_Settings_Window::Advanced_Settings_Window( QWidget *parent )
 	ui.CH_Portrait->setChecked( Settings.value("Info/Portrait", "no").toString() == "yes" );
 	ui.CH_Curses->setChecked( Settings.value("Info/Curses", "no").toString() == "yes" );
 	ui.CH_Show_Cursor->setChecked( Settings.value("Info/Show_Cursor", "no").toString() == "yes" );
+	ui.CH_Use_OpenGL->setChecked( Settings.value("Info/Use_OpenGL", "no").toString() == "yes" );
 	ui.CH_Init_Graphical_Mode->setChecked( Settings.value("Info/Init_Graphical_Mode", "no").toString() == "yes" );
 	
 	ui.CH_ROM_File->setChecked( Settings.value("Info/ROM_File", "no").toString() == "yes" );
@@ -553,6 +554,7 @@ void Advanced_Settings_Window::done(int r)
 	    Settings.setValue( "Info/Portrait", ui.CH_Portrait->isChecked() ? "yes" : "no" );
 	    Settings.setValue( "Info/Curses", ui.CH_Curses->isChecked() ? "yes" : "no" );
 	    Settings.setValue( "Info/Show_Cursor", ui.CH_Show_Cursor->isChecked() ? "yes" : "no" );
+	    Settings.setValue( "Info/Use_OpenGL", ui.CH_Use_OpenGL->isChecked() ? "yes" : "no" );
 	    Settings.setValue( "Info/Init_Graphical_Mode", ui.CH_Init_Graphical_Mode->isChecked() ? "yes" : "no" );
 	
 	    Settings.setValue( "Info/ROM_File", ui.CH_ROM_File->isChecked() ? "yes" : "no" );

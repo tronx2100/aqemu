@@ -925,6 +925,10 @@ const QMap<QString, Available_Devices> Main_Window::Get_Devices_Info( bool *ok )
 				devices.Video_Card_List[ix].Caption = tr("Virtio VGA (-device virtio-vga)");
 			else if( name == "virtio-gpu" )
 				devices.Video_Card_List[ix].Caption = tr("Virtio GPU (-device virtio-gpu)");
+			else if( name == "virtio-gpu-gl" )
+				devices.Video_Card_List[ix].Caption = tr("Virtio GPU with GL (virgl)");
+			else if( name == "virtio-vga-gl" )
+				devices.Video_Card_List[ix].Caption = tr("Virtio VGA with GL (virgl)");
 			else if( name == "xenfb" )
 				devices.Video_Card_List[ix].Caption = tr("Xen framebuffer");
 			else if( name == "tcx" )
@@ -937,6 +941,8 @@ const QMap<QString, Available_Devices> Main_Window::Get_Devices_Info( bool *ok )
 
 		ensure_video_card( tr("Virtio VGA (-device virtio-vga)"), "virtio-vga" );
 		ensure_video_card( tr("Virtio GPU (-device virtio-gpu)"), "virtio-gpu" );
+		ensure_video_card( tr("Virtio GPU with GL (virgl)"), "virtio-gpu-gl" );
+		ensure_video_card( tr("Virtio VGA with GL (virgl)"), "virtio-vga-gl" );
 		ensure_video_card( tr("No Graphics"), "-nographic" );
 	};
 
@@ -1313,6 +1319,8 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 	tmp_vm->Use_No_Quit( ui.CH_No_Quit->isChecked() );
 	// Show cursor (emitted as -display show-cursor=on)
 	tmp_vm->Use_Show_Cursor( ui.CH_Show_Cursor->isChecked() );
+	// OpenGL acceleration (emitted as -display gl=on)
+	tmp_vm->Use_OpenGL( ui.CH_Use_OpenGL->isChecked() );
 
 	// Display Type
 	{
@@ -1861,6 +1869,8 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 
 	// Show_Cursor
 	ui.CH_Show_Cursor->setChecked( tmp_vm->Use_Show_Cursor() );
+	// OpenGL acceleration
+	ui.CH_Use_OpenGL->setChecked( tmp_vm->Use_OpenGL() );
 
 	// Hide deprecated display options removed in QEMU 11+
 	ui.CH_No_Frame->setVisible( false );

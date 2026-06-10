@@ -2215,20 +2215,30 @@
                   </property>
                  </widget>
                 </item>
-                <item>
-                 <widget class="QCheckBox" name="CH_Show_Cursor">
-                  <property name="text">
-                   <string>Show cursor (It works only in QEMU SDL window)</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="CH_Init_Graphic_Mode">
-                  <property name="text">
-                   <string>Initial graphical mode</string>
-                  </property>
-                 </widget>
-                </item>
+                 <item>
+                  <widget class="QCheckBox" name="CH_Show_Cursor">
+                   <property name="text">
+                    <string>Show cursor (It works only in QEMU SDL window)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="CH_Use_OpenGL">
+                   <property name="text">
+                    <string>OpenGL acceleration (gl=on, requires virtio-gpu-gl / virtio-vga-gl)</string>
+                   </property>
+                   <property name="toolTip">
+                    <string>Enable GL acceleration for the display backend (adds gl=on to -display). Requires virtio-gpu-gl or virtio-vga-gl as graphics card.</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="CH_Init_Graphic_Mode">
+                   <property name="text">
+                    <string>Initial graphical mode</string>
+                   </property>
+                  </widget>
+                 </item>
                 <item>
                  <widget class="QWidget" name="Initial_Graphical_Mode_Widget" native="true">
                   <layout class="QHBoxLayout" name="horizontalLayout_9">

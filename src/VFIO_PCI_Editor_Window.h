@@ -51,12 +51,12 @@ private:
         PCI_Host_Device Info;
         VM_PCI_Device Config;
 
-        bool MatchesAll;
+        bool Available;
     };
 
     void Refresh_Device_List();
     void Populate_Table();
-    void Fill_Row( int row, const PCI_Host_Device &info, bool enabled );
+    void Fill_Row( int row, const PCI_Host_Device &info, bool enabled, bool available = true );
     void Update_Flag_UI( int row );
     void Clear_Flag_UI();
     QString Make_Address_Short( const QString &fullAddr ) const;

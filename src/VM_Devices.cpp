@@ -482,9 +482,13 @@ bool Emulator::Load( const QString &path )
 					tmpDev.Video_Card_List[vx].Caption = QObject::tr("Virtio VGA (-vga virtio)");
 				else if( name == "virtio-vga" )
 					tmpDev.Video_Card_List[vx].Caption = QObject::tr("Virtio VGA (-device virtio-vga)");
-				else if( name == "virtio-gpu" )
-					tmpDev.Video_Card_List[vx].Caption = QObject::tr("Virtio GPU (-device virtio-gpu)");
-				else if( name == "xenfb" )
+			else if( name == "virtio-gpu" )
+				tmpDev.Video_Card_List[vx].Caption = QObject::tr("Virtio GPU (-device virtio-gpu)");
+			else if( name == "virtio-gpu-gl" )
+				tmpDev.Video_Card_List[vx].Caption = QObject::tr("Virtio GPU with GL (virgl)");
+			else if( name == "virtio-vga-gl" )
+				tmpDev.Video_Card_List[vx].Caption = QObject::tr("Virtio VGA with GL (virgl)");
+			else if( name == "xenfb" )
 					tmpDev.Video_Card_List[vx].Caption = QObject::tr("Xen framebuffer");
 				else if( name == "tcx" )
 					tmpDev.Video_Card_List[vx].Caption = QObject::tr("Sun TCX");
@@ -506,6 +510,8 @@ bool Emulator::Load( const QString &path )
 
 			append_video_card( QObject::tr("Virtio VGA (-device virtio-vga)"), "virtio-vga" );
 			append_video_card( QObject::tr("Virtio GPU (-device virtio-gpu)"), "virtio-gpu" );
+			append_video_card( QObject::tr("Virtio GPU with GL (virgl)"), "virtio-gpu-gl" );
+			append_video_card( QObject::tr("Virtio VGA with GL (virgl)"), "virtio-vga-gl" );
 			append_video_card( QObject::tr("No Graphics"), "-nographic" );
 
 			// Preserve compatibility with older saved emulator definitions by adding

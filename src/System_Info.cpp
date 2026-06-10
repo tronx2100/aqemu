@@ -582,6 +582,8 @@ bool System_Info::Update_VM_Computers_List()
 	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("QXL"), "qxl" );
 	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Virtio VGA (-vga virtio)"), "virtio" );
 	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Virtio VGA (-device virtio-vga)"), "virtio-vga" );
+	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Virtio GPU with GL (virgl)"), "virtio-gpu-gl" );
+	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Virtio VGA with GL (virgl)"), "virtio-vga-gl" );
 	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Xen framebuffer"), "xenfb" );
 	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Sun TCX"), "tcx" );
 	QEMU_Video_Cards_v0_10_0 << Device_Map( QObject::tr("Sun cg3"), "cg3" );
@@ -1962,6 +1964,8 @@ Available_Devices System_Info::Get_Emulator_Info( const QString &path, bool *ok,
 		tmp_dev.Video_Card_List.prepend( Device_Map( QObject::tr("Default"), "" ) );
 	append_video_card( QObject::tr("Virtio VGA (device)"), "virtio-vga" );
 	append_video_card( QObject::tr("Virtio GPU (device)"), "virtio-gpu" );
+	append_video_card( QObject::tr("Virtio GPU with GL (virgl)"), "virtio-gpu-gl" );
+	append_video_card( QObject::tr("Virtio VGA with GL (virgl)"), "virtio-vga-gl" );
 	append_video_card( QObject::tr("No Graphics"), "-nographic" );
 	
 	// Get Audio Cards Models
