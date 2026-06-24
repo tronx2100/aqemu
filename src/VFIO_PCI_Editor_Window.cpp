@@ -411,6 +411,14 @@ void VFIO_PCI_Editor_Window::Populate_Table()
 
         bool enabled = cfg.IsEnabled();
         Fill_Row( visibleRow, info, enabled );
+
+        // For newly discovered devices (no saved config), auto-apply VGA defaults
+        if ( !existingConfigs.contains( info.Address ) && pciClassTop( info.ClassID, 0x03 ) )
+        {
+            Device_Rows.last().Config.Set_XVGA( true );
+            Device_Rows.last().Config.Set_Multifunction( true );
+        }
+
         visibleRow++;
 
         // connect enabled checkbox

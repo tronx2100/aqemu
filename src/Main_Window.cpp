@@ -4060,6 +4060,9 @@ void Main_Window::on_actionCreate_Shell_Script_triggered()
 
 	script_code = script_code.remove( "-monitor stdio" );
 
+	// "$@" placed at end of QEMU line so script args pass to QEMU, not after after-command
+	script_code += " \"$@\"";
+
 	if( incl_after && ! after_cmd.isEmpty() )
 		script_code += "\n\n# Execute after QEMU exit\n" + after_cmd;
 
@@ -4090,7 +4093,7 @@ void Main_Window::on_actionCreate_Shell_Script_triggered()
 		}
 
 		QTextStream out( &scriptFile );
-		out << script_code << " \"$@\"\n";
+		out << script_code << "\n";
 		
 		// Set File Permissions
 		scriptFile.setPermissions( scriptFile.permissions() | QFile::ExeOwner | QFile::ExeUser );
