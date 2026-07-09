@@ -10441,16 +10441,6 @@ void Virtual_Machine::QEMU_Started()
 		emit Loading_Complete();
 	}
 	
-	if( ! Settings.value("Run_Before_QEMU", "").toString().isEmpty() )
-	{
-		QProcess *before_proc = new QProcess();
-#ifndef Q_OS_WIN32
-		before_proc->start( "/bin/sh", QStringList() << "-c" << Settings.value("Run_Before_QEMU", "").toString() );
-#else
-		before_proc->start( "cmd.exe", QStringList() << "/C" << Settings.value("Run_Before_QEMU", "").toString() );
-#endif
-	}
-	
 	// Connect monitor?
 	#ifndef Q_OS_WIN32
 	if( Use_Monitor_TCP == true )
