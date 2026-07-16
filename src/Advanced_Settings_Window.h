@@ -108,9 +108,10 @@ class Advanced_Settings_Window: public QDialog
 
 		// Hub auto-detect state
 		QTimer       *Hotplug_Detect_Timer;
-		QStringList   Hotplug_Detect_KnownKernels; // snapshot before detect
+		QStringList   Hotplug_Detect_KnownKernels;  // kernel name snapshot
+		QStringList   Hotplug_Detect_KnownVidPids;  // VID:PID snapshot (reconnect guard)
 		int           Hotplug_Detect_SecondsLeft;
-		bool          Hotplug_Detect_FoundNew;     // new hub was seen, 10s cooldown running
+		bool          Hotplug_Detect_FoundNew;       // new hub was seen, 10s cooldown running
 
 		void Setup_Hotplug_Tab();
 		QList<UsbHubGroup> Scan_USB_Hubs();

@@ -1104,7 +1104,7 @@ void Advanced_Settings_Window::Setup_Hotplug_Tab()
 	hubBtnLayout->addWidget( scanBtn );
 
 	Hotplug_Detect_Btn = new QPushButton( tr("Detect Hub") );
-	Hotplug_Detect_Btn->setToolTip( tr("Click, then plug in your hub. It will be detected and selected automatically.") );
+	Hotplug_Detect_Btn->setToolTip( tr("First unplug your hub, then click this button, then plug the hub back in. It will be detected and selected automatically.") );
 	connect( Hotplug_Detect_Btn, &QPushButton::clicked, this, &Advanced_Settings_Window::on_Hotplug_Detect_clicked );
 	hubBtnLayout->addWidget( Hotplug_Detect_Btn );
 
@@ -1272,8 +1272,24 @@ QStringList Advanced_Settings_Window::Current_Hub_Kernels()
 		if( entry.contains(':') ) continue;
 		QString base = QString("/sys/bus/usb/devices/%1").arg(entry);
 		if( read_sysfs(base + "/bDeviceClass") != "09" ) continue;
-		if( read_sysfs(base + "/devnum") == "1" ) continue; // root hub
+		if( read_sysfs(base + "/devnum") == "1" ) continue;
 		result << entry;
+	}
+	return result;
+}
+
+// Gibt alle bekannten Hub-VID:PID-Kombinationen zurück (für Reconnect-Erkennung)
+static QStringList Current_Hub_VidPids()
+{
+	QStringList result;
+	QDir sysfs( "/sys/bus/usb/devices" );
+	for( const QString &entry : sysfs.entryList(QDir::Dirs | QDir::NoDotAndDotDot) )
+	{
+		if( entry.contains(':') ) continue;
+		QString base = QString("/sys/bus/usb/devices/%1").arg(entry);
+		if( read_sysfs(base + "/bDeviceClass") != "09" ) continue;
+		if( read_sysfs(base + "/devnum") == "1" ) continue;
+		result << read_sysfs(base + "/idVendor") + ":" + read_sysfs(base + "/idProduct");
 	}
 	return result;
 }
@@ -1289,13 +1305,15 @@ void Advanced_Settings_Window::on_Hotplug_Detect_clicked()
 		return;
 	}
 
-	// Snapshot der aktuell bekannten Hubs
+	// Frischer Scan als Snapshot — erfasst alles was gerade eingesteckt ist
+	on_Hotplug_Scan_clicked();
 	Hotplug_Detect_KnownKernels = Current_Hub_Kernels();
+	Hotplug_Detect_KnownVidPids = Current_Hub_VidPids();
 	Hotplug_Detect_SecondsLeft  = 60;
 	Hotplug_Detect_FoundNew     = false;
 
 	Hotplug_Detect_Btn->setText( tr("Cancel") );
-	Hotplug_Detect_Label->setText( tr("Plug in your hub now...  60s") );
+	Hotplug_Detect_Label->setText( tr("⚠ Make sure the hub is UNPLUGGED, then plug it in now...  60s") );
 	Hotplug_Detect_Timer->start();
 }
 
@@ -1303,11 +1321,17 @@ void Advanced_Settings_Window::on_Hotplug_Detect_Tick()
 {
 	QStringList current = Current_Hub_Kernels();
 
-	// Neue Hubs seit Snapshot
+	// Neue Hubs seit Snapshot — nur wenn VID:PID auch wirklich neu ist
+	// (verhindert Fehldetektionen wenn Parent-Hub kurz resettet und Kernel-Name wechselt)
 	QStringList newKernels;
 	for( const QString &k : current )
-		if( !Hotplug_Detect_KnownKernels.contains(k) )
-			newKernels << k;
+	{
+		if( Hotplug_Detect_KnownKernels.contains(k) ) continue;
+		QString base = QString("/sys/bus/usb/devices/%1").arg(k);
+		QString vidpid = read_sysfs(base + "/idVendor") + ":" + read_sysfs(base + "/idProduct");
+		if( Hotplug_Detect_KnownVidPids.contains(vidpid) ) continue; // Reconnect, kein neues Gerät
+		newKernels << k;
+	}
 
 	if( !newKernels.isEmpty() && !Hotplug_Detect_FoundNew )
 	{
@@ -1465,7 +1489,7 @@ void Advanced_Settings_Window::on_Hotplug_Install_clicked()
 		"        VENDOR=$(cat /sys/bus/usb/devices/$KERNEL/idVendor 2>/dev/null)\n"
 		"        PRODUCT=$(cat /sys/bus/usb/devices/$KERNEL/idProduct 2>/dev/null)\n"
 		"        if [ -n \"$VENDOR\" ] && [ -n \"$PRODUCT\" ]; then\n"
-		"            printf 'device_add usb-host,vendorid=0x%s,productid=0x%s,id=hotplug-%s\\n' \\\n"
+		"            printf 'device_add usb-host,bus=xhci.0,vendorid=0x%s,productid=0x%s,id=hotplug-%s\\n' \\\n"
 		"                \"$VENDOR\" \"$PRODUCT\" \"$KERNEL\" \\\n"
 		"                | socat - UNIX-CONNECT:\"$MONITOR\" 2>/dev/null\n"
 		"        fi\n"
@@ -1516,7 +1540,7 @@ void Advanced_Settings_Window::on_Hotplug_Install_clicked()
 	startScript += "                [ -n \"$DRV\" ] && echo \"$IFACE\" > /sys/bus/usb/drivers/$DRV/unbind 2>/dev/null\n";
 	startScript += "            done\n";
 	startScript += "        fi\n";
-	startScript += "        printf 'device_add usb-host,vendorid=0x%s,productid=0x%s,id=hotplug-%s\\n' \\\n";
+	startScript += "        printf 'device_add usb-host,bus=xhci.0,vendorid=0x%s,productid=0x%s,id=hotplug-%s\\n' \\\n";
 	startScript += "            \"$VENDOR\" \"$PRODUCT\" \"$KNAME\" \\\n";
 	startScript += "            | socat - UNIX-CONNECT:\"$MONITOR\" 2>/dev/null\n";
 	startScript += "    done\n";
