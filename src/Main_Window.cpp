@@ -206,6 +206,17 @@ Main_Window::Main_Window( QWidget *parent )
 	}
 	connect( CH_Prevent_Host_Sleep, SIGNAL(clicked()), this, SLOT(VM_Changed()) );
 
+	// --- Dynamic USB Hotplug checkbox ---
+	CH_Dynamic_Hotplug = new QCheckBox( tr("Dynamic USB &Hotplug (udev rule required)") );
+	CH_Dynamic_Hotplug->setToolTip( tr("Pass USB devices connected to the configured hub dynamically to this VM.\n"
+	                                   "Requires the udev rule to be set up in Configure → Dynamic Hotplug.") );
+	if( optGrid )
+	{
+		int optRow = optGrid->rowCount();
+		optGrid->addWidget( CH_Dynamic_Hotplug, optRow, 0, 1, 3 );
+	}
+	connect( CH_Dynamic_Hotplug, SIGNAL(clicked()), this, SLOT(VM_Changed()) );
+
 	// --- Hugepages memory backend widgets ---
 	QGridLayout *memGrid = qobject_cast<QGridLayout*>( ui.GB_Memory->layout() );
 	if( memGrid )
@@ -465,19 +476,33 @@ void Main_Window::closeEvent( QCloseEvent *event )
         return;
     }
 
-    // Run post-exit command once at AQEMU shutdown
+    // Run post-exit command once at AQEMU shutdown — but only if no VM is running
     {
-        QSettings settings;
-        QString after_cmd = settings.value("Run_After_QEMU", "").toString().trimmed();
-        if( ! after_cmd.isEmpty() )
+        bool any_running = false;
+        for( int vx = 0; vx < VM_List.count(); ++vx )
         {
-            QProcess after_proc;
+            VM::VM_State s = VM_List[vx]->Get_State();
+            if( s == VM::VMS_Running || s == VM::VMS_Pause )
+            {
+                any_running = true;
+                break;
+            }
+        }
+
+        if( ! any_running )
+        {
+            QSettings settings;
+            QString after_cmd = settings.value("Run_After_QEMU", "").toString().trimmed();
+            if( ! after_cmd.isEmpty() )
+            {
+                QProcess after_proc;
 #ifndef Q_OS_WIN32
-            after_proc.start( "/bin/sh", QStringList() << "-c" << after_cmd );
+                after_proc.start( "/bin/sh", QStringList() << "-c" << after_cmd );
 #else
-            after_proc.start( "cmd.exe", QStringList() << "/C" << after_cmd );
+                after_proc.start( "cmd.exe", QStringList() << "/C" << after_cmd );
 #endif
-            after_proc.waitForFinished( -1 );
+                after_proc.waitForFinished( -1 );
+            }
         }
     }
 
@@ -1190,6 +1215,7 @@ bool Main_Window::Create_VM_From_Ui( Virtual_Machine *tmp_vm, Virtual_Machine *o
 	tmp_vm->Use_ACPI( ui_ao.CH_ACPI->isChecked() );
 	tmp_vm->Use_Snapshot_Mode( ui.CH_Snapshot->isChecked() );
 	tmp_vm->Use_Prevent_Host_Sleep( CH_Prevent_Host_Sleep->isChecked() );
+	tmp_vm->Use_Dynamic_Hotplug( CH_Dynamic_Hotplug->isChecked() );
 	tmp_vm->Use_Start_CPU( ui_ao.CH_Start_CPU->isChecked() );
 	tmp_vm->Use_No_Reboot( ui_ao.CH_No_Reboot->isChecked() );
 	tmp_vm->Use_No_Shutdown( ui_ao.CH_No_Shutdown->isChecked() );
@@ -1788,6 +1814,7 @@ void Main_Window::Update_VM_Ui(bool update_info_tab)
 	ui_ao.CH_ACPI->setChecked( tmp_vm->Use_ACPI() );
 	ui.CH_Snapshot->setChecked( tmp_vm->Use_Snapshot_Mode() );
 	CH_Prevent_Host_Sleep->setChecked( tmp_vm->Use_Prevent_Host_Sleep() );
+	CH_Dynamic_Hotplug->setChecked( tmp_vm->Use_Dynamic_Hotplug() );
 	ui_ao.CH_FDD_Boot->setChecked( tmp_vm->Use_Check_FDD_Boot_Sector() );
 	ui.CH_Local_Time->setChecked( tmp_vm->Use_Local_Time() );
 	ui_ao.CH_Win2K_Hack->setChecked( tmp_vm->Use_Win2K_Hack() );

@@ -248,6 +248,7 @@ class Main_Window: public QMainWindow
 
         // Programmatic host sleep prevention checkbox
         QCheckBox *CH_Prevent_Host_Sleep;
+        QCheckBox *CH_Dynamic_Hotplug;
 
         // Programmatic memory backend widgets (hugepages)
         QComboBox *CB_Memory_Backend_Type;

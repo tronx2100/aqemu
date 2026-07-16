@@ -226,7 +226,10 @@ class Virtual_Machine: public QObject
 		
 		bool Use_Prevent_Host_Sleep() const;
 		void Use_Prevent_Host_Sleep( bool use );
-		
+
+		bool Use_Dynamic_Hotplug() const;
+		void Use_Dynamic_Hotplug( bool use );
+
 		bool Use_Start_CPU() const;
 		void Use_Start_CPU( bool start );
 		
@@ -617,6 +620,7 @@ class Virtual_Machine: public QObject
 		bool ACPI;
 		bool Snapshot_Mode;
 		bool Prevent_Host_Sleep;
+		bool Dynamic_Hotplug;
 		bool Start_CPU;
 		bool No_Reboot;
 		bool No_Shutdown;

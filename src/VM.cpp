@@ -179,6 +179,7 @@ Virtual_Machine::Virtual_Machine( const Virtual_Machine &vm )
 	this->ACPI = vm.Use_ACPI();
 	this->Snapshot_Mode = vm.Use_Snapshot_Mode();
 	this->Prevent_Host_Sleep = vm.Use_Prevent_Host_Sleep();
+	this->Dynamic_Hotplug = vm.Use_Dynamic_Hotplug();
 	this->Start_CPU = vm.Use_Start_CPU();
 	this->No_Reboot = vm.Use_No_Reboot();
 	this->No_Shutdown = vm.Use_No_Shutdown();
@@ -452,6 +453,7 @@ void Virtual_Machine::Shared_Constructor()
 	ACPI = true;
 	Snapshot_Mode = false;
 	Prevent_Host_Sleep = false;
+	Dynamic_Hotplug = false;
 	Start_CPU = true;
 	No_Reboot = false;
 	No_Shutdown = false;
@@ -583,6 +585,7 @@ bool Virtual_Machine::operator==( const Virtual_Machine &vm ) const
 		this->ACPI == vm.Use_ACPI() &&
 		this->Snapshot_Mode == vm.Use_Snapshot_Mode() &&
 		this->Prevent_Host_Sleep == vm.Use_Prevent_Host_Sleep() &&
+		this->Dynamic_Hotplug == vm.Use_Dynamic_Hotplug() &&
 		this->No_Shutdown == vm.Use_No_Shutdown() &&
 		this->Start_CPU == vm.Use_Start_CPU() &&
 		this->No_Reboot == vm.Use_No_Reboot() &&
@@ -843,6 +846,7 @@ Virtual_Machine &Virtual_Machine::operator=( const Virtual_Machine &vm )
 	this->ACPI = vm.Use_ACPI();
 	this->Snapshot_Mode = vm.Use_Snapshot_Mode();
 	this->Prevent_Host_Sleep = vm.Use_Prevent_Host_Sleep();
+	this->Dynamic_Hotplug = vm.Use_Dynamic_Hotplug();
 	this->Start_CPU = vm.Use_Start_CPU();
 	this->No_Reboot = vm.Use_No_Reboot();
 	this->No_Shutdown = vm.Use_No_Shutdown();
@@ -1487,7 +1491,13 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 		Dom_Text = New_Dom_Document.createTextNode( "false" );
 	
 	Dom_Element.appendChild( Dom_Text );
-	
+
+	// Dynamic_Hotplug
+	Dom_Element = New_Dom_Document.createElement( "Dynamic_Hotplug" );
+	VM_Element.appendChild( Dom_Element );
+	Dom_Text = New_Dom_Document.createTextNode( Dynamic_Hotplug ? "true" : "false" );
+	Dom_Element.appendChild( Dom_Text );
+
 	// Start_CPU
 	Dom_Element = New_Dom_Document.createElement( "Start_CPU" );
 	VM_Element.appendChild( Dom_Element );
@@ -4308,7 +4318,10 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 			
 			// Prevent_Host_Sleep
 			Prevent_Host_Sleep = (Child_Element.firstChildElement("Prevent_Host_Sleep").text() == "true");
-			
+
+			// Dynamic_Hotplug
+			Dynamic_Hotplug = (Child_Element.firstChildElement("Dynamic_Hotplug").text() == "true");
+
 			// Start_CPU
 			Start_CPU = (Child_Element.firstChildElement("Start_CPU").text() == "true");
 			
@@ -7172,13 +7185,20 @@ QStringList Virtual_Machine::Build_QEMU_Args()
 	}
 	else
 	{
+		// Dynamic Hotplug always needs xhci — add once here, track so static USB won't duplicate
+		bool usb_xhci_arg_added = false;
+		if( Dynamic_Hotplug )
+		{
+			Args << "-usb" << "-device" << "nec-usb-xhci,id=xhci";
+			usb_xhci_arg_added = true;
+		}
+
 		if( USB_Ports.count() > 0 )
 		{
 			bool usb_ehci_arg_added = false; // USB 2.0 controller
-			bool usb_xhci_arg_added = false; // USB 3.0 controller
+			// usb_xhci_arg_added already set above (outer scope)
 			bool usb_uhci_arg_added = false; // USB 1.1 controller
-			
-			Args << "-usb";
+			if( !Dynamic_Hotplug ) Args << "-usb"; // only if not already added by hotplug
 			
 			if( Build_QEMU_Args_for_Tab_Info == false ) System_Info::Update_Host_USB();
 			QList<VM_USB> all_usb = System_Info::Get_All_Host_USB();
@@ -9062,6 +9082,16 @@ void Virtual_Machine::Use_Prevent_Host_Sleep( bool use )
 	Prevent_Host_Sleep = use;
 }
 
+bool Virtual_Machine::Use_Dynamic_Hotplug() const
+{
+	return Dynamic_Hotplug;
+}
+
+void Virtual_Machine::Use_Dynamic_Hotplug( bool use )
+{
+	Dynamic_Hotplug = use;
+}
+
 bool Virtual_Machine::Use_Win2K_Hack() const
 {
 	return Win2K_Hack;
@@ -10440,7 +10470,16 @@ void Virtual_Machine::QEMU_Started()
 				 "emit Loading_Complete()" );
 		emit Loading_Complete();
 	}
-	
+
+	// Dynamic Hotplug: beim VM-Start alle am Hub eingesteckten Geräte übergeben (alle Modi)
+	if( Dynamic_Hotplug && QFile::exists("/etc/aqemu/hotplug-start.sh") )
+	{
+		QProcess *p = new QProcess();
+		p->start( "/bin/sh", QStringList() << "/etc/aqemu/hotplug-start.sh" );
+		connect( p, QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
+		         p, &QProcess::deleteLater );
+	}
+
 	// Connect monitor?
 	#ifndef Q_OS_WIN32
 	if( Use_Monitor_TCP == true )
@@ -10501,6 +10540,16 @@ void Virtual_Machine::QEMU_Finished( int exitCode, QProcess::ExitStatus exitStat
     {
 	    foreach( VM_USB usb_dev, USB_Ports ) System_Info::Delete_From_Used_USB_List( usb_dev );
     }
+
+	// Dynamic Hotplug mode 3: release hub devices back to host
+	if( Dynamic_Hotplug && Settings.value("Hotplug/Mode", 1).toInt() == 3
+	    && QFile::exists("/etc/aqemu/hotplug-stop.sh") )
+	{
+		QProcess *p = new QProcess();
+		p->start( "/bin/sh", QStringList() << "/etc/aqemu/hotplug-stop.sh" );
+		connect( p, QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
+		         p, &QProcess::deleteLater );
+	}
 
 }
 

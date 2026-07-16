@@ -21,11 +21,20 @@
 **
 ****************************************************************************/
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFileDialog>
 #include <QHeaderView>
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QGroupBox>
+#include <QProcess>
+#include <QFile>
+#include <QTextStream>
+#include <QListWidgetItem>
+#include <QFont>
 
 #include "Advanced_Settings_Window.h"
 #include "System_Info.h"
@@ -39,6 +48,10 @@ Advanced_Settings_Window::Advanced_Settings_Window( QWidget *parent )
 	: QDialog( parent )
 {
 	ui.setupUi( this );
+
+	// Hotplug-Tab muss VOR Settings_Widget angelegt werden, da Settings_Widget
+	// alle Tabs beim Konstruktor einliest und All_Tabs danach versteckt.
+	Setup_Hotplug_Tab();
 
     settings_widget = new Settings_Widget( ui.All_Tabs, QBoxLayout::TopToBottom, true, false );
 	
@@ -1042,4 +1055,468 @@ QStringList Advanced_Settings_Window::Get_All_Emulators_Names() const
 	QStringList list;
 	for( int ix = 0; ix < Emulators.count(); ix++ ) list << Emulators[ ix ].Get_Name();
 	return list;
+}
+
+// ─── Dynamic Hotplug ────────────────────────────────────────────────────────
+
+void Advanced_Settings_Window::Setup_Hotplug_Tab()
+{
+	QWidget *tab = new QWidget();
+	QVBoxLayout *layout = new QVBoxLayout( tab );
+
+	// Info label
+	QLabel *info = new QLabel(
+		tr("Select the USB hub(s) whose connected devices should be passed dynamically to the running VM.\n"
+		   "Physical USB 3.x hubs appear as two entries (HS + SS) — both are selected together.\n"
+		   "Only devices plugged into these hubs will be affected; all other hubs stay with the host.") );
+	info->setWordWrap( true );
+	layout->addWidget( info );
+
+	// Mode selection
+	QGroupBox *modeGroup = new QGroupBox( tr("Passthrough Mode") );
+	QVBoxLayout *modeLayout = new QVBoxLayout( modeGroup );
+	Hotplug_RB_Mode1 = new QRadioButton(
+		tr("Mode 1 — Pass to VM only while QEMU is running (devices usable on host otherwise)") );
+	Hotplug_RB_Mode2 = new QRadioButton(
+		tr("Mode 2 — Always block hub devices on host (Passthrough-Simulation)") );
+	Hotplug_RB_Mode1->setToolTip( tr("Devices on the hub are accessible on the host normally.\nWhen a device is plugged in while QEMU is running it is passed to the VM.") );
+	Hotplug_RB_Mode2->setToolTip( tr("Any device plugged into the hub is immediately blocked on the host (authorized=0),\nregardless of whether QEMU is running.") );
+	modeLayout->addWidget( Hotplug_RB_Mode1 );
+	modeLayout->addWidget( Hotplug_RB_Mode2 );
+	layout->addWidget( modeGroup );
+
+	// Restore saved mode
+	int savedMode = Settings.value("Hotplug/Mode", 1).toInt();
+	if ( savedMode == 2 ) Hotplug_RB_Mode2->setChecked( true );
+	else                  Hotplug_RB_Mode1->setChecked( true );
+
+	// Hub list
+	QGroupBox *hubGroup = new QGroupBox( tr("Available USB Hubs") );
+	QVBoxLayout *hubLayout = new QVBoxLayout( hubGroup );
+	Hotplug_Hub_List = new QListWidget();
+	Hotplug_Hub_List->setSelectionMode( QAbstractItemView::NoSelection );
+	hubLayout->addWidget( Hotplug_Hub_List );
+	QPushButton *scanBtn = new QPushButton( tr("Refresh Hub List") );
+	connect( scanBtn, &QPushButton::clicked, this, &Advanced_Settings_Window::on_Hotplug_Scan_clicked );
+	hubLayout->addWidget( scanBtn );
+	layout->addWidget( hubGroup );
+
+	// Status
+	Hotplug_Status_Label = new QLabel();
+	QFont f = Hotplug_Status_Label->font();
+	f.setBold( true );
+	Hotplug_Status_Label->setFont( f );
+	layout->addWidget( Hotplug_Status_Label );
+
+	// Buttons
+	QHBoxLayout *btnLayout = new QHBoxLayout();
+	Hotplug_Install_Btn = new QPushButton( tr("Install udev Rule") );
+	Hotplug_Remove_Btn  = new QPushButton( tr("Remove udev Rule") );
+	connect( Hotplug_Install_Btn, &QPushButton::clicked, this, &Advanced_Settings_Window::on_Hotplug_Install_clicked );
+	connect( Hotplug_Remove_Btn,  &QPushButton::clicked, this, &Advanced_Settings_Window::on_Hotplug_Remove_clicked );
+	btnLayout->addWidget( Hotplug_Install_Btn );
+	btnLayout->addWidget( Hotplug_Remove_Btn );
+	btnLayout->addStretch();
+	layout->addLayout( btnLayout );
+	layout->addStretch();
+
+	ui.All_Tabs->addTab( tab, QIcon(":/usb.png"), tr("Dynamic Hotplug") );
+
+	// Initial scan + status
+	on_Hotplug_Scan_clicked();
+	Update_Hotplug_Status();
+}
+
+static QString read_sysfs( const QString &path )
+{
+	QFile f( path );
+	if( !f.open( QIODevice::ReadOnly ) ) return QString();
+	return QString::fromUtf8( f.readAll() ).trimmed();
+}
+
+QList<UsbHubGroup> Advanced_Settings_Window::Scan_USB_Hubs()
+{
+	QList<UsbHubGroup> groups;
+	QDir sysfs( "/sys/bus/usb/devices" );
+	QStringList entries = sysfs.entryList( QDir::Dirs | QDir::NoDotAndDotDot );
+
+	// Collect all non-root hubs
+	struct RawHub {
+		QString KernelName;
+		QString IdVendor;
+		QString IdProduct;
+		QString Manufacturer;
+		QString Product;
+		QString Speed;
+		QString DevPath; // e.g. "2" or "1.4"
+		int BusNum;
+	};
+	QList<RawHub> rawHubs;
+
+	for( const QString &entry : entries )
+	{
+		// Skip root hubs and interfaces (contain ":")
+		if( entry.contains(':') ) continue;
+
+		QString base = QString("/sys/bus/usb/devices/%1").arg(entry);
+		QString devClass = read_sysfs( base + "/bDeviceClass" );
+		if( devClass != "09" ) continue; // only hubs
+
+		QString devNum = read_sysfs( base + "/devnum" );
+		if( devNum == "1" ) continue; // skip root hubs
+
+		RawHub h;
+		h.KernelName   = entry;
+		h.IdVendor     = read_sysfs( base + "/idVendor" );
+		h.IdProduct    = read_sysfs( base + "/idProduct" );
+		h.Manufacturer = read_sysfs( base + "/manufacturer" );
+		h.Product      = read_sysfs( base + "/product" );
+		h.Speed        = read_sysfs( base + "/speed" );
+		// devpath: e.g. for kernel name "3-2" the port is "2"
+		int dash = entry.indexOf('-');
+		h.DevPath = (dash >= 0) ? entry.mid(dash + 1) : entry;
+		bool ok = false;
+		h.BusNum = read_sysfs( base + "/busnum" ).toInt(&ok);
+		if( !ok ) h.BusNum = 0;
+		rawHubs << h;
+	}
+
+	// Group: HS hub (speed<=480) and SS hub (speed>=5000) with same port path & same idVendor:idProduct
+	QVector<bool> used( rawHubs.size(), false );
+	for( int i = 0; i < rawHubs.size(); i++ )
+	{
+		if( used[i] ) continue;
+		UsbHubGroup grp;
+		grp.KernelNames << rawHubs[i].KernelName;
+
+		// Look for partner (same vendor:product, same devpath component, different speed class)
+		bool iSS = rawHubs[i].Speed.toInt() >= 5000;
+		for( int j = i+1; j < rawHubs.size(); j++ )
+		{
+			if( used[j] ) continue;
+			bool jSS = rawHubs[j].Speed.toInt() >= 5000;
+			if( iSS == jSS ) continue; // same speed class → not a pair
+			if( rawHubs[i].IdVendor  != rawHubs[j].IdVendor  ) continue;
+			if( rawHubs[i].IdProduct != rawHubs[j].IdProduct  ) continue;
+			if( rawHubs[i].DevPath   != rawHubs[j].DevPath    ) continue;
+			grp.KernelNames << rawHubs[j].KernelName;
+			used[j] = true;
+			break;
+		}
+		used[i] = true;
+
+		// Build display name
+		QString mfr  = rawHubs[i].Manufacturer.isEmpty() ? rawHubs[i].IdVendor  : rawHubs[i].Manufacturer;
+		QString prod = rawHubs[i].Product.isEmpty()       ? rawHubs[i].IdProduct : rawHubs[i].Product;
+		QString speeds;
+		for( const QString &k : qAsConst(grp.KernelNames) )
+		{
+			for( const RawHub &h : rawHubs )
+				if( h.KernelName == k ) { speeds += (speeds.isEmpty() ? "" : " + ") + h.Speed + " Mbit/s"; break; }
+		}
+		grp.DisplayName = QString("%1 %2  [%3]  kernels: %4")
+			.arg(mfr, prod, speeds, grp.KernelNames.join(", "));
+
+		groups << grp;
+	}
+	return groups;
+}
+
+void Advanced_Settings_Window::on_Hotplug_Scan_clicked()
+{
+	Hotplug_Groups = Scan_USB_Hubs();
+
+	// Restore previously selected kernel names
+	QStringList saved = Settings.value("Hotplug/Hub_Kernels").toStringList();
+
+	Hotplug_Hub_List->clear();
+	for( const UsbHubGroup &grp : qAsConst(Hotplug_Groups) )
+	{
+		QListWidgetItem *item = new QListWidgetItem( grp.DisplayName, Hotplug_Hub_List );
+		item->setFlags( item->flags() | Qt::ItemIsUserCheckable );
+		// Check if any kernel of this group was previously saved
+		bool wasSelected = false;
+		for( const QString &k : grp.KernelNames )
+			if( saved.contains(k) ) { wasSelected = true; break; }
+		item->setCheckState( wasSelected ? Qt::Checked : Qt::Unchecked );
+	}
+}
+
+void Advanced_Settings_Window::Update_Hotplug_Status()
+{
+	bool ruleExists = QFile::exists("/etc/udev/rules.d/99-aqemu-hotplug.rules");
+	if( ruleExists )
+		Hotplug_Status_Label->setText( tr("Status: udev rule is ACTIVE ✓") );
+	else
+		Hotplug_Status_Label->setText( tr("Status: no udev rule installed") );
+	Hotplug_Install_Btn->setEnabled( !ruleExists );
+	Hotplug_Remove_Btn->setEnabled( ruleExists );
+}
+
+bool Advanced_Settings_Window::Write_File_As_Root( const QString &path, const QString &content, QString &error )
+{
+	// Inhalt in temporäre Datei schreiben, dann einmalig pkexec cp (kein eigener pkexec-Dialog)
+	// Wird nur noch intern für Einzeldateien genutzt — Install benutzt Run_As_Root_Script.
+	QString tmp = QString("/tmp/aqemu_write_%1").arg(QCoreApplication::applicationPid());
+	QFile f(tmp);
+	if( !f.open(QIODevice::WriteOnly) ) { error = tr("Cannot write temp file"); return false; }
+	f.write( content.toUtf8() );
+	f.close();
+	QProcess proc;
+	proc.start( "pkexec", QStringList() << "cp" << tmp << path );
+	proc.waitForFinished(-1);
+	QFile::remove(tmp);
+	if( proc.exitCode() != 0 ) { error = QString::fromUtf8(proc.readAllStandardError()); return false; }
+	return true;
+}
+
+bool Advanced_Settings_Window::Remove_File_As_Root( const QString &path, QString &error )
+{
+	QProcess proc;
+	proc.start( "pkexec", QStringList() << "rm" << "-f" << path );
+	proc.waitForFinished( -1 );
+	if( proc.exitCode() != 0 ) { error = QString::fromUtf8(proc.readAllStandardError()); return false; }
+	return true;
+}
+
+// Führt ein mehrzeiliges Shell-Skript einmalig als Root aus (ein pkexec-Aufruf).
+static bool Run_As_Root_Script( const QString &script, QString &error )
+{
+	QString tmp = QString("/tmp/aqemu_root_%1.sh").arg(QCoreApplication::applicationPid());
+	QFile f(tmp);
+	if( !f.open(QIODevice::WriteOnly) ) { error = "Cannot write temp script"; return false; }
+	f.write( script.toUtf8() );
+	f.close();
+	f.setPermissions( QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner );
+	QProcess proc;
+	proc.start( "pkexec", QStringList() << "bash" << tmp );
+	proc.waitForFinished(-1);
+	QFile::remove(tmp);
+	if( proc.exitCode() != 0 ) { error = QString::fromUtf8(proc.readAllStandardError()); return false; }
+	return true;
+}
+
+void Advanced_Settings_Window::on_Hotplug_Install_clicked()
+{
+	// Collect selected hub kernel names
+	QStringList kernels;
+	for( int i = 0; i < Hotplug_Hub_List->count(); i++ )
+	{
+		if( Hotplug_Hub_List->item(i)->checkState() == Qt::Checked )
+			kernels << Hotplug_Groups[i].KernelNames;
+	}
+
+	if( kernels.isEmpty() )
+	{
+		QMessageBox::warning( this, tr("No Hub Selected"),
+			tr("Please select at least one USB hub from the list.") );
+		return;
+	}
+
+	int mode = Hotplug_RB_Mode2->isChecked() ? 2 : 1;
+	Settings.setValue( "Hotplug/Hub_Kernels", kernels );
+	Settings.setValue( "Hotplug/Mode", mode );
+
+	QString monitorPath = Settings.value("Emulator_Monitor_UNIX_Path", "/tmp/0.qmon").toString();
+
+	// ── udev rule ────────────────────────────────────────────────────────────
+	// Strings mit udev-Variablen (%k, %E{...}) werden NICHT über QString::arg()
+	// gebaut um ungewollte %-Substitutionen zu vermeiden.
+	QString rule;
+	for( const QString &k : qAsConst(kernels) )
+	{
+		rule += "# Hub: " + k + "\n"
+			"ACTION==\"add\", SUBSYSTEM==\"usb\", ENV{DEVTYPE}==\"usb_device\", "
+			"KERNEL==\"" + k + ".*\", ATTR{bDeviceClass}!=\"09\", "
+			"RUN+=\"/etc/aqemu/hotplug.sh add %k\"\n"
+			"ACTION==\"remove\", SUBSYSTEM==\"usb\", ENV{DEVTYPE}==\"usb_device\", "
+			"KERNEL==\"" + k + ".*\", "
+			"RUN+=\"/etc/aqemu/hotplug.sh remove %k\"\n\n";
+	}
+
+	// ── hotplug.sh (udev event handler) ──────────────────────────────────────
+	//   Mode 1: pass to QEMU only when running, host access otherwise
+	//   Mode 2: always block on host (authorized=0), pass to QEMU if running
+	//   Mode 3: block on host + pass to QEMU if running (auto-start handles cold devices)
+	// vendorid/productid statt hostbus/hostaddr — robust gegen USB-Resets/Re-Enumeration
+	QString script = QString(
+		"#!/bin/bash\n"
+		"# AQEMU dynamic USB hotplug — auto-generated (mode %1)\n"
+		"MONITOR=\"%2\"\n"
+		"MODE=%1\n"
+		"ACTION=\"$1\"\n"
+		"KERNEL=\"$2\"\n\n"
+		"QEMU_RUNNING=0\n"
+		"[ -S \"$MONITOR\" ] && QEMU_RUNNING=1\n\n"
+		"if [ \"$ACTION\" = \"add\" ]; then\n"
+		"    if [ \"$QEMU_RUNNING\" = \"1\" ] && [ \"$MODE\" -le 2 ]; then\n"
+		"        # Mode 2: Host-Treiber aktiv unbinden bevor QEMU das Gerät übernimmt\n"
+		"        if [ \"$MODE\" -ge 2 ]; then\n"
+		"            for IFACE_DIR in /sys/bus/usb/devices/${KERNEL}:*; do\n"
+		"                [ -d \"$IFACE_DIR\" ] || continue\n"
+		"                IFACE=$(basename \"$IFACE_DIR\")\n"
+		"                DRV=$(readlink \"$IFACE_DIR/driver\" 2>/dev/null | xargs basename 2>/dev/null)\n"
+		"                [ -n \"$DRV\" ] && echo \"$IFACE\" > /sys/bus/usb/drivers/$DRV/unbind 2>/dev/null\n"
+		"            done\n"
+		"        fi\n"
+		"        VENDOR=$(cat /sys/bus/usb/devices/$KERNEL/idVendor 2>/dev/null)\n"
+		"        PRODUCT=$(cat /sys/bus/usb/devices/$KERNEL/idProduct 2>/dev/null)\n"
+		"        if [ -n \"$VENDOR\" ] && [ -n \"$PRODUCT\" ]; then\n"
+		"            printf 'device_add usb-host,vendorid=0x%s,productid=0x%s,id=hotplug-%s\\n' \\\n"
+		"                \"$VENDOR\" \"$PRODUCT\" \"$KERNEL\" \\\n"
+		"                | socat - UNIX-CONNECT:\"$MONITOR\" 2>/dev/null\n"
+		"        fi\n"
+		"    elif [ \"$MODE\" -ge 2 ]; then\n"
+		"        # QEMU läuft nicht: Gerät auf dem Host blockieren\n"
+		"        echo 0 > /sys/bus/usb/devices/$KERNEL/authorized 2>/dev/null\n"
+		"    fi\n"
+		"else\n"
+		"    if [ \"$QEMU_RUNNING\" = \"1\" ]; then\n"
+		"        printf 'device_del hotplug-%s\\n' \"$KERNEL\" \\\n"
+		"            | socat - UNIX-CONNECT:\"$MONITOR\" 2>/dev/null\n"
+		"    fi\n"
+		"    # Nach Entfernen: falls authorized=0 war, wieder freigeben\n"
+		"    if [ \"$MODE\" -ge 2 ]; then\n"
+		"        echo 1 > /sys/bus/usb/devices/$KERNEL/authorized 2>/dev/null\n"
+		"    fi\n"
+		"fi\n"
+	).arg(mode).arg(monitorPath);
+
+	// ── hotplug-start.sh (beim VM-Start bereits eingesteckte Hub-Geräte übergeben) ──
+	// Wird von AQEMU (QEMU_Started) und vom systemd Path-Unit aufgerufen.
+	// vendorid/productid statt hostbus/hostaddr — robust gegen USB-Re-Enumeration.
+	QString startScript;
+	startScript  = "#!/bin/bash\n";
+	startScript += "# AQEMU hotplug VM-start script — auto-generated (mode " + QString::number(mode) + ")\n";
+	startScript += "MONITOR=\"" + monitorPath + "\"\n";
+	startScript += "MODE=" + QString::number(mode) + "\n";
+	startScript += "[ -S \"$MONITOR\" ] || exit 0\n\n";
+	startScript += "# Warten bis QEMU-Monitor bereit ist (max 5 s)\n";
+	startScript += "for i in $(seq 1 10); do\n";
+	startScript += "    echo '' | socat - UNIX-CONNECT:\"$MONITOR\" 2>/dev/null && break\n";
+	startScript += "    sleep 0.5\n";
+	startScript += "done\n\n";
+	startScript += "for HUB_KERNEL in " + kernels.join(" ") + "; do\n";
+	startScript += "    for DEV in /sys/bus/usb/devices/${HUB_KERNEL}.*; do\n";
+	startScript += "        [ -d \"$DEV\" ] || continue\n";
+	startScript += "        DCLASS=$(cat \"$DEV/bDeviceClass\" 2>/dev/null)\n";
+	startScript += "        [ \"$DCLASS\" = \"09\" ] && continue\n";
+	startScript += "        KNAME=$(basename \"$DEV\")\n";
+	startScript += "        VENDOR=$(cat \"$DEV/idVendor\" 2>/dev/null)\n";
+	startScript += "        PRODUCT=$(cat \"$DEV/idProduct\" 2>/dev/null)\n";
+	startScript += "        [ -n \"$VENDOR\" ] && [ -n \"$PRODUCT\" ] || continue\n";
+	startScript += "        if [ \"$MODE\" -ge 2 ]; then\n";
+	startScript += "            for IFACE_DIR in \"$DEV\":*; do\n";
+	startScript += "                [ -d \"$IFACE_DIR\" ] || continue\n";
+	startScript += "                IFACE=$(basename \"$IFACE_DIR\")\n";
+	startScript += "                DRV=$(readlink \"$IFACE_DIR/driver\" 2>/dev/null | xargs basename 2>/dev/null)\n";
+	startScript += "                [ -n \"$DRV\" ] && echo \"$IFACE\" > /sys/bus/usb/drivers/$DRV/unbind 2>/dev/null\n";
+	startScript += "            done\n";
+	startScript += "        fi\n";
+	startScript += "        printf 'device_add usb-host,vendorid=0x%s,productid=0x%s,id=hotplug-%s\\n' \\\n";
+	startScript += "            \"$VENDOR\" \"$PRODUCT\" \"$KNAME\" \\\n";
+	startScript += "            | socat - UNIX-CONNECT:\"$MONITOR\" 2>/dev/null\n";
+	startScript += "    done\n";
+	startScript += "done\n";
+
+	// ── hotplug-stop.sh (called by AQEMU when VM stops, mode 3) ─────────────
+	QString stopScript = QString(
+		"#!/bin/bash\n"
+		"# AQEMU hotplug VM-stop script — auto-generated\n"
+		"MONITOR=\"%1\"\n\n"
+		"# Remove all hotplug devices from QEMU if still running\n"
+		"if [ -S \"$MONITOR\" ]; then\n"
+		"    echo 'info usb' | socat - UNIX-CONNECT:\"$MONITOR\" 2>/dev/null \\\n"
+		"    | grep 'ID: hotplug-' | sed 's/.*ID: //' | while read id; do\n"
+		"        printf 'device_del %s\\n' \"$id\" | socat - UNIX-CONNECT:\"$MONITOR\" 2>/dev/null\n"
+		"    done\n"
+		"fi\n\n"
+		"# Re-authorize all hub devices\n"
+		"for HUB_KERNEL in %2; do\n"
+		"    for DEV in /sys/bus/usb/devices/${HUB_KERNEL}.*; do\n"
+		"        [ -d \"$DEV\" ] || continue\n"
+		"        echo 1 > \"$DEV/authorized\" 2>/dev/null\n"
+		"    done\n"
+		"done\n"
+	).arg(monitorPath, kernels.join(" "));
+
+	// ── systemd Path-Unit: feuert hotplug-start.sh wenn QEMU-Monitor-Socket erscheint ──
+	QString pathUnit;
+	pathUnit  = "[Unit]\n";
+	pathUnit += "Description=AQEMU Hotplug: Trigger when QEMU monitor socket appears\n\n";
+	pathUnit += "[Path]\n";
+	pathUnit += "PathExists=" + monitorPath + "\n";
+	pathUnit += "Unit=aqemu-hotplug-start.service\n\n";
+	pathUnit += "[Install]\n";
+	pathUnit += "WantedBy=multi-user.target\n";
+
+	QString serviceUnit;
+	serviceUnit  = "[Unit]\n";
+	serviceUnit += "Description=AQEMU Hotplug: Pass hub devices to new QEMU instance\n\n";
+	serviceUnit += "[Service]\n";
+	serviceUnit += "Type=oneshot\n";
+	serviceUnit += "ExecStart=/etc/aqemu/hotplug-start.sh\n";
+
+	// Alle Dateien in einem einzigen pkexec bash-Aufruf schreiben.
+	// Inhalte werden base64-kodiert um Sonderzeichen/Prozentzeichen sicher zu übertragen.
+	// KEIN QString::arg() für den Skript-Body — base64-Strings könnten %1..%9 enthalten.
+	auto b64 = []( const QString &s ) -> QByteArray {
+		return s.toUtf8().toBase64();
+	};
+
+	QString installScript;
+	installScript  = "#!/bin/bash\nset -e\nmkdir -p /etc/aqemu\n";
+	installScript += "base64 -d <<'__EOF__' > /etc/udev/rules.d/99-aqemu-hotplug.rules\n";
+	installScript += QString::fromLatin1( b64(rule) ) + "\n__EOF__\n";
+	installScript += "base64 -d <<'__EOF__' > /etc/aqemu/hotplug.sh\n";
+	installScript += QString::fromLatin1( b64(script) ) + "\n__EOF__\n";
+	installScript += "base64 -d <<'__EOF__' > /etc/aqemu/hotplug-start.sh\n";
+	installScript += QString::fromLatin1( b64(startScript) ) + "\n__EOF__\n";
+	installScript += "base64 -d <<'__EOF__' > /etc/aqemu/hotplug-stop.sh\n";
+	installScript += QString::fromLatin1( b64(stopScript) ) + "\n__EOF__\n";
+	installScript += "chmod +x /etc/aqemu/hotplug.sh /etc/aqemu/hotplug-start.sh /etc/aqemu/hotplug-stop.sh\n";
+	installScript += "base64 -d <<'__EOF__' > /etc/systemd/system/aqemu-hotplug-start.path\n";
+	installScript += QString::fromLatin1( b64(pathUnit) ) + "\n__EOF__\n";
+	installScript += "base64 -d <<'__EOF__' > /etc/systemd/system/aqemu-hotplug-start.service\n";
+	installScript += QString::fromLatin1( b64(serviceUnit) ) + "\n__EOF__\n";
+	installScript += "systemctl daemon-reload\n";
+	installScript += "systemctl enable --now aqemu-hotplug-start.path\n";
+	installScript += "udevadm control --reload-rules\n";
+	installScript += "udevadm trigger --subsystem-match=usb --action=add\n";
+
+	QString err;
+	if( !Run_As_Root_Script(installScript, err) )
+	{ QMessageBox::critical( this, tr("Error"), tr("Installation failed:\n%1").arg(err) ); return; }
+
+	Update_Hotplug_Status();
+
+	QString modeDesc = (mode == 2)
+		? tr("Mode 2 (Passthrough-Simulation): devices are always blocked on the host and passed exclusively to the VM.")
+		: tr("Mode 1: devices are passed to the VM while QEMU is running, accessible on the host otherwise.");
+	QMessageBox::information( this, tr("Done"),
+		tr("udev rule installed successfully.\n\n%1").arg(modeDesc) );
+}
+
+void Advanced_Settings_Window::on_Hotplug_Remove_clicked()
+{
+	QString removeScript =
+		"#!/bin/bash\n"
+		"systemctl disable --now aqemu-hotplug-start.path 2>/dev/null || true\n"
+		"rm -f /etc/systemd/system/aqemu-hotplug-start.path\n"
+		"rm -f /etc/systemd/system/aqemu-hotplug-start.service\n"
+		"systemctl daemon-reload\n"
+		"rm -f /etc/udev/rules.d/99-aqemu-hotplug.rules\n"
+		"rm -f /etc/aqemu/hotplug.sh /etc/aqemu/hotplug-start.sh /etc/aqemu/hotplug-stop.sh\n"
+		"udevadm control --reload-rules\n";
+
+	QString err;
+	if( !Run_As_Root_Script(removeScript, err) )
+		QMessageBox::critical( this, tr("Error"), tr("Could not remove udev rule:\n%1").arg(err) );
+	else
+	{
+		Settings.remove("Hotplug/Hub_Kernels");
+		Update_Hotplug_Status();
+		on_Hotplug_Scan_clicked(); // uncheck all
+		QMessageBox::information( this, tr("Done"), tr("udev rule removed.") );
+	}
 }
