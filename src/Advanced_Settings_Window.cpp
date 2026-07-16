@@ -23,6 +23,7 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QTimer>
 #include <QFileDialog>
 #include <QHeaderView>
 #include <QInputDialog>
@@ -1096,10 +1097,30 @@ void Advanced_Settings_Window::Setup_Hotplug_Tab()
 	Hotplug_Hub_List = new QListWidget();
 	Hotplug_Hub_List->setSelectionMode( QAbstractItemView::NoSelection );
 	hubLayout->addWidget( Hotplug_Hub_List );
+
+	QHBoxLayout *hubBtnLayout = new QHBoxLayout();
 	QPushButton *scanBtn = new QPushButton( tr("Refresh Hub List") );
 	connect( scanBtn, &QPushButton::clicked, this, &Advanced_Settings_Window::on_Hotplug_Scan_clicked );
-	hubLayout->addWidget( scanBtn );
+	hubBtnLayout->addWidget( scanBtn );
+
+	Hotplug_Detect_Btn = new QPushButton( tr("Detect Hub") );
+	Hotplug_Detect_Btn->setToolTip( tr("Click, then plug in your hub. It will be detected and selected automatically.") );
+	connect( Hotplug_Detect_Btn, &QPushButton::clicked, this, &Advanced_Settings_Window::on_Hotplug_Detect_clicked );
+	hubBtnLayout->addWidget( Hotplug_Detect_Btn );
+
+	hubLayout->addLayout( hubBtnLayout );
+
+	Hotplug_Detect_Label = new QLabel();
+	hubLayout->addWidget( Hotplug_Detect_Label );
+
 	layout->addWidget( hubGroup );
+
+	// Timer für Hub-Erkennung
+	Hotplug_Detect_Timer = new QTimer( this );
+	Hotplug_Detect_Timer->setInterval( 1000 );
+	connect( Hotplug_Detect_Timer, &QTimer::timeout, this, &Advanced_Settings_Window::on_Hotplug_Detect_Tick );
+	Hotplug_Detect_SecondsLeft = 0;
+	Hotplug_Detect_FoundNew    = false;
 
 	// Status
 	Hotplug_Status_Label = new QLabel();
@@ -1240,6 +1261,88 @@ void Advanced_Settings_Window::on_Hotplug_Scan_clicked()
 			if( saved.contains(k) ) { wasSelected = true; break; }
 		item->setCheckState( wasSelected ? Qt::Checked : Qt::Unchecked );
 	}
+}
+
+QStringList Advanced_Settings_Window::Current_Hub_Kernels()
+{
+	QStringList result;
+	QDir sysfs( "/sys/bus/usb/devices" );
+	for( const QString &entry : sysfs.entryList(QDir::Dirs | QDir::NoDotAndDotDot) )
+	{
+		if( entry.contains(':') ) continue;
+		QString base = QString("/sys/bus/usb/devices/%1").arg(entry);
+		if( read_sysfs(base + "/bDeviceClass") != "09" ) continue;
+		if( read_sysfs(base + "/devnum") == "1" ) continue; // root hub
+		result << entry;
+	}
+	return result;
+}
+
+void Advanced_Settings_Window::on_Hotplug_Detect_clicked()
+{
+	if( Hotplug_Detect_Timer->isActive() )
+	{
+		// Abbrechen
+		Hotplug_Detect_Timer->stop();
+		Hotplug_Detect_Btn->setText( tr("Detect Hub") );
+		Hotplug_Detect_Label->setText( "" );
+		return;
+	}
+
+	// Snapshot der aktuell bekannten Hubs
+	Hotplug_Detect_KnownKernels = Current_Hub_Kernels();
+	Hotplug_Detect_SecondsLeft  = 60;
+	Hotplug_Detect_FoundNew     = false;
+
+	Hotplug_Detect_Btn->setText( tr("Cancel") );
+	Hotplug_Detect_Label->setText( tr("Plug in your hub now...  60s") );
+	Hotplug_Detect_Timer->start();
+}
+
+void Advanced_Settings_Window::on_Hotplug_Detect_Tick()
+{
+	QStringList current = Current_Hub_Kernels();
+
+	// Neue Hubs seit Snapshot
+	QStringList newKernels;
+	for( const QString &k : current )
+		if( !Hotplug_Detect_KnownKernels.contains(k) )
+			newKernels << k;
+
+	if( !newKernels.isEmpty() && !Hotplug_Detect_FoundNew )
+	{
+		// Neuen Hub gefunden — Liste neu einlesen und selektieren
+		Hotplug_Detect_FoundNew    = true;
+		Hotplug_Detect_SecondsLeft = 10;
+
+		on_Hotplug_Scan_clicked(); // Liste neu aufbauen
+
+		// Alle Gruppen die einen der neuen Kernel enthalten selektieren
+		for( int i = 0; i < Hotplug_Hub_List->count(); i++ )
+		{
+			for( const QString &nk : qAsConst(newKernels) )
+				if( Hotplug_Groups[i].KernelNames.contains(nk) )
+					{ Hotplug_Hub_List->item(i)->setCheckState(Qt::Checked); break; }
+		}
+	}
+
+	Hotplug_Detect_SecondsLeft--;
+
+	if( Hotplug_Detect_SecondsLeft <= 0 )
+	{
+		Hotplug_Detect_Timer->stop();
+		Hotplug_Detect_Btn->setText( tr("Detect Hub") );
+		Hotplug_Detect_Label->setText(
+			Hotplug_Detect_FoundNew
+				? tr("Hub detected and selected ✓")
+				: tr("No hub detected.") );
+		return;
+	}
+
+	if( Hotplug_Detect_FoundNew )
+		Hotplug_Detect_Label->setText( tr("Hub detected! Waiting for more...  %1s").arg(Hotplug_Detect_SecondsLeft) );
+	else
+		Hotplug_Detect_Label->setText( tr("Plug in your hub now...  %1s").arg(Hotplug_Detect_SecondsLeft) );
 }
 
 void Advanced_Settings_Window::Update_Hotplug_Status()

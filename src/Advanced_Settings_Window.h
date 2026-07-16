@@ -100,13 +100,24 @@ class Advanced_Settings_Window: public QDialog
 		QLabel       *Hotplug_Status_Label;
 		QPushButton  *Hotplug_Install_Btn;
 		QPushButton  *Hotplug_Remove_Btn;
+		QPushButton  *Hotplug_Detect_Btn;
+		QLabel       *Hotplug_Detect_Label;
 		QRadioButton *Hotplug_RB_Mode1; // pass only when QEMU running
 		QRadioButton *Hotplug_RB_Mode2; // always block on host
 		QList<UsbHubGroup> Hotplug_Groups;
 
+		// Hub auto-detect state
+		QTimer       *Hotplug_Detect_Timer;
+		QStringList   Hotplug_Detect_KnownKernels; // snapshot before detect
+		int           Hotplug_Detect_SecondsLeft;
+		bool          Hotplug_Detect_FoundNew;     // new hub was seen, 10s cooldown running
+
 		void Setup_Hotplug_Tab();
 		QList<UsbHubGroup> Scan_USB_Hubs();
+		QStringList        Current_Hub_Kernels();
 		void Update_Hotplug_Status();
+		void on_Hotplug_Detect_clicked();
+		void on_Hotplug_Detect_Tick();
 		bool Write_File_As_Root( const QString &path, const QString &content, QString &error );
 		bool Remove_File_As_Root( const QString &path, QString &error );
 };
