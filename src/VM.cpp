@@ -10502,15 +10502,6 @@ void Virtual_Machine::QEMU_Finished( int exitCode, QProcess::ExitStatus exitStat
 	    foreach( VM_USB usb_dev, USB_Ports ) System_Info::Delete_From_Used_USB_List( usb_dev );
     }
 
-	if( ! Settings.value("Run_After_QEMU", "").toString().isEmpty() )
-	{
-		QProcess *after_proc = new QProcess();
-#ifndef Q_OS_WIN32
-		after_proc->start( "/bin/sh", QStringList() << "-c" << Settings.value("Run_After_QEMU", "").toString() );
-#else
-		after_proc->start( "cmd.exe", QStringList() << "/C" << Settings.value("Run_After_QEMU", "").toString() );
-#endif
-	}
 }
 
 void Virtual_Machine::QEMU_Error( QProcess::ProcessError error )
