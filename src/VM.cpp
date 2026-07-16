@@ -8150,22 +8150,6 @@ bool Virtual_Machine::Start_impl()
             qemu_args.prepend( "--what=sleep:idle" );
             bin_path = "systemd-inhibit";
         }
-        // Execute before QEMU command
-        {
-            QSettings settings;
-            QString before_cmd = settings.value("Run_Before_QEMU", "").toString().trimmed();
-            if( !before_cmd.isEmpty() )
-            {
-                QProcess before_proc;
-#ifndef Q_OS_WIN32
-                before_proc.start( "/bin/sh", QStringList() << "-c" << before_cmd );
-#else
-                before_proc.start( "cmd.exe", QStringList() << "/C" << before_cmd );
-#endif
-                before_proc.waitForFinished( -1 );
-            }
-        }
-
         QEMU_Process->start( bin_path, qemu_args );
         TEMPODEBUG( "bool Virtual_Machine::Start_impl()",
                     QString("process start requested bin=\"%1\" args=\"%2\"")
@@ -10530,26 +10514,9 @@ void Virtual_Machine::QEMU_Finished( int exitCode, QProcess::ExitStatus exitStat
                 .arg(State) );
 	
 	emit QEMU_End();
-
+	
 	Start_Snapshot_Tag = "";
 	Set_State( VM::VMS_Power_Off );
-
-	// Execute after QEMU command
-	{
-		QSettings settings;
-		QString after_cmd = settings.value("Run_After_QEMU", "").toString().trimmed();
-		if( !after_cmd.isEmpty() )
-		{
-			QProcess *after_proc = new QProcess();
-#ifndef Q_OS_WIN32
-			after_proc->start( "/bin/sh", QStringList() << "-c" << after_cmd );
-#else
-			after_proc->start( "cmd.exe", QStringList() << "/C" << after_cmd );
-#endif
-			connect( after_proc, QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
-			         after_proc, &QProcess::deleteLater );
-		}
-	}
 	
     if (exitStatus == QProcess::CrashExit)
 	{

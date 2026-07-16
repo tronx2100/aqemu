@@ -348,6 +348,21 @@ Main_Window::Main_Window( QWidget *parent )
     Connect_Signals();
     block_VM_changed_signals = false;
 
+    // Run pre-start command once at AQEMU startup
+    {
+        QSettings settings;
+        QString before_cmd = settings.value("Run_Before_QEMU", "").toString().trimmed();
+        if( ! before_cmd.isEmpty() )
+        {
+            QProcess before_proc;
+#ifndef Q_OS_WIN32
+            before_proc.start( "/bin/sh", QStringList() << "-c" << before_cmd );
+#else
+            before_proc.start( "cmd.exe", QStringList() << "/C" << before_cmd );
+#endif
+            before_proc.waitForFinished( -1 );
+        }
+    }
 }
 
 void Main_Window::init_dbus()
@@ -474,6 +489,21 @@ void Main_Window::closeEvent( QCloseEvent *event )
             }
         }
 
+        if( ! any_running )
+        {
+            QSettings settings;
+            QString after_cmd = settings.value("Run_After_QEMU", "").toString().trimmed();
+            if( ! after_cmd.isEmpty() )
+            {
+                QProcess after_proc;
+#ifndef Q_OS_WIN32
+                after_proc.start( "/bin/sh", QStringList() << "-c" << after_cmd );
+#else
+                after_proc.start( "cmd.exe", QStringList() << "/C" << after_cmd );
+#endif
+                after_proc.waitForFinished( -1 );
+            }
+        }
     }
 
     event->accept();
