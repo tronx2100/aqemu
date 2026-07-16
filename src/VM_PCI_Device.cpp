@@ -137,9 +137,6 @@ QString VM_PCI_Device::To_QEMU_Device_Arg() const
     if ( XVGA )
         arg += ",x-vga=on";
 
-    if ( Disable_VGA )
-        arg += ",disable-vga=on";
-
     if ( No_KVM_MSI )
         arg += ",x-no-kvm-msi=on";
 

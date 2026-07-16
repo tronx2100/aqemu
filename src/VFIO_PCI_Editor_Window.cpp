@@ -112,10 +112,6 @@ VFIO_PCI_Editor_Window::VFIO_PCI_Editor_Window( QWidget *parent )
     Flag_XVGA->setToolTip( tr("Enable x-vga=on for VGA assignment") );
     flagGrid->addWidget( Flag_XVGA, 1, 2 );
 
-    Flag_Disable_VGA = new QCheckBox( tr("Disable VGA") );
-    Flag_Disable_VGA->setToolTip( tr("Enable disable-vga=on") );
-    flagGrid->addWidget( Flag_Disable_VGA, 1, 3 );
-
     // Row 2: x-no-kvm-msi, x-no-kvm-msix
     Flag_No_KVM_MSI = new QCheckBox( tr("x-no-kvm-msi") );
     Flag_No_KVM_MSI->setToolTip( tr("Disable KVM MSI interrupt remapping (may fix USB lag)") );
@@ -198,7 +194,6 @@ VFIO_PCI_Editor_Window::VFIO_PCI_Editor_Window( QWidget *parent )
     connect( Flag_XVGA, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_XVGA_Changed );
     connect( Flag_Use_ROM_File, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_Use_ROM_File_Changed );
     connect( Flag_ROM_File_Browse, &QPushButton::clicked, this, &VFIO_PCI_Editor_Window::on_ROM_File_Browse );
-    connect( Flag_Disable_VGA, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_Disable_VGA_Changed );
     connect( Flag_No_KVM_MSI, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_No_KVM_MSI_Changed );
     connect( Flag_No_KVM_MSIX, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_No_KVM_MSIX_Changed );
     connect( Flag_Add_Button, &QPushButton::clicked, this, &VFIO_PCI_Editor_Window::on_Add_Flag );
@@ -903,7 +898,6 @@ void VFIO_PCI_Editor_Window::Update_Flag_UI( int row )
     Flag_ROM_File_Edit->setText( cfg.Get_ROM_File() );
     Flag_ROM_File_Edit->setEnabled( cfg.Get_Use_ROM_File() );
     Flag_ROM_File_Browse->setEnabled( cfg.Get_Use_ROM_File() );
-    Flag_Disable_VGA->setChecked( cfg.Get_Disable_VGA() );
     Flag_No_KVM_MSI->setChecked( cfg.Get_No_KVM_MSI() );
     Flag_No_KVM_MSIX->setChecked( cfg.Get_No_KVM_MSIX() );
 
@@ -928,7 +922,6 @@ void VFIO_PCI_Editor_Window::Clear_Flag_UI()
     Flag_ROM_File_Edit->clear();
     Flag_ROM_File_Edit->setEnabled( false );
     Flag_ROM_File_Browse->setEnabled( false );
-    Flag_Disable_VGA->setChecked( false );
     Flag_No_KVM_MSI->setChecked( false );
     Flag_No_KVM_MSIX->setChecked( false );
     Flag_Additional_List->clear();
@@ -994,13 +987,6 @@ void VFIO_PCI_Editor_Window::on_ROM_File_Browse()
     }
 }
 
-void VFIO_PCI_Editor_Window::on_Disable_VGA_Changed( int state )
-{
-    if ( Updating_Table ) return;
-    int row = Device_Table->currentRow();
-    if ( row >= 0 && row < Device_Rows.size() )
-        Device_Rows[row].Config.Set_Disable_VGA( state == Qt::Checked );
-}
 
 void VFIO_PCI_Editor_Window::on_No_KVM_MSI_Changed( int state )
 {
