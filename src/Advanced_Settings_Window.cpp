@@ -1378,6 +1378,9 @@ void Advanced_Settings_Window::Update_Hotplug_Status()
 		Hotplug_Status_Label->setText( tr("Status: no udev rule installed") );
 	Hotplug_Install_Btn->setEnabled( !ruleExists );
 	Hotplug_Remove_Btn->setEnabled( ruleExists );
+	// Mode-Auswahl nur vor der Installation möglich
+	Hotplug_RB_Mode1->setEnabled( !ruleExists );
+	Hotplug_RB_Mode2->setEnabled( !ruleExists );
 }
 
 bool Advanced_Settings_Window::Write_File_As_Root( const QString &path, const QString &content, QString &error )

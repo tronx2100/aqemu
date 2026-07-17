@@ -66,6 +66,20 @@ ninja
 
 Based on AQEMU — a Qt5 frontend for QEMU with optional embedded VNC display and DBus service.
 
+## Dynamic USB Hotplug — KVM Switch Tips
+
+If you use an HDMI KVM switch with the Dynamic Hotplug feature and experience USB
+disconnects or a black guest display when starting certain video streams (e.g. live TV
+with DRM/Widevine), the cause is likely an **automatic display refresh rate switch**
+by the NVIDIA driver (e.g. switching from 60 Hz to 50 Hz for European broadcast content).
+The KVM switch interprets the brief HDMI signal change as a disconnect and resets its USB ports.
+
+**Fix:** In the Windows guest, set the display refresh rate to a fixed value (e.g. 60 Hz)
+and disable automatic refresh rate adjustment.
+*Settings → Display → Advanced display settings → Refresh rate → 60 Hz*
+
+---
+
 ## Mac OS X / macOS Guest Troubleshooting
 
 - **Black screen after boot**: Open *Boot Settings* → set *bootargs=* to `colors=32` (`-boot args=colors=32`)
