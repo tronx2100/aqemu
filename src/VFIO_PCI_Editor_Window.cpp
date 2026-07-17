@@ -103,7 +103,7 @@ VFIO_PCI_Editor_Window::VFIO_PCI_Editor_Window( QWidget *parent )
     Flag_Addr_Edit->setToolTip( tr("Address on the root port bus (e.g. 00.0)") );
     flagGrid->addWidget( Flag_Addr_Edit, 0, 3 );
 
-    // Row 1: multifunction, x-vga, disable-vga
+    // Row 1: multifunction, x-vga, rombar=0
     Flag_Multifunction = new QCheckBox( tr("Multifunction") );
     Flag_Multifunction->setToolTip( tr("Enable multifunction=on for this device") );
     flagGrid->addWidget( Flag_Multifunction, 1, 0, 1, 2 );
@@ -111,6 +111,10 @@ VFIO_PCI_Editor_Window::VFIO_PCI_Editor_Window( QWidget *parent )
     Flag_XVGA = new QCheckBox( tr("x-vga") );
     Flag_XVGA->setToolTip( tr("Enable x-vga=on for VGA assignment") );
     flagGrid->addWidget( Flag_XVGA, 1, 2 );
+
+    Flag_ROM_Bar_Zero = new QCheckBox( tr("rombar=0") );
+    Flag_ROM_Bar_Zero->setToolTip( tr("Set rombar=0 — fixes hanging VGA init on some GPUs") );
+    flagGrid->addWidget( Flag_ROM_Bar_Zero, 1, 3 );
 
     // Row 2: x-no-kvm-msi, x-no-kvm-msix
     Flag_No_KVM_MSI = new QCheckBox( tr("x-no-kvm-msi") );
@@ -192,6 +196,7 @@ VFIO_PCI_Editor_Window::VFIO_PCI_Editor_Window( QWidget *parent )
     connect( Flag_Addr_Edit, &QLineEdit::textChanged, this, &VFIO_PCI_Editor_Window::on_Addr_Changed );
     connect( Flag_Multifunction, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_Multifunction_Changed );
     connect( Flag_XVGA, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_XVGA_Changed );
+    connect( Flag_ROM_Bar_Zero, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_ROM_Bar_Zero_Changed );
     connect( Flag_Use_ROM_File, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_Use_ROM_File_Changed );
     connect( Flag_ROM_File_Browse, &QPushButton::clicked, this, &VFIO_PCI_Editor_Window::on_ROM_File_Browse );
     connect( Flag_No_KVM_MSI, &QCheckBox::stateChanged, this, &VFIO_PCI_Editor_Window::on_No_KVM_MSI_Changed );
@@ -894,6 +899,7 @@ void VFIO_PCI_Editor_Window::Update_Flag_UI( int row )
     Flag_Addr_Edit->setText( cfg.Get_Addr() );
     Flag_Multifunction->setChecked( cfg.Get_Multifunction() );
     Flag_XVGA->setChecked( cfg.Get_XVGA() );
+    Flag_ROM_Bar_Zero->setChecked( cfg.Get_ROM_Bar_Zero() );
     Flag_Use_ROM_File->setChecked( cfg.Get_Use_ROM_File() );
     Flag_ROM_File_Edit->setText( cfg.Get_ROM_File() );
     Flag_ROM_File_Edit->setEnabled( cfg.Get_Use_ROM_File() );
@@ -918,6 +924,7 @@ void VFIO_PCI_Editor_Window::Clear_Flag_UI()
     Flag_Addr_Edit->clear();
     Flag_Multifunction->setChecked( false );
     Flag_XVGA->setChecked( false );
+    Flag_ROM_Bar_Zero->setChecked( false );
     Flag_Use_ROM_File->setChecked( false );
     Flag_ROM_File_Edit->clear();
     Flag_ROM_File_Edit->setEnabled( false );
@@ -959,6 +966,14 @@ void VFIO_PCI_Editor_Window::on_XVGA_Changed( int state )
     int row = Device_Table->currentRow();
     if ( row >= 0 && row < Device_Rows.size() )
         Device_Rows[row].Config.Set_XVGA( state == Qt::Checked );
+}
+
+void VFIO_PCI_Editor_Window::on_ROM_Bar_Zero_Changed( int state )
+{
+    if ( Updating_Table ) return;
+    int row = Device_Table->currentRow();
+    if ( row >= 0 && row < Device_Rows.size() )
+        Device_Rows[row].Config.Set_ROM_Bar_Zero( state == Qt::Checked );
 }
 
 void VFIO_PCI_Editor_Window::on_Use_ROM_File_Changed( int state )

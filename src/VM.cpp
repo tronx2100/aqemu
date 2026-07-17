@@ -3479,6 +3479,10 @@ bool Virtual_Machine::Create_VM_File( const QString &file_name, bool template_mo
 		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_Disable_VGA() ? "true" : "false" ) );
 		Dom_Element.appendChild( tmpElement );
 
+		tmpElement = New_Dom_Document.createElement( "ROM_Bar_Zero" );
+		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_ROM_Bar_Zero() ? "true" : "false" ) );
+		Dom_Element.appendChild( tmpElement );
+
 		tmpElement = New_Dom_Document.createElement( "Disable_Idle" );
 		tmpElement.appendChild( New_Dom_Document.createTextNode( PCI_Devices[px].Get_Disable_Idle() ? "true" : "false" ) );
 		Dom_Element.appendChild( tmpElement );
@@ -5189,6 +5193,9 @@ bool Virtual_Machine::Load_VM( const QString &file_name )
 
 			tmpElement = PCIDevicesElement.firstChildElement( "Disable_VGA" );
 			dev.Set_Disable_VGA( tmpElement.text() == "true" );
+
+			tmpElement = PCIDevicesElement.firstChildElement( "ROM_Bar_Zero" );
+			dev.Set_ROM_Bar_Zero( tmpElement.text() == "true" );
 
 			tmpElement = PCIDevicesElement.firstChildElement( "Disable_Idle" );
 			dev.Set_Disable_Idle( tmpElement.text() == "true" );

@@ -5,7 +5,7 @@
 
 VM_PCI_Device::VM_PCI_Device()
     : Enabled(false), Multifunction(false), XVGA(false),
-      Use_ROM_File(false), Use_ROM_Bar(true), Disable_VGA(false), Disable_Idle(false),
+      Use_ROM_File(false), Use_ROM_Bar(true), Disable_VGA(false), ROM_Bar_Zero(false), Disable_Idle(false),
       No_KVM_MSI(false), No_KVM_MSIX(false)
 {
 }
@@ -16,7 +16,7 @@ VM_PCI_Device::VM_PCI_Device( const VM_PCI_Device &other )
       Multifunction(other.Multifunction), XVGA(other.XVGA),
       Use_ROM_File(other.Use_ROM_File), ROM_File(other.ROM_File),
       Use_ROM_Bar(other.Use_ROM_Bar), ROM_Bar(other.ROM_Bar),
-      Disable_VGA(other.Disable_VGA), Disable_Idle(other.Disable_Idle),
+      Disable_VGA(other.Disable_VGA), ROM_Bar_Zero(other.ROM_Bar_Zero), Disable_Idle(other.Disable_Idle),
       No_KVM_MSI(other.No_KVM_MSI), No_KVM_MSIX(other.No_KVM_MSIX),
       Additional_Flags(other.Additional_Flags)
 {
@@ -39,6 +39,7 @@ bool VM_PCI_Device::operator==( const VM_PCI_Device &other ) const
         && Use_ROM_Bar == other.Use_ROM_Bar
         && ROM_Bar == other.ROM_Bar
         && Disable_VGA == other.Disable_VGA
+        && ROM_Bar_Zero == other.ROM_Bar_Zero
         && Disable_Idle == other.Disable_Idle
         && No_KVM_MSI == other.No_KVM_MSI
         && No_KVM_MSIX == other.No_KVM_MSIX
@@ -65,6 +66,7 @@ VM_PCI_Device &VM_PCI_Device::operator=( const VM_PCI_Device &other )
         Use_ROM_Bar = other.Use_ROM_Bar;
         ROM_Bar = other.ROM_Bar;
         Disable_VGA = other.Disable_VGA;
+        ROM_Bar_Zero = other.ROM_Bar_Zero;
         Disable_Idle = other.Disable_Idle;
         No_KVM_MSI = other.No_KVM_MSI;
         No_KVM_MSIX = other.No_KVM_MSIX;
@@ -106,6 +108,9 @@ void VM_PCI_Device::Set_ROM_Bar( const QString &val ) { ROM_Bar = val; }
 bool VM_PCI_Device::Get_Disable_VGA() const { return Disable_VGA; }
 void VM_PCI_Device::Set_Disable_VGA( bool on ) { Disable_VGA = on; }
 
+bool VM_PCI_Device::Get_ROM_Bar_Zero() const { return ROM_Bar_Zero; }
+void VM_PCI_Device::Set_ROM_Bar_Zero( bool on ) { ROM_Bar_Zero = on; }
+
 bool VM_PCI_Device::Get_Disable_Idle() const { return Disable_Idle; }
 void VM_PCI_Device::Set_Disable_Idle( bool on ) { Disable_Idle = on; }
 
@@ -136,6 +141,9 @@ QString VM_PCI_Device::To_QEMU_Device_Arg() const
 
     if ( XVGA )
         arg += ",x-vga=on";
+
+    if ( ROM_Bar_Zero )
+        arg += ",rombar=0";
 
     if ( No_KVM_MSI )
         arg += ",x-no-kvm-msi=on";

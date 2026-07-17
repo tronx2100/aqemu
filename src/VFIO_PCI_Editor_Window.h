@@ -35,9 +35,9 @@ private slots:
     void on_Type_Combo_Changed( int row, int index );
     void on_Multifunction_Changed( int state );
     void on_XVGA_Changed( int state );
+    void on_ROM_Bar_Zero_Changed( int state );
     void on_Use_ROM_File_Changed( int state );
     void on_ROM_File_Browse();
-    void on_Disable_VGA_Changed( int state );
     void on_No_KVM_MSI_Changed( int state );
     void on_No_KVM_MSIX_Changed( int state );
     void on_Add_Flag();
@@ -71,10 +71,10 @@ private:
     QLineEdit *Flag_Addr_Edit;
     QCheckBox *Flag_Multifunction;
     QCheckBox *Flag_XVGA;
+    QCheckBox *Flag_ROM_Bar_Zero;
     QCheckBox *Flag_Use_ROM_File;
     QLineEdit *Flag_ROM_File_Edit;
     QPushButton *Flag_ROM_File_Browse;
-    QCheckBox *Flag_Disable_VGA;
     QCheckBox *Flag_No_KVM_MSI;
     QCheckBox *Flag_No_KVM_MSIX;
     QListWidget *Flag_Additional_List;

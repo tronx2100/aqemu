@@ -66,6 +66,9 @@ public:
     bool Get_Disable_VGA() const;
     void Set_Disable_VGA( bool on );
 
+    bool Get_ROM_Bar_Zero() const;
+    void Set_ROM_Bar_Zero( bool on );
+
     bool Get_Disable_Idle() const;
     void Set_Disable_Idle( bool on );
 
@@ -96,6 +99,7 @@ private:
     bool Use_ROM_Bar;
     QString ROM_Bar;
     bool Disable_VGA;
+    bool ROM_Bar_Zero;
     bool Disable_Idle;
     bool No_KVM_MSI;
     bool No_KVM_MSIX;
