@@ -10548,15 +10548,10 @@ void Virtual_Machine::QEMU_Finished( int exitCode, QProcess::ExitStatus exitStat
 	    foreach( VM_USB usb_dev, USB_Ports ) System_Info::Delete_From_Used_USB_List( usb_dev );
     }
 
-	// Dynamic Hotplug mode 3: release hub devices back to host
-	if( Dynamic_Hotplug && Settings.value("Hotplug/Mode", 1).toInt() == 3
-	    && QFile::exists("/etc/aqemu/hotplug-stop.sh") )
-	{
-		QProcess *p = new QProcess();
-		p->start( "/bin/sh", QStringList() << "/etc/aqemu/hotplug-stop.sh" );
-		connect( p, QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
-		         p, &QProcess::deleteLater );
-	}
+	// Dynamic Hotplug: release hub devices back to host (auch Mode 2 / Guest-only)
+	// Hinweis: Der Stop läuft über den systemd-PathChanged-Trigger
+	// (aqemu-hotplug-start.path -> hotplug-start.sh), wenn /tmp/0.qmon
+	// verschwindet. Kein separater hotplug-stop-Aufruf hier nötig.
 
 }
 

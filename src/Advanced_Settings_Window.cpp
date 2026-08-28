@@ -1081,7 +1081,7 @@ void Advanced_Settings_Window::Setup_Hotplug_Tab()
 	Hotplug_RB_Mode2 = new QRadioButton(
 		tr("Mode 2 — Always block hub devices on host (Passthrough-Simulation)") );
 	Hotplug_RB_Mode1->setToolTip( tr("Devices on the hub are accessible on the host normally.\nWhen a device is plugged in while QEMU is running it is passed to the VM.") );
-	Hotplug_RB_Mode2->setToolTip( tr("Any device plugged into the hub is immediately blocked on the host (authorized=0),\nregardless of whether QEMU is running.") );
+	Hotplug_RB_Mode2->setToolTip( tr("Any device plugged into the hub is immediately blocked on the host (interface authorized=0),\nregardless of whether QEMU is running.") );
 	modeLayout->addWidget( Hotplug_RB_Mode1 );
 	modeLayout->addWidget( Hotplug_RB_Mode2 );
 	layout->addWidget( modeGroup );
@@ -1497,17 +1497,23 @@ void Advanced_Settings_Window::on_Hotplug_Install_clicked()
 		"                | socat - UNIX-CONNECT:\"$MONITOR\" 2>/dev/null\n"
 		"        fi\n"
 		"    elif [ \"$MODE\" -ge 2 ]; then\n"
-		"        # QEMU läuft nicht: Gerät auf dem Host blockieren\n"
-		"        echo 0 > /sys/bus/usb/devices/$KERNEL/authorized 2>/dev/null\n"
+		"        # QEMU läuft nicht: Interfaces blocken (auth=0), Gerät bleibt im Baum\n"
+		"        for IFACE_DIR in /sys/bus/usb/devices/$KERNEL:*; do\n"
+		"            [ -d \"$IFACE_DIR\" ] || continue\n"
+		"            echo 0 > \"$IFACE_DIR/authorized\" 2>/dev/null\n"
+		"        done\n"
 		"    fi\n"
 		"else\n"
 		"    if [ \"$QEMU_RUNNING\" = \"1\" ]; then\n"
 		"        printf 'device_del hotplug-%s\\n' \"$KERNEL\" \\\n"
 		"            | socat - UNIX-CONNECT:\"$MONITOR\" 2>/dev/null\n"
 		"    fi\n"
-		"    # Nach Entfernen: falls authorized=0 war, wieder freigeben\n"
+		"    # Nach Entfernen: Interfaces wieder freigeben (auth=1)\n"
 		"    if [ \"$MODE\" -ge 2 ]; then\n"
-		"        echo 1 > /sys/bus/usb/devices/$KERNEL/authorized 2>/dev/null\n"
+		"        for IFACE_DIR in /sys/bus/usb/devices/$KERNEL:*; do\n"
+		"            [ -d \"$IFACE_DIR\" ] || continue\n"
+		"            echo 1 > \"$IFACE_DIR/authorized\" 2>/dev/null\n"
+		"        done\n"
 		"    fi\n"
 		"fi\n"
 	).arg(mode).arg(monitorPath);
@@ -1520,12 +1526,37 @@ void Advanced_Settings_Window::on_Hotplug_Install_clicked()
 	startScript += "# AQEMU hotplug VM-start script — auto-generated (mode " + QString::number(mode) + ")\n";
 	startScript += "MONITOR=\"" + monitorPath + "\"\n";
 	startScript += "MODE=" + QString::number(mode) + "\n";
-	startScript += "[ -S \"$MONITOR\" ] || exit 0\n\n";
+	// STOP (Monitor weg). Modus>=2 (Guest-only): Endgerät-Interfaces unter den
+	// PT-Hubs auf auth=0 (Gerät bleibt im Baum, Host-Treiber bindet nicht -> kein hci1).
+	// Modus 1: nichts tun (auth=1 bleibt, btusb bindet beim Stopp von selbst).
+	startScript += "[ -S \"$MONITOR\" ] || {\n";
+	startScript += "    if [ \"$MODE\" -ge 2 ]; then\n";
+	startScript += "        for HUB_KERNEL in " + kernels.join(" ") + "; do\n";
+	startScript += "            for DEV in /sys/bus/usb/devices/${HUB_KERNEL}.*; do\n";
+	startScript += "                [ -d \"$DEV\" ] || continue\n";
+	startScript += "                DCLASS=$(cat \"$DEV/bDeviceClass\" 2>/dev/null)\n";
+	startScript += "                [ \"$DCLASS\" = \"09\" ] && continue\n";
+	startScript += "                for IFACE_DIR in \"$DEV\":*; do\n";
+	startScript += "                    [ -d \"$IFACE_DIR\" ] || continue\n";
+	startScript += "                    echo 0 > \"$IFACE_DIR/authorized\" 2>/dev/null\n";
+	startScript += "                done\n";
+	startScript += "            done\n";
+	startScript += "        done\n";
+	startScript += "    fi\n";
+	startScript += "    exit 0\n";
+	startScript += "}\n\n";
 	startScript += "# Warten bis QEMU-Monitor bereit ist (max 5 s)\n";
 	startScript += "for i in $(seq 1 10); do\n";
 	startScript += "    echo '' | socat - UNIX-CONNECT:\"$MONITOR\" 2>/dev/null && break\n";
 	startScript += "    sleep 0.5\n";
 	startScript += "done\n\n";
+	// Idempotenz: nur Device-IDs anlegen, die noch fehlen (kein Duplikat,
+	// auch wenn parallel der udev-Hotplug hotplug.sh add laeuft).
+	startScript += "# Prueft, ob die Geraete-ID bereits im Monitor existiert\n";
+	startScript += "usb_exists() {\n";
+	startScript += "    local ID=\"$1\"\n";
+	startScript += "    echo 'info usb' | socat - UNIX-CONNECT:\"$MONITOR\" 2>/dev/null | grep -q \"ID: $ID\"\n";
+	startScript += "}\n\n";
 	startScript += "for HUB_KERNEL in " + kernels.join(" ") + "; do\n";
 	startScript += "    for DEV in /sys/bus/usb/devices/${HUB_KERNEL}.*; do\n";
 	startScript += "        [ -d \"$DEV\" ] || continue\n";
@@ -1535,12 +1566,22 @@ void Advanced_Settings_Window::on_Hotplug_Install_clicked()
 	startScript += "        VENDOR=$(cat \"$DEV/idVendor\" 2>/dev/null)\n";
 	startScript += "        PRODUCT=$(cat \"$DEV/idProduct\" 2>/dev/null)\n";
 	startScript += "        [ -n \"$VENDOR\" ] && [ -n \"$PRODUCT\" ] || continue\n";
+	startScript += "        ID=\"hotplug-$KNAME\"\n";
+	// Bereits durchgereicht -> ueberspringen
+	startScript += "        usb_exists \"$ID\" && continue\n";
+	// 1) Interfaces auth=1 (STOP setzt Interfaces auf 0; Device bleibt immer auth=1).
+	//    Ohne Interface-auth bekäme der Gast ein Geist-Gerät/Dreieck.
+	startScript += "        for IFACE_DIR in \"$DEV\":*; do\n";
+	startScript += "            [ -d \"$IFACE_DIR\" ] || continue\n";
+	startScript += "            echo 1 > \"$IFACE_DIR/authorized\" 2>/dev/null\n";
+	startScript += "        done\n";
+	// 2) Host-Treiber (btusb) von den Interfaces entkoppeln (nicht usbfs)
 	startScript += "        if [ \"$MODE\" -ge 2 ]; then\n";
 	startScript += "            for IFACE_DIR in \"$DEV\":*; do\n";
 	startScript += "                [ -d \"$IFACE_DIR\" ] || continue\n";
 	startScript += "                IFACE=$(basename \"$IFACE_DIR\")\n";
 	startScript += "                DRV=$(readlink \"$IFACE_DIR/driver\" 2>/dev/null | xargs basename 2>/dev/null)\n";
-	startScript += "                [ -n \"$DRV\" ] && echo \"$IFACE\" > /sys/bus/usb/drivers/$DRV/unbind 2>/dev/null\n";
+	startScript += "                [ -n \"$DRV\" ] && [ \"$DRV\" != \"usbfs\" ] && echo \"$IFACE\" > /sys/bus/usb/drivers/$DRV/unbind 2>/dev/null\n";
 	startScript += "            done\n";
 	startScript += "        fi\n";
 	startScript += "        printf 'device_add usb-host,bus=xhci.0,vendorid=0x%s,productid=0x%s,id=hotplug-%s\\n' \\\n";
@@ -1549,33 +1590,12 @@ void Advanced_Settings_Window::on_Hotplug_Install_clicked()
 	startScript += "    done\n";
 	startScript += "done\n";
 
-	// ── hotplug-stop.sh (called by AQEMU when VM stops, mode 3) ─────────────
-	QString stopScript = QString(
-		"#!/bin/bash\n"
-		"# AQEMU hotplug VM-stop script — auto-generated\n"
-		"MONITOR=\"%1\"\n\n"
-		"# Remove all hotplug devices from QEMU if still running\n"
-		"if [ -S \"$MONITOR\" ]; then\n"
-		"    echo 'info usb' | socat - UNIX-CONNECT:\"$MONITOR\" 2>/dev/null \\\n"
-		"    | grep 'ID: hotplug-' | sed 's/.*ID: //' | while read id; do\n"
-		"        printf 'device_del %s\\n' \"$id\" | socat - UNIX-CONNECT:\"$MONITOR\" 2>/dev/null\n"
-		"    done\n"
-		"fi\n\n"
-		"# Re-authorize all hub devices\n"
-		"for HUB_KERNEL in %2; do\n"
-		"    for DEV in /sys/bus/usb/devices/${HUB_KERNEL}.*; do\n"
-		"        [ -d \"$DEV\" ] || continue\n"
-		"        echo 1 > \"$DEV/authorized\" 2>/dev/null\n"
-		"    done\n"
-		"done\n"
-	).arg(monitorPath, kernels.join(" "));
-
-	// ── systemd Path-Unit: feuert hotplug-start.sh wenn QEMU-Monitor-Socket erscheint ──
+	// ── systemd Path-Unit: feuert hotplug-start.sh wenn QEMU-Monitor-Socket erscheint/verschwindet ──
 	QString pathUnit;
 	pathUnit  = "[Unit]\n";
 	pathUnit += "Description=AQEMU Hotplug: Trigger when QEMU monitor socket appears\n\n";
 	pathUnit += "[Path]\n";
-	pathUnit += "PathExists=" + monitorPath + "\n";
+	pathUnit += "PathChanged=" + monitorPath + "\n";
 	pathUnit += "Unit=aqemu-hotplug-start.service\n\n";
 	pathUnit += "[Install]\n";
 	pathUnit += "WantedBy=multi-user.target\n";
@@ -1602,9 +1622,7 @@ void Advanced_Settings_Window::on_Hotplug_Install_clicked()
 	installScript += QString::fromLatin1( b64(script) ) + "\n__EOF__\n";
 	installScript += "base64 -d <<'__EOF__' > /etc/aqemu/hotplug-start.sh\n";
 	installScript += QString::fromLatin1( b64(startScript) ) + "\n__EOF__\n";
-	installScript += "base64 -d <<'__EOF__' > /etc/aqemu/hotplug-stop.sh\n";
-	installScript += QString::fromLatin1( b64(stopScript) ) + "\n__EOF__\n";
-	installScript += "chmod +x /etc/aqemu/hotplug.sh /etc/aqemu/hotplug-start.sh /etc/aqemu/hotplug-stop.sh\n";
+	installScript += "chmod +x /etc/aqemu/hotplug.sh /etc/aqemu/hotplug-start.sh\n";
 	installScript += "base64 -d <<'__EOF__' > /etc/systemd/system/aqemu-hotplug-start.path\n";
 	installScript += QString::fromLatin1( b64(pathUnit) ) + "\n__EOF__\n";
 	installScript += "base64 -d <<'__EOF__' > /etc/systemd/system/aqemu-hotplug-start.service\n";
@@ -1636,7 +1654,7 @@ void Advanced_Settings_Window::on_Hotplug_Remove_clicked()
 		"rm -f /etc/systemd/system/aqemu-hotplug-start.service\n"
 		"systemctl daemon-reload\n"
 		"rm -f /etc/udev/rules.d/99-aqemu-hotplug.rules\n"
-		"rm -f /etc/aqemu/hotplug.sh /etc/aqemu/hotplug-start.sh /etc/aqemu/hotplug-stop.sh\n"
+		"rm -f /etc/aqemu/hotplug.sh /etc/aqemu/hotplug-start.sh\n"
 		"udevadm control --reload-rules\n";
 
 	QString err;
