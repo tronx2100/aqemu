@@ -1606,6 +1606,10 @@ void Advanced_Settings_Window::on_Hotplug_Install_clicked()
 	serviceUnit += "[Service]\n";
 	serviceUnit += "Type=oneshot\n";
 	serviceUnit += "ExecStart=/etc/aqemu/hotplug-start.sh\n";
+	// H�he Start-Limit deutlich an, damit viele Start/Stop-Zyklen nie in
+	// 'start-limit-hit' laufen (Standardeinstellung ist 5 Starts in 10 s).
+	serviceUnit += "StartLimitIntervalSec=0\n";
+	serviceUnit += "StartLimitBurst=0\n";
 
 	// Alle Dateien in einem einzigen pkexec bash-Aufruf schreiben.
 	// Inhalte werden base64-kodiert um Sonderzeichen/Prozentzeichen sicher zu übertragen.
